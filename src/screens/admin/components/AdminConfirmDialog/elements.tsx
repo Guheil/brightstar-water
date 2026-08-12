@@ -1,0 +1,41 @@
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import { styled } from '@mui/material/styles';
+
+export const ConfirmDialog = styled(Dialog)(() => ({}));
+
+export const ConfirmDialogTitle = styled(DialogTitle)(({ theme }) => ({
+  ...theme.typography.h5,
+  color: theme.vars.palette.text.primary,
+}));
+
+export const ConfirmDialogContent = styled(DialogContent)(() => ({}));
+
+export const ConfirmDialogText = styled(DialogContentText)(({ theme }) => ({
+  ...theme.typography.body1,
+  color: theme.vars.palette.text.secondary,
+}));
+
+export const ConfirmDialogActions = styled(DialogActions)(({ theme }) => ({
+  gap: theme.spacing(1),
+  padding: theme.spacing(2, 3, 3),
+}));
+
+export const CancelButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+  color: theme.vars.palette.text.primary,
+}));
+
+export const ConfirmButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+  backgroundColor: theme.vars.palette.error.main,
+  color: theme.vars.palette.error.contrastText,
+
+  '&:hover': {
+    backgroundColor: theme.vars.palette.error.dark,
+  },
+}));
