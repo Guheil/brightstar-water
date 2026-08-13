@@ -6,11 +6,10 @@ export default function CustomerError({ reset }: { error: Error; reset: () => vo
   return (
     <PageContainer>
       <ErrorState
-        description="We could not display this demo customer page. Your prototype data has not been sent anywhere."
+        description="We could not display this customer page. Try again to reload your account information."
         onRetry={reset}
         title="Customer page unavailable"
       />
     </PageContainer>
   );
 }
-

@@ -6,7 +6,7 @@ export default function CustomerLoading() {
   return (
     <PageContainer>
       <LoadingState
-        description="Preparing fictional account and order information."
+        description="Preparing your account and order information."
         label="Loading customer workspace"
       />
     </PageContainer>

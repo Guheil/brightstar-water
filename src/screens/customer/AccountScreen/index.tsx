@@ -38,7 +38,7 @@ const ACCOUNT_ACTIONS: readonly AccountAction[] = [
   {
     href: '/customer/profile',
     label: 'Profile and delivery addresses',
-    description: 'Review the fictional contact and saved address information.',
+    description: 'Review your contact details and saved delivery addresses.',
   },
   {
     href: '/customer/orders',
@@ -48,7 +48,7 @@ const ACCOUNT_ACTIONS: readonly AccountAction[] = [
   {
     href: '/customer/loyalty',
     label: 'Loyalty activity',
-    description: 'See provisional points and how the demo calculation works.',
+    description: 'See available and pending points, plus earning details.',
   },
 ];
 
@@ -68,8 +68,8 @@ export default function AccountScreen() {
     return (
       <AccountPage>
         <EmptyState
-          description="Reset the demo workspace to restore the fictional customer profile."
-          title="Demo customer unavailable"
+          description="Refresh the page or sign in again to reload your account."
+          title="Customer account unavailable"
         />
       </AccountPage>
     );
@@ -81,11 +81,11 @@ export default function AccountScreen() {
         <IntroCopy>
           <Title>Good day, {customer.displayName}.</Title>
           <Lead>
-            Review your next delivery, manage saved details, and keep an eye on provisional loyalty points.
+            Review your next delivery, manage saved details, and keep an eye on loyalty points.
           </Lead>
         </IntroCopy>
         <AccountIdentity>
-          <IdentityTerm>Demo account</IdentityTerm>
+          <IdentityTerm>Account email</IdentityTerm>
           <IdentityValue>{customer.email}</IdentityValue>
           <IdentityTerm>Contact</IdentityTerm>
           <IdentityValue>{customer.phonePlaceholder}</IdentityValue>
@@ -116,7 +116,7 @@ export default function AccountScreen() {
           ) : (
             <EmptyState
               action={<InlineLink href="/shop">Browse products</InlineLink>}
-              description="Your placed demo orders will appear here."
+              description="Your placed orders will appear here."
               icon={<PackageSearch />}
               title="No orders yet"
             />
@@ -140,7 +140,7 @@ export default function AccountScreen() {
           <SectionTitle>Loyalty snapshot</SectionTitle>
           <PointsValue>{loyalty?.pointsAvailable ?? 0} pts</PointsValue>
           <SupportingText>
-            Approximate value: {formatPhp((loyalty?.pointsAvailable ?? 0) * 100)}. Redemption is disabled until the business confirms the final rule.
+            Approximate value: {formatPhp((loyalty?.pointsAvailable ?? 0) * 100)}. Redemption is not currently available.
           </SupportingText>
           <InlineLink href="/customer/loyalty">Review loyalty details</InlineLink>
         </Section>
@@ -148,4 +148,3 @@ export default function AccountScreen() {
     </AccountPage>
   );
 }
-

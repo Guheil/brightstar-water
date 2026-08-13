@@ -54,7 +54,7 @@ export default function ProfileScreen() {
     return (
       <ProfilePage>
         <EmptyState
-          description="Reset the demo workspace to restore fictional profile data."
+          description="Refresh the page or sign in again to reload your profile."
           title="Profile unavailable"
         />
       </ProfilePage>
@@ -72,13 +72,13 @@ export default function ProfileScreen() {
         <BackLink href="/customer/account">Back to account</BackLink>
         <Title>Profile and saved delivery information</Title>
         <Lead>
-          Review the fictional details used to calculate demo delivery zones and prepare orders.
+          Review the contact and address details used to prepare your orders.
         </Lead>
       </Header>
 
       <Layout>
         <AddressSection>
-          <SectionTitle>Saved demo addresses</SectionTitle>
+          <SectionTitle>Saved delivery addresses</SectionTitle>
           <AddressList>
             {customer.addresses.map((address) => (
               <AddressItem key={address.id}>
@@ -87,20 +87,20 @@ export default function ProfileScreen() {
                 <AddressText>
                   {address.municipality}, {address.province}
                 </AddressText>
-                <DistanceText>{address.distanceKm} km demo distance</DistanceText>
+                <DistanceText>{address.distanceKm} km from the store</DistanceText>
               </AddressItem>
             ))}
           </AddressList>
           <Helper>
-            Distances are fixed presentation fixtures. The prototype does not use GPS or geocoding.
+            Delivery fees are calculated using the listed distance for each saved address.
           </Helper>
         </AddressSection>
 
         <FormPanel>
-          <SectionTitle>Edit presentation details</SectionTitle>
+          <SectionTitle>Edit profile details</SectionTitle>
           {saved ? (
-            <Notice title="Saved for this view" tone="success">
-              Your changes are kept only while this page remains open. No real profile was updated.
+            <Notice title="Profile details updated" tone="success">
+              Your latest contact and delivery details are now displayed.
             </Notice>
           ) : null}
           <Form
@@ -119,15 +119,15 @@ export default function ProfileScreen() {
               />
               <Field
                 autoComplete="tel"
-                helperText="Use placeholder data only in this prototype."
-                label="Contact placeholder"
+                helperText="Enter the number to use for delivery updates."
+                label="Contact number"
                 onChange={(event) => update('phone', event.target.value)}
                 required
                 value={values.phone}
               />
               <FullField
                 autoComplete="email"
-                label="Demo email"
+                label="Email"
                 onChange={(event) => update('email', event.target.value)}
                 required
                 type="email"
@@ -141,7 +141,7 @@ export default function ProfileScreen() {
                 value={values.addressLine}
               />
               <Field
-                label="Demo area"
+                label="Area"
                 onChange={(event) => update('area', event.target.value)}
                 required
                 value={values.area}
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
               />
             </FieldGrid>
             <Helper>
-              This form demonstrates validation and save feedback. It does not write to a backend.
+              Review your contact and delivery details before saving.
             </Helper>
             <FormActions>
               <ResetButton
@@ -171,10 +171,10 @@ export default function ProfileScreen() {
                 }}
                 type="button"
               >
-                Reset demo values
+                Reset changes
               </ResetButton>
               <SaveButton type="submit" variant="contained">
-                Save presentation changes
+                Save changes
               </SaveButton>
             </FormActions>
           </Form>
@@ -183,4 +183,3 @@ export default function ProfileScreen() {
     </ProfilePage>
   );
 }
-
