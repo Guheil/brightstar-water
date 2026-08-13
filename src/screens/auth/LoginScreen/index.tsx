@@ -123,8 +123,8 @@ export default function LoginScreen() {
           <TextLink href="/register">Create a customer account</TextLink>
         </FormLinks>
       </Form>
-      <DemoSection aria-labelledby="demo-accounts-title">
-        <DemoTitle id="demo-accounts-title">Role accounts</DemoTitle>
+      <DemoSection aria-labelledby="role-accounts-title">
+        <DemoTitle id="role-accounts-title">Role accounts</DemoTitle>
         <DemoIntro>
           Choose the account for the workspace you need.
         </DemoIntro>

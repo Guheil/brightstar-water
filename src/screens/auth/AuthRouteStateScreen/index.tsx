@@ -29,7 +29,7 @@ export default function AuthRouteStateScreen({
           />
         ) : (
           <ErrorState
-            description="Try opening the page again. No credential or personal information was submitted."
+            description="Try opening the page again or return to sign in."
             onRetry={onRetry}
             title="Authentication unavailable"
           />
