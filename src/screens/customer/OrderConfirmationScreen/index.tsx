@@ -1,7 +1,7 @@
 'use client';
 
 import { CircleCheckBig } from 'lucide-react';
-import { EmptyState, Notice } from '@/components';
+import { EmptyState } from '@/components';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
 import { useCustomerCart } from '../_shared/CustomerAreaShell';
@@ -36,8 +36,8 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
     return (
       <ConfirmationPage>
         <EmptyState
-          action={<SecondaryLink href="/customer/orders">View demo orders</SecondaryLink>}
-          description="The requested order does not exist in the current prototype session."
+          action={<SecondaryLink href="/customer/orders">View orders</SecondaryLink>}
+          description="The requested order could not be found."
           title="Order confirmation unavailable"
         />
       </ConfirmationPage>
@@ -49,16 +49,13 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
       <ConfirmationPanel>
         <IconMark><CircleCheckBig aria-hidden="true" /></IconMark>
         <HeadingGroup>
-          <Title>Demo order received</Title>
+          <Title>Order received</Title>
           <Lead>
             {lastPlacedOrderId === order.id
-              ? 'Your cart was cleared and the shared prototype workflow now contains this order.'
-              : 'This is a fictional confirmation record from the current prototype workspace.'}
+              ? 'Your cart has been cleared and the order is ready for review.'
+              : 'Review the confirmation details for this order.'}
           </Lead>
         </HeadingGroup>
-        <Notice tone="success" title="No real purchase was made">
-          The order, payment, address and schedule are presentation data only.
-        </Notice>
         <ReferencePanel>
           <ReferenceItem><dt>Order reference</dt><dd>{order.reference}</dd></ReferenceItem>
           <ReferenceItem><dt>Total</dt><dd>{formatPhp(order.totals.totalCentavos)}</dd></ReferenceItem>
@@ -69,11 +66,11 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
           </ReferenceItem>
         </ReferencePanel>
         <NextSection>
-          <SectionTitle>What happens next in the demo</SectionTitle>
+          <SectionTitle>What happens next</SectionTitle>
           <NextList>
             <li>Admin reviews and confirms the new order.</li>
-            <li>Reserved stock remains unavailable to other demo orders.</li>
-            <li>Admin assigns a fictional deliverer and the tracking timeline updates.</li>
+            <li>Reserved stock remains unavailable to other orders.</li>
+            <li>Admin assigns a deliverer and the tracking timeline updates.</li>
             <li>Loyalty points settle only after the delivery is completed.</li>
           </NextList>
         </NextSection>
@@ -85,4 +82,3 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
     </ConfirmationPage>
   );
 }
-

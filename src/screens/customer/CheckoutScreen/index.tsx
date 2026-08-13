@@ -74,12 +74,12 @@ const PAYMENT_CHOICES: readonly PaymentChoice[] = [
   {
     method: 'cod',
     title: 'Cash on delivery',
-    description: 'The fictional amount is marked for collection when the order is delivered.',
+    description: 'Prepare the displayed amount for collection when the order is delivered.',
   },
   {
     method: 'gcash',
-    title: 'GCash demo',
-    description: 'Creates an awaiting-verification state. No real transfer or account is used.',
+    title: 'GCash',
+    description: 'Places the order in an awaiting-verification state for payment review.',
   },
 ];
 
@@ -158,11 +158,11 @@ export default function CheckoutScreen() {
 
   const submitOrder = () => {
     if (hasAvailabilityIssue) {
-      setError('Return to your cart and adjust products that no longer have enough demo stock.');
+      setError('Return to your cart and adjust products that no longer have enough stock.');
       return;
     }
     if (!selectedAddress || !deliveryQuote?.serviceable) {
-      setError('Choose a demo address inside the 10 km service area.');
+      setError('Choose a delivery address inside the 10 km service area.');
       return;
     }
     setPlacing(true);
@@ -201,7 +201,7 @@ export default function CheckoutScreen() {
         <BackLink href="/customer/cart">Back to cart</BackLink>
         <Title>Checkout</Title>
         <Lead>
-          Complete three clear steps to place a fictional order in the shared demo workflow.
+          Complete three clear steps to place your order.
         </Lead>
       </Header>
 
@@ -225,7 +225,7 @@ export default function CheckoutScreen() {
           {hasAvailabilityIssue ? (
             <Notice tone="warning" title="Cart availability changed">
               {hasMissingProduct
-                ? 'A product in your cart is no longer available in the demo catalog. '
+                ? 'A product in your cart is no longer available in the catalog. '
                 : ''}
               {stockIssues.map(({ product, availableStock }) =>
                 `${product.name} has ${availableStock} available.`,
@@ -237,7 +237,7 @@ export default function CheckoutScreen() {
             <>
               <StageTitle>Choose delivery details</StageTitle>
               <StageDescription>
-                Address distances are fixed fixtures for fee simulation. No live location is used.
+                Delivery fees are calculated from the distance assigned to the selected address.
               </StageDescription>
               <ChoiceList role="radiogroup" aria-label="Saved delivery address">
                 {customer.addresses.map((address) => (
@@ -258,7 +258,7 @@ export default function CheckoutScreen() {
                 ))}
               </ChoiceList>
 
-              <StageTitle>Choose a demo schedule</StageTitle>
+              <StageTitle>Choose a delivery schedule</StageTitle>
               <ChoiceList role="radiogroup" aria-label="Delivery schedule">
                 {SCHEDULES.map((schedule) => (
                   <ChoiceCard key={schedule.id} $selected={schedule.id === scheduleId}>
@@ -289,7 +289,7 @@ export default function CheckoutScreen() {
             <>
               <StageTitle>Select a payment method</StageTitle>
               <StageDescription>
-                Both options are presentation states. This frontend cannot collect or verify real money.
+                Choose how you want the order payment to be handled.
               </StageDescription>
               <ChoiceList role="radiogroup" aria-label="Payment method">
                 {PAYMENT_CHOICES.map((choice) => (
@@ -314,7 +314,7 @@ export default function CheckoutScreen() {
                 <DemoPaymentPanel>
                   <Smartphone aria-hidden="true" />
                   <StageDescription>
-                    Demo QR intentionally unavailable. Admin verification is simulated after placement.
+                    The order remains awaiting verification until payment review is complete.
                   </StageDescription>
                 </DemoPaymentPanel>
               ) : null}
@@ -323,9 +323,9 @@ export default function CheckoutScreen() {
 
           {stage === 'review' ? (
             <>
-              <StageTitle>Review the demo order</StageTitle>
+              <StageTitle>Review your order</StageTitle>
               <StageDescription>
-                Nothing below represents a real customer, payment, or scheduled delivery.
+                Confirm the delivery, payment, and item details before placing your order.
               </StageDescription>
               <ReviewList>
                 {lines.map(({ cartItem, product }) => (
@@ -344,7 +344,7 @@ export default function CheckoutScreen() {
                 </ReviewItem>
                 <ReviewItem>
                   <ReviewLabel>Payment</ReviewLabel>
-                  <ReviewValue>{paymentMethod === 'cod' ? 'Cash on delivery' : 'GCash demo'}</ReviewValue>
+                  <ReviewValue>{paymentMethod === 'cod' ? 'Cash on delivery' : 'GCash'}</ReviewValue>
                 </ReviewItem>
               </ReviewList>
             </>
@@ -356,7 +356,7 @@ export default function CheckoutScreen() {
             )}
             {stage === 'review' ? (
               <PrimaryButton disabled={placing} onClick={submitOrder} variant="contained">
-                {placing ? 'Placing demo order…' : 'Place demo order'}
+                {placing ? 'Placing order…' : 'Place order'}
               </PrimaryButton>
             ) : (
               <PrimaryButton
@@ -383,7 +383,7 @@ export default function CheckoutScreen() {
             </Notice>
           ) : null}
           <FinePrint>
-            Estimated loyalty after delivery: {pointsPending} points. One point per ₱100 applies only to qualifying subtotals of at least ₱500. Bonus and redemption remain disabled pending confirmation.
+            Estimated loyalty after delivery: {pointsPending} points. One point per ₱100 applies to qualifying subtotals of at least ₱500. Bonus points and redemption are not currently available.
           </FinePrint>
         </SummaryPanel>
       </CheckoutLayout>

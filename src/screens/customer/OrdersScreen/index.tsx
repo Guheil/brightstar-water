@@ -58,7 +58,7 @@ export default function OrdersScreen() {
         <HeaderCopy>
           <Title>My orders</Title>
           <Lead>
-            Follow active demo deliveries and review how completed or exceptional orders are recorded.
+            Follow active deliveries and review completed, cancelled, or failed orders.
           </Lead>
         </HeaderCopy>
         <ShopLink href="/shop">Start another order</ShopLink>
@@ -101,8 +101,8 @@ export default function OrdersScreen() {
           action={<ShopLink href="/shop">Browse products</ShopLink>}
           description={
             filter === 'all'
-              ? 'Placed demo orders will appear here.'
-              : 'No orders match this filter in the current demo state.'
+              ? 'Placed orders will appear here.'
+              : 'No orders match the selected filter.'
           }
           icon={<ClipboardList />}
           title={filter === 'all' ? 'No orders yet' : 'No matching orders'}
@@ -111,4 +111,3 @@ export default function OrdersScreen() {
     </OrdersPage>
   );
 }
-
