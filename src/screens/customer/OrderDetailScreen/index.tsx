@@ -63,7 +63,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       <DetailPage>
         <EmptyState
           action={<BackLink href="/customer/orders">Return to my orders</BackLink>}
-          description="This order is unavailable or is not part of the active fictional customer account."
+          description="This order is unavailable or does not belong to the active customer account."
           title="Order not found"
         />
       </DetailPage>
@@ -85,7 +85,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
         <HeadingCopy>
           <BackLink href="/customer/orders">Back to my orders</BackLink>
           <Title>{order.reference}</Title>
-          <DateText>Placed {order.placedAt.slice(0, 10)} · Fictional prototype order</DateText>
+          <DateText>Placed {order.placedAt.slice(0, 10)}</DateText>
         </HeadingCopy>
         <StatusText tone={ORDER_STATUS_TONES[order.status]}>
           {ORDER_STATUS_LABELS[order.status]}
@@ -119,7 +119,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             </Notice>
           ) : order.status === 'delivery_failed' && payment && ['verified', 'paid'].includes(payment.status) ? (
             <Notice title="Refund review is available to Admin" tone="warning">
-              A failed delivery does not automatically start a refund or restore inventory in this prototype.
+              A failed delivery requires Admin review before refund or inventory changes are processed.
             </Notice>
           ) : null}
 
@@ -174,7 +174,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                   {cancellationForm.error ? <Notice tone="error">{cancellationForm.error}</Notice> : null}
                   <ReasonField
                     autoFocus
-                    helperText="Minimum 4 characters. The reason is stored only in demo state."
+                    helperText="Enter at least 4 characters."
                     label="Reason for cancellation"
                     minRows={3}
                     multiline
@@ -207,7 +207,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           <Panel>
             <SectionTitle>Payment and totals</SectionTitle>
             <DefinitionList>
-              <DefinitionRow><dt>Payment</dt><dd>{order.paymentMethod === 'cod' ? 'Cash on delivery' : 'GCash demo'}</dd></DefinitionRow>
+              <DefinitionRow><dt>Payment</dt><dd>{order.paymentMethod === 'cod' ? 'Cash on delivery' : 'GCash'}</dd></DefinitionRow>
               <DefinitionRow><dt>Payment state</dt><dd>{payment?.status.replaceAll('_', ' ') ?? 'Unavailable'}</dd></DefinitionRow>
               <DefinitionRow><dt>Subtotal</dt><dd>{formatPhp(order.totals.subtotalCentavos)}</dd></DefinitionRow>
               <DefinitionRow><dt>Delivery</dt><dd>{formatPhp(order.totals.deliveryFeeCentavos)}</dd></DefinitionRow>
@@ -234,4 +234,3 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     </DetailPage>
   );
 }
-
