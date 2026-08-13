@@ -28,8 +28,8 @@ import {
 } from './elements';
 
 const loginSchema = z.object({
-  email: z.string().trim().email('Enter a valid demo email address.'),
-  password: z.string().min(1, 'Enter the demo password.'),
+  email: z.string().trim().email('Enter a valid email address.'),
+  password: z.string().min(1, 'Enter your password.'),
 });
 
 const roleDestinations = {
@@ -53,7 +53,6 @@ const demoCredentials: DemoCredentialView[] = DEMO_AUTH_ACCOUNTS.map(
 export default function LoginScreen() {
   const router = useRouter();
   const signIn = useAppStore((state) => state.commands.signIn);
-  const prototypeNotice = useAppStore((state) => state.auth.prototypeNotice);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
     formState: { errors, isSubmitting },
@@ -61,8 +60,8 @@ export default function LoginScreen() {
     register,
   } = useForm<LoginFormValues>({
     defaultValues: {
-      email: 'customer.demo@example.test',
-      password: 'demo-only',
+      email: 'customer@brightstar.local',
+      password: 'BrightStar123!',
     },
     resolver: zodResolver(loginSchema),
   });
@@ -82,15 +81,12 @@ export default function LoginScreen() {
 
   return (
     <AuthScaffold
-      description="Use one of the public presentation accounts below. This sign-in only changes frontend demo state."
-      title="Sign in to the prototype"
+      description="Use the account for your role to continue to your workspace."
+      title="Sign in to your account"
     >
-      <Notice title="Frontend demonstration" tone="warning">
-        {prototypeNotice} Never enter a real password or personal email here.
-      </Notice>
       <Form
         aria-busy={isSubmitting}
-        aria-label="Prototype sign in"
+        aria-label="Account sign in"
         noValidate
         onSubmit={onSubmit}
       >
@@ -106,7 +102,7 @@ export default function LoginScreen() {
           error={Boolean(errors.email)}
           fullWidth
           helperText={errors.email?.message}
-          label="Demo email"
+          label="Email"
           type="email"
           {...register('email')}
         />
@@ -115,22 +111,22 @@ export default function LoginScreen() {
           error={Boolean(errors.password)}
           fullWidth
           helperText={errors.password?.message}
-          label="Demo password"
+          label="Password"
           type="password"
           {...register('password')}
         />
         <SubmitButton disabled={isSubmitting} type="submit" variant="contained">
-          {isSubmitting ? 'Checking demo account…' : 'Sign in'}
+          {isSubmitting ? 'Signing in…' : 'Sign in'}
         </SubmitButton>
         <FormLinks>
-          <TextLink href="/forgot-password">Forgot demo password?</TextLink>
-          <TextLink href="/register">Create a demo customer account</TextLink>
+          <TextLink href="/forgot-password">Forgot password?</TextLink>
+          <TextLink href="/register">Create a customer account</TextLink>
         </FormLinks>
       </Form>
       <DemoSection aria-labelledby="demo-accounts-title">
-        <DemoTitle id="demo-accounts-title">Presentation accounts</DemoTitle>
+        <DemoTitle id="demo-accounts-title">Role accounts</DemoTitle>
         <DemoIntro>
-          These fixed addresses are fictional and cannot receive email.
+          Choose the account for the workspace you need.
         </DemoIntro>
         <CredentialList>
           {demoCredentials.map((credential) => (
@@ -141,7 +137,7 @@ export default function LoginScreen() {
           ))}
         </CredentialList>
         <PasswordHint>
-          Shared public demo password: <strong>demo-only</strong>
+          Shared account password: <strong>BrightStar123!</strong>
         </PasswordHint>
       </DemoSection>
     </AuthScaffold>

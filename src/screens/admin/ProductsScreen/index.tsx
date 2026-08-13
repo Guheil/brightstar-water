@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import EmptyState from '@/components/ui/EmptyState';
-import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
 import { selectProductsWithAvailability, useAppStore } from '@/store';
 import type { ProductWithAvailability } from '@/store';
@@ -108,13 +107,9 @@ export default function ProductsScreen({ className }: ProductsScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Maintain the fictional customer catalog. Product availability remains linked to shared inventory."
+        description="Maintain the customer catalog and product availability across inventory."
         title="Products"
       />
-
-      <Notice title="Prototype-only catalog editing" tone="warning">
-        Product changes live only in browser memory for this session. No file upload, database, or production catalog API is connected.
-      </Notice>
 
       <Toolbar>
         <SearchField

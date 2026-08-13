@@ -47,12 +47,3 @@ export const Value = styled('dd')(({ theme }) => ({
   color: theme.vars.palette.text.primary,
   fontWeight: theme.typography.fontWeightMedium,
 }));
-
-export const BoundaryList = styled('ul')(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(1),
-  margin: 0,
-  paddingInlineStart: theme.spacing(2.5),
-  color: theme.vars.palette.text.secondary,
-}));

@@ -4,6 +4,5 @@ export const INVENTORY_POLICY = {
   releaseOnApprovedCancellation: true,
   restoreAutomaticallyAfterFailedDelivery: false,
   allowNegativeAvailableStock: false,
-  notice: 'Prototype inventory timing pending business confirmation.',
+  notice: 'Stock is reserved when an order is placed and deducted after delivery.',
 } as const;
-

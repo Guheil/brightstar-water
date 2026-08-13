@@ -21,7 +21,7 @@ export const calculateDeliveryFee = (distanceKm: number): DeliveryQuote => {
       serviceable: false,
       distanceKm,
       feeCentavos: null,
-      label: 'Choose a valid demo delivery zone.',
+      label: 'Choose a valid delivery zone.',
     };
   }
 
@@ -35,7 +35,7 @@ export const calculateDeliveryFee = (distanceKm: number): DeliveryQuote => {
       serviceable: false,
       distanceKm,
       feeCentavos: null,
-      label: `Outside the ${DELIVERY_FEE_CONFIG.serviceRadiusKm} km demo service area`,
+      label: `Outside the ${DELIVERY_FEE_CONFIG.serviceRadiusKm} km service area`,
     };
   }
 
@@ -51,4 +51,3 @@ export const canTransitionDelivery = (
   from: DeliveryStatus,
   to: DeliveryStatus,
 ): boolean => DELIVERY_TRANSITIONS[from].includes(to);
-

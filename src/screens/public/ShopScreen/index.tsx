@@ -133,9 +133,8 @@ export default function ShopScreen({
           <div>
             <Title>Shop household essentials</Title>
             <Introduction>
-              Browse fictional demo stock for LPG refills, purified water, and
-              practical accessories. Availability updates from the shared
-              prototype inventory.
+              Browse LPG refills, purified water, and practical accessories.
+              Current availability is shown for every product.
             </Introduction>
           </div>
           <CoverageLink href="/about-delivery">
@@ -207,7 +206,7 @@ export default function ShopScreen({
             {visibleProducts.length}{' '}
             {visibleProducts.length === 1 ? 'product' : 'products'} found
           </ResultsCount>
-          <ResultsCount>Fictional prototype inventory</ResultsCount>
+          <ResultsCount>Current inventory</ResultsCount>
         </ResultsBar>
 
         {visibleProducts.length ? (
@@ -241,7 +240,7 @@ export default function ShopScreen({
                   <ProductPrice>{formatPhp(product.priceCentavos)}</ProductPrice>
                   <ProductAvailability $available={product.isAvailable}>
                     {product.isAvailable
-                      ? `${product.availableStock} available in demo stock`
+                      ? `${product.availableStock} available`
                       : 'Currently unavailable'}
                   </ProductAvailability>
                   <AddButton
@@ -252,11 +251,11 @@ export default function ShopScreen({
                     }}
                     variant="contained"
                   >
-                    Add to prototype cart
+                    Add to cart
                   </AddButton>
                   <Feedback aria-atomic="true" aria-live="polite">
                     {recentlyAdded === product.id
-                      ? `${product.name} added to your prototype cart.`
+                      ? `${product.name} added to your cart.`
                       : ''}
                   </Feedback>
                 </ProductContent>

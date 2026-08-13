@@ -38,7 +38,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
         </TableLink>
       ),
     },
-    { key: 'contact', label: 'Contact placeholder', render: (customer) => customer.phonePlaceholder },
+    { key: 'contact', label: 'Contact', render: (customer) => customer.phonePlaceholder },
     {
       key: 'orders',
       label: 'Orders',
@@ -76,7 +76,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Review fictional customer contact placeholders, purchase history, active work, and loyalty without invasive analytics."
+        description="Review customer contact details, purchase history, active orders, and loyalty balances."
         title="Customers"
       />
       <SearchField
@@ -94,7 +94,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
       ) : (
         <EmptyState
           action={<ResetButton onClick={() => setQuery('')}>Clear search</ResetButton>}
-          description="Try another fictional name, email, or contact placeholder."
+          description="Try another customer name, email, or contact number."
           title="No customers match this search"
         />
       )}

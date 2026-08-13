@@ -64,7 +64,7 @@ export default function ProductFormScreen({ productId }: ProductFormScreenProps)
     return (
       <EmptyState
         action={<EmptyActionLink href="/admin/products">Return to products</EmptyActionLink>}
-        description="This fictional product may have been removed when demo state was reset."
+        description="The requested product could not be found."
         title="Product not found"
       />
     );
@@ -115,13 +115,9 @@ export default function ProductFormScreen({ productId }: ProductFormScreenProps)
       <AdminPageHeader
         backHref="/admin/products"
         backLabel="Back to products"
-        description="Use fictional catalog content only. New products start with zero stock and require an inventory adjustment."
+        description="Enter the catalog details customers need. New products start with zero stock and require an inventory adjustment."
         title={editing ? `Edit ${product?.name}` : 'Add product'}
       />
-
-      <Notice title="Session-only product form" tone="warning">
-        This form updates shared browser memory only. Image paths are local placeholders; there is no upload service.
-      </Notice>
       {error ? (
         <Notice title="Product not saved" tone="error">
           {error}
@@ -190,7 +186,7 @@ export default function ProductFormScreen({ productId }: ProductFormScreenProps)
           value={form.description}
         />
         <Field
-          label="Local image path"
+          label="Product image path"
           onChange={(event) => update('imageSrc', event.target.value)}
           required
           value={form.imageSrc}

@@ -58,7 +58,7 @@ export const INVENTORY_ADJUSTMENT_FIXTURES: InventoryAdjustment[] = [
     stockReservedBefore: 0,
     stockReservedAfter: 0,
     source: 'admin_adjustment',
-    reason: 'Fictional opening stock count for the prototype.',
+    reason: 'Opening stock count.',
     actorId: 'user-admin-demo',
     createdAt: '2026-08-01T08:15:00.000Z',
   },
@@ -72,9 +72,8 @@ export const INVENTORY_ADJUSTMENT_FIXTURES: InventoryAdjustment[] = [
     stockReservedBefore: 1,
     stockReservedAfter: 0,
     source: 'order_commit',
-    reason: 'Committed by delivered demo order MRJE-DEMO-0003.',
+    reason: 'Committed by delivered order MRJE-0003.',
     actorId: 'system',
     createdAt: '2026-08-09T06:35:00.000Z',
   },
 ];
-

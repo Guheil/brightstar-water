@@ -1,7 +1,6 @@
 'use client';
 
 import { useShallow } from 'zustand/react/shallow';
-import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
 import { selectAdminWorkCounts, useAppStore } from '@/store';
 import { formatPhp, getAvailableStock, isLowStock } from '@/utils';
@@ -42,13 +41,9 @@ export default function OverviewScreen({ className }: OverviewScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Review the queues that need attention now. Counts come directly from the fictional shared frontend state."
+        description="Review the orders, deliveries, and inventory items that need attention."
         title="Operational overview"
       />
-
-      <Notice title="Fictional operational data" tone="info">
-        This workspace is a frontend prototype. No order, customer, payment, or delivery shown here is real.
-      </Notice>
 
       <SummaryStrip aria-label="Current work summary">
         <SummaryItem>

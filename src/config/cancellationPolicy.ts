@@ -1,6 +1,6 @@
 import type { OrderStatus } from '@/types';
 
-/** Prototype policy: requests are allowed until a delivery has started. */
+/** Cancellation requests are accepted until a delivery has started. */
 export const CANCELLABLE_ORDER_STATUSES = [
   'pending_review',
   'confirmed',
@@ -13,6 +13,5 @@ export const CANCELLATION_POLICY = {
   minimumReasonLength: 4,
   allowedStatuses: CANCELLABLE_ORDER_STATUSES,
   releaseReservedStockOnApproval: true,
-  notice: 'Prototype cancellation policy pending business confirmation.',
+  notice: 'Cancellation requests require Admin review and are accepted until delivery begins.',
 } as const;
-

@@ -293,23 +293,23 @@ export default function HomeScreen() {
             <DetailRow>
               <DetailTitle>Delivery coverage</DetailTitle>
               <DetailText>
-                Fictional address fixtures determine whether delivery is free,
-                ₱30, ₱50, or outside the 10 km prototype service area.
+                Your saved address determines whether delivery is free, ₱30,
+                ₱50, or outside the 10 km service area.
               </DetailText>
             </DetailRow>
             <DetailRow>
               <DetailTitle>Payment</DetailTitle>
               <DetailText>
-                Choose cash on delivery or a clearly labelled GCash
-                demonstration. The prototype never accepts real payments.
+                Choose cash on delivery or GCash. GCash orders move to payment
+                verification before fulfillment.
               </DetailText>
             </DetailRow>
             <DetailRow>
               <DetailTitle>Loyalty</DetailTitle>
               <DetailText>
-                The current demo awards one point per ₱100 on qualifying
-                merchandise subtotals of at least ₱500 after delivery. Reward
-                redemption remains disabled until the business rule is final.
+                Earn one point per ₱100 on qualifying merchandise subtotals of
+                at least ₱500 after delivery. Reward redemption is not currently
+                available.
               </DetailText>
             </DetailRow>
           </DetailList>
@@ -325,8 +325,8 @@ export default function HomeScreen() {
             <div>
               <SectionTitle id="process-title">From store to doorstep</SectionTitle>
               <SectionIntro>
-                The prototype keeps each role informed without pretending to
-                provide live GPS tracking.
+                Follow clear status updates from order review through final
+                delivery.
               </SectionIntro>
             </div>
           </SectionHeadingRow>
@@ -337,7 +337,7 @@ export default function HomeScreen() {
             </ProcessItem>
             <ProcessItem>
               <ProcessTitle>Schedule</ProcessTitle>
-              <ProcessText>Select a delivery fixture and time window.</ProcessText>
+              <ProcessText>Select a delivery date and time window.</ProcessText>
             </ProcessItem>
             <ProcessItem>
               <ProcessTitle>Confirm</ProcessTitle>

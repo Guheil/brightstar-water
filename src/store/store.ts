@@ -78,7 +78,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     );
 
     if (!account || account.demoPassword !== credentials.password) {
-      return commandFailure('invalid_input', 'Use one of the documented demo accounts.');
+      return commandFailure('invalid_input', 'The email or password is incorrect.');
     }
 
     const session = {
@@ -107,7 +107,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const product = state.catalog.products.find((item) => item.id === productId);
     const inventoryItem = state.inventory.items.find((item) => item.productId === productId);
     if (!product || !product.isActive || !inventoryItem) {
-      return commandFailure('not_found', 'This product is unavailable in the demo catalog.');
+      return commandFailure('not_found', 'This product is currently unavailable.');
     }
     if (!Number.isInteger(quantity) || quantity <= 0) {
       return commandFailure('invalid_input', 'Cart quantity must be a positive whole number.');
@@ -117,7 +117,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     if (!canReserveStock(inventoryItem, nextQuantity)) {
       return commandFailure(
         'insufficient_stock',
-        `${product.name} does not have enough available demo stock.`,
+        `${product.name} does not have enough available stock.`,
       );
     }
     const nextLine = { productId, quantity: nextQuantity };
@@ -147,12 +147,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const product = state.catalog.products.find((item) => item.id === productId);
     const inventoryItem = state.inventory.items.find((item) => item.productId === productId);
     if (!product || !product.isActive || !inventoryItem) {
-      return commandFailure('not_found', 'This product is unavailable in the demo catalog.');
+      return commandFailure('not_found', 'This product is currently unavailable.');
     }
     if (!canReserveStock(inventoryItem, quantity)) {
       return commandFailure(
         'insufficient_stock',
-        `${product.name} does not have enough available demo stock.`,
+        `${product.name} does not have enough available stock.`,
       );
     }
     const nextLine = { productId, quantity };
@@ -189,12 +189,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const customer = state.customers.records.find((item) => item.id === input.customerId);
 
     if (!customer || customer.status !== 'active') {
-      return commandFailure('not_found', 'The selected demo customer is unavailable.', 'customerId');
+      return commandFailure('not_found', 'The selected customer is unavailable.', 'customerId');
     }
 
     const address = customer.addresses.find((item) => item.id === input.deliveryAddressId);
     if (!address) {
-      return commandFailure('not_found', 'Choose a delivery address from this demo account.', 'deliveryAddressId');
+      return commandFailure('not_found', 'Choose a delivery address from this account.', 'deliveryAddressId');
     }
 
     if (!input.items.length) {
@@ -204,7 +204,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     if ((input.requestedLoyaltyPoints ?? 0) > 0) {
       return commandFailure(
         'not_allowed',
-        'Loyalty redemption is disabled until the business rule is confirmed.',
+        'Loyalty point redemption is currently unavailable.',
         'requestedLoyaltyPoints',
       );
     }
@@ -228,7 +228,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       if (!canReserveStock(inventoryItem, quantity)) {
         return commandFailure(
           'insufficient_stock',
-          `${product.name} does not have enough available demo stock.`,
+          `${product.name} does not have enough available stock.`,
           'items',
         );
       }
@@ -446,7 +446,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       return commandFailure('not_found', 'Order delivery record not found.');
     }
     if (!deliverer || deliverer.status !== 'available') {
-      return commandFailure('not_found', 'The selected demo deliverer is unavailable.');
+      return commandFailure('not_found', 'The selected deliverer is unavailable.');
     }
 
     const isInitialAssignment = delivery.status === 'unassigned';
@@ -520,7 +520,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const delivery = state.deliveries.records.find((item) => item.id === deliveryId);
     if (!delivery) return commandFailure('not_found', 'Delivery not found.');
     if (delivery.delivererId !== delivererId) {
-      return commandFailure('not_allowed', 'This delivery is assigned to another demo deliverer.');
+      return commandFailure('not_allowed', 'This delivery is assigned to another deliverer.');
     }
     if (!canTransitionDelivery(delivery.status, 'accepted')) {
       return commandFailure('invalid_transition', 'Only an assigned delivery can be accepted.');
@@ -573,7 +573,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const delivery = state.deliveries.records.find((item) => item.id === deliveryId);
     if (!delivery) return commandFailure('not_found', 'Delivery not found.');
     if (delivery.delivererId !== delivererId) {
-      return commandFailure('not_allowed', 'This delivery is assigned to another demo deliverer.');
+      return commandFailure('not_allowed', 'This delivery is assigned to another deliverer.');
     }
     if (!canTransitionDelivery(delivery.status, 'out_for_delivery')) {
       return commandFailure('invalid_transition', 'This delivery cannot be started from its current state.');
@@ -629,7 +629,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const delivery = state.deliveries.records.find((item) => item.id === deliveryId);
     if (!delivery) return commandFailure('not_found', 'Delivery not found.');
     if (delivery.delivererId !== delivererId) {
-      return commandFailure('not_allowed', 'This delivery is assigned to another demo deliverer.');
+      return commandFailure('not_allowed', 'This delivery is assigned to another deliverer.');
     }
     if (!canTransitionDelivery(delivery.status, 'delivered')) {
       return commandFailure('invalid_transition', 'Start the delivery before marking it delivered.');
@@ -645,7 +645,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     if (payment.method === 'gcash' && !['verified', 'paid'].includes(payment.status)) {
       return commandFailure(
         'not_allowed',
-        'Verify the fictional GCash payment before completing this demo delivery.',
+        'Verify the GCash payment before completing this delivery.',
       );
     }
 
@@ -827,7 +827,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const delivery = state.deliveries.records.find((item) => item.id === deliveryId);
     if (!delivery) return commandFailure('not_found', 'Delivery not found.');
     if (delivery.delivererId !== delivererId) {
-      return commandFailure('not_allowed', 'This delivery is assigned to another demo deliverer.');
+      return commandFailure('not_allowed', 'This delivery is assigned to another deliverer.');
     }
     if (!canTransitionDelivery(delivery.status, 'failed')) {
       return commandFailure('invalid_transition', 'Start the delivery before reporting a failure.');
@@ -1124,14 +1124,14 @@ export const useAppStore = create<AppStore>()((set, get) => {
     if (payment.method !== 'gcash' || payment.status !== 'awaiting_verification') {
       return commandFailure(
         'invalid_transition',
-        'Only an awaiting fictional GCash payment can be verified.',
+        'Only a GCash payment awaiting verification can be verified.',
       );
     }
     const occurredAt = resolveTimestamp(at);
     const nextPayment: PaymentRecord = {
       ...payment,
       status: 'verified',
-      demoReference: demoReference?.trim() || `DEMO-${order.reference}`,
+      demoReference: demoReference?.trim() || `GCASH-${order.reference}`,
       verifiedAt: occurredAt,
       updatedAt: occurredAt,
     };
@@ -1139,7 +1139,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       state.meta.nextOrderEventSequence,
       order.id,
       'payment_verified',
-      'Demo GCash payment verified',
+      'GCash payment verified',
       'admin',
       occurredAt,
       actorId,

@@ -16,7 +16,7 @@ import type { AppDataState } from './interface';
 export const createInitialAppData = (): AppDataState => ({
   auth: {
     session: null,
-    prototypeNotice: 'Demo sign-in only. This frontend does not provide production authentication.',
+    prototypeNotice: 'Use your assigned email and password to sign in.',
   },
   catalog: { products: structuredClone(PRODUCT_FIXTURES) },
   cart: {

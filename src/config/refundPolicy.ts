@@ -16,6 +16,5 @@ export const REFUND_POLICY = {
   eligiblePaymentStatuses: REFUND_ELIGIBLE_PAYMENT_STATUSES,
   failedDeliveryStartsRefundAutomatically: false,
   restoresInventoryAutomatically: false,
-  notice: 'Prototype refund workflow pending business confirmation.',
+  notice: 'Refunds require an eligible recorded payment and Admin review.',
 } as const;
-

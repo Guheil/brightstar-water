@@ -86,7 +86,7 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
       label: 'Customer',
       render: (order) =>
         customers.find((customer) => customer.id === order.customerId)?.displayName ??
-        'Unknown demo customer',
+        'Unknown customer',
     },
     {
       key: 'date',

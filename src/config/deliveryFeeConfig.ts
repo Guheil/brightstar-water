@@ -7,7 +7,7 @@ export interface DeliveryFeeBand {
   label: string;
 }
 
-/** Prototype distances come from demo address fixtures, never live GPS. */
+/** Delivery fees are calculated from the distance recorded for each address. */
 export const DELIVERY_FEE_CONFIG = {
   serviceRadiusKm: 10,
   bands: [
@@ -31,4 +31,3 @@ export const DELIVERY_FEE_CONFIG = {
     },
   ] satisfies DeliveryFeeBand[],
 } as const;
-

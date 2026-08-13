@@ -42,12 +42,12 @@ const paymentOptions: PaymentOptionView[] = [
   {
     title: 'Cash on delivery',
     description:
-      'The order total remains due until the deliverer records the fictional delivery outcome. Prepare the displayed amount for collection.',
+      'The order total remains due until delivery is completed. Prepare the displayed amount for collection.',
   },
   {
-    title: 'GCash demo',
+    title: 'GCash',
     description:
-      'Checkout can demonstrate a non-scannable QR and Admin verification state. No real account number, payment credential, or transfer is used.',
+      'Select GCash at checkout to create an order awaiting payment verification.',
   },
 ];
 
@@ -60,9 +60,8 @@ export default function DeliveryInfoScreen() {
             Delivery coverage you can review before checkout.
           </HeroTitle>
           <HeroText>
-            The prototype uses fictional address zones around San Pedro,
-            Laguna. It does not calculate live GPS distance or promise real
-            delivery availability.
+            Review service areas and delivery fees for households around San
+            Pedro, Laguna before placing an order.
           </HeroText>
         </HeroContainer>
       </Hero>
@@ -73,7 +72,7 @@ export default function DeliveryInfoScreen() {
             <SectionTitle id="zones-title">Delivery zones and fees</SectionTitle>
             <SectionIntro>
               Boundary values are inclusive at 3, 6, and 10 km. Checkout blocks
-              a demo address once its fixture distance exceeds 10 km.
+              an address when its delivery distance exceeds 10 km.
             </SectionIntro>
           </SectionHeader>
           <ZoneList>
@@ -87,9 +86,9 @@ export default function DeliveryInfoScreen() {
           </ZoneList>
           <Explanation>
             <Step>
-              <StepTitle>Choose a demo address</StepTitle>
+              <StepTitle>Choose a delivery address</StepTitle>
               <StepText>
-                Saved fictional addresses include a predefined distance band.
+                Select one of your saved addresses for the delivery quote.
               </StepText>
             </Step>
             <Step>
@@ -101,7 +100,7 @@ export default function DeliveryInfoScreen() {
             <Step>
               <StepTitle>Select a schedule</StepTitle>
               <StepText>
-                Choose one of the prototype date and time fixtures at checkout.
+                Choose an available delivery date and time window at checkout.
               </StepText>
             </Step>
           </Explanation>
@@ -113,8 +112,7 @@ export default function DeliveryInfoScreen() {
           <SectionHeader>
             <SectionTitle id="payment-title">Payment options</SectionTitle>
             <SectionIntro>
-              Both methods are presentation-only until a secure backend and
-              production payment process are approved.
+              Choose cash on delivery or GCash when reviewing your order.
             </SectionIntro>
           </SectionHeader>
           <PaymentGrid>
@@ -127,8 +125,8 @@ export default function DeliveryInfoScreen() {
           </PaymentGrid>
           <Callout>
             <CalloutText>
-              Ready to browse? Product pages show current fictional stock, but
-              a final delivery fee appears only after a demo address is chosen.
+              Ready to browse? Product pages show current availability, while
+              the final delivery fee appears after an address is chosen.
             </CalloutText>
             <ShopLink href="/shop">Shop products</ShopLink>
           </Callout>

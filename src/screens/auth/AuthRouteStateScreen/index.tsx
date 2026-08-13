@@ -16,22 +16,22 @@ export default function AuthRouteStateScreen({
     <AuthScaffold
       description={
         loading
-          ? 'The frontend is preparing the fictional presentation accounts.'
-          : 'The prototype could not prepare this authentication screen.'
+          ? 'Your account access is being prepared.'
+          : 'We could not prepare this authentication screen.'
       }
-      title={loading ? 'Preparing demo access' : 'This page did not load'}
+      title={loading ? 'Preparing account access' : 'This page did not load'}
     >
       <StateRegion>
         {loading ? (
           <LoadingState
-            description="No production identity service is being contacted."
-            label="Loading authentication demo"
+            description="Please wait while the sign-in page loads."
+            label="Loading authentication"
           />
         ) : (
           <ErrorState
             description="Try opening the page again. No credential or personal information was submitted."
             onRetry={onRetry}
-            title="Authentication demo unavailable"
+            title="Authentication unavailable"
           />
         )}
       </StateRegion>

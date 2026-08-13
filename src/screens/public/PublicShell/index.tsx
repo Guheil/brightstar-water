@@ -81,10 +81,10 @@ export default function PublicShell({ children }: PublicShellProps) {
         summary="LPG and purified water for scheduled delivery within our service area."
         contactLines={[
           'Brgy. San Lorenzo Ruiz, San Pedro, Laguna',
-          'Prototype contact: 09XX-XXX-XXXX',
+          'Open daily for local delivery orders',
         ]}
         groups={footerGroups}
-        legalText="Frontend prototype. All names, contact details, orders, and payment records are fictional."
+        legalText="MRJE Gas + Bright Star Water. All rights reserved."
       />
     </>
   );

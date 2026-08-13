@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import DelivererShell from '@/components/layout/DelivererShell';
 import EmptyState from '@/components/ui/EmptyState';
-import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
@@ -58,13 +57,9 @@ export default function ActiveDeliveriesScreen() {
       userName={deliverer?.displayName}
     >
       <Root>
-        <Notice tone="info" title="Frontend prototype">
-          All customer details, payment records, and delivery addresses shown
-          here are fictional.
-        </Notice>
         <Intro>
-          Work through assigned stops in schedule order. This prototype records
-          status updates but does not use GPS or background location.
+          Work through assigned stops in schedule order and keep each delivery
+          status current.
         </Intro>
         {deliveries.length ? (
           <Queue>
@@ -82,7 +77,7 @@ export default function ActiveDeliveriesScreen() {
                       <Secondary>{delivery.schedule.date}</Secondary>
                     </div>
                     <Address>
-                      <Primary>{customer?.displayName ?? 'Demo customer'}</Primary>
+                      <Primary>{customer?.displayName ?? 'Customer'}</Primary>
                       <Secondary>
                         {delivery.address.area} · {delivery.address.addressLine}
                       </Secondary>

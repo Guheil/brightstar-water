@@ -53,16 +53,16 @@ export default function CartScreen() {
       <Header>
         <Title>Your cart</Title>
         <Lead>
-          Check quantities before choosing a fictional delivery address, schedule, and payment method.
+          Check quantities before choosing a delivery address, schedule, and payment method.
         </Lead>
       </Header>
 
       {!lines.length ? (
         <EmptyState
           action={<ContinueLink href="/shop">Browse LPG and water</ContinueLink>}
-          description="Add a product to begin the customer ordering demonstration."
+          description="Add a product to begin your order."
           icon={<ShoppingBasket />}
-          title="Your demo cart is empty"
+          title="Your cart is empty"
         />
       ) : (
         <CartLayout>
@@ -75,7 +75,7 @@ export default function CartScreen() {
                 <ProductInfo>
                   <ProductName>{product.name}</ProductName>
                   <ProductMeta>
-                    {formatPhp(product.priceCentavos)} each · {availableStock} available in demo stock
+                    {formatPhp(product.priceCentavos)} each · {availableStock} available
                   </ProductMeta>
                   <RowActions>
                     <QuantityControl
@@ -115,7 +115,7 @@ export default function CartScreen() {
             <CheckoutLink href="/customer/checkout">Continue to checkout</CheckoutLink>
             <ContinueLink href="/shop">Continue shopping</ContinueLink>
             <FeeNote>
-              Demo delivery fees: free through 3 km, ₱30 over 3 through 6 km, ₱50 over 6 through 10 km. Addresses beyond 10 km are outside the prototype service area.
+              Delivery fees: free through 3 km, ₱30 over 3 through 6 km, and ₱50 over 6 through 10 km. Addresses beyond 10 km are outside the service area.
             </FeeNote>
           </SummaryPanel>
         </CartLayout>
@@ -123,4 +123,3 @@ export default function CartScreen() {
     </CartPage>
   );
 }
-

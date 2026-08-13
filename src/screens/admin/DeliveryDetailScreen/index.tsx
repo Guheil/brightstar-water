@@ -62,7 +62,7 @@ export default function DeliveryDetailScreen({
         action={
           <EmptyActionLink href="/admin/deliveries">Return to deliveries</EmptyActionLink>
         }
-        description="This fictional delivery may have been removed when the demo state was reset."
+        description="The requested delivery could not be found."
         title="Delivery not found"
       />
     );
@@ -78,7 +78,7 @@ export default function DeliveryDetailScreen({
       setFeedback({
         tone: 'error',
         title: 'Choose a deliverer',
-        message: 'Select an available fictional deliverer before continuing.',
+        message: 'Select an available deliverer before continuing.',
       });
       setConfirmOpen(false);
       return;
@@ -106,7 +106,7 @@ export default function DeliveryDetailScreen({
       <AdminPageHeader
         backHref="/admin/deliveries"
         backLabel="Back to deliveries"
-        description="Review only the customer and fulfillment information needed to coordinate this fictional delivery."
+        description="Review the customer, schedule, payment, and fulfillment details for this delivery."
         title={`Delivery for ${order.reference}`}
       />
 
@@ -147,14 +147,14 @@ export default function DeliveryDetailScreen({
             <DetailList>
               <DetailTerm>Customer</DetailTerm>
               <DetailValue>{customer?.displayName ?? delivery.address.recipientName}</DetailValue>
-              <DetailTerm>Contact placeholder</DetailTerm>
+              <DetailTerm>Contact</DetailTerm>
               <DetailValue>{delivery.address.phonePlaceholder}</DetailValue>
               <DetailTerm>Address</DetailTerm>
               <DetailValue>
                 {delivery.address.addressLine}, {delivery.address.area},{' '}
                 {delivery.address.municipality}, {delivery.address.province}
               </DetailValue>
-              <DetailTerm>Demo distance</DetailTerm>
+              <DetailTerm>Distance</DetailTerm>
               <DetailValue>{delivery.address.distanceKm} km</DetailValue>
               <DetailTerm>Delivery note</DetailTerm>
               <DetailValue>{delivery.address.deliveryNote ?? 'No delivery note.'}</DetailValue>
@@ -204,7 +204,7 @@ export default function DeliveryDetailScreen({
           {canAssign ? (
             <>
               <AssignmentCopy>
-                Assignment is allowed only before delivery begins. Available demo deliverers are listed.
+                Assignment is available before delivery begins. Choose an available deliverer.
               </AssignmentCopy>
               <AssignmentField
                 label="Deliverer"

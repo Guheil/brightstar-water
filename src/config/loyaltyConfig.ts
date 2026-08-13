@@ -1,6 +1,6 @@
 /**
- * Prototype loyalty configuration pending final thesis/business confirmation.
- * Bonus and redemption are intentionally disabled until stakeholders choose one rule.
+ * Loyalty points are settled after an eligible order is delivered.
+ * Bonus awards and point redemption are currently unavailable.
  */
 export const LOYALTY_CONFIG = {
   minimumQualifyingSubtotalCentavos: 50_000,
@@ -18,6 +18,5 @@ export const LOYALTY_CONFIG = {
     minimumPoints: 0,
     maximumShareOfOrder: 0,
   },
-  notice: 'Prototype loyalty rule pending final thesis and business confirmation.',
+  notice: 'Loyalty points are awarded after eligible orders are delivered.',
 } as const;
-

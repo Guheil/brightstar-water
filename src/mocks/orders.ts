@@ -3,7 +3,7 @@ import type { Order } from '@/types';
 export const ORDER_FIXTURES: Order[] = [
   {
     id: 'order-0001',
-    reference: 'MRJE-DEMO-0001',
+    reference: 'MRJE-0001',
     customerId: 'customer-demo-01',
     status: 'pending_review',
     items: [
@@ -39,7 +39,7 @@ export const ORDER_FIXTURES: Order[] = [
     deliveryId: 'delivery-0001',
     deliveryAddressId: 'address-demo-01-a',
     deliverySchedule: { date: '2026-08-13', windowLabel: '9:00 AM–12:00 PM' },
-    customerNote: 'Prototype order. No real delivery is expected.',
+    customerNote: 'Please call upon arrival.',
     loyalty: {
       qualifyingSubtotalCentavos: 99_000,
       pointsPending: 9,
@@ -53,7 +53,7 @@ export const ORDER_FIXTURES: Order[] = [
         orderId: 'order-0001',
         type: 'placed',
         label: 'Order placed',
-        description: 'The fictional order is waiting for Admin review.',
+        description: 'The order is waiting for Admin review.',
         actorRole: 'customer',
         actorId: 'user-customer-demo',
         occurredAt: '2026-08-10T08:05:00.000Z',
@@ -72,7 +72,7 @@ export const ORDER_FIXTURES: Order[] = [
   },
   {
     id: 'order-0002',
-    reference: 'MRJE-DEMO-0002',
+    reference: 'MRJE-0002',
     customerId: 'customer-demo-02',
     status: 'assigned_for_delivery',
     items: [
@@ -138,7 +138,7 @@ export const ORDER_FIXTURES: Order[] = [
         id: 'order-event-0005',
         orderId: 'order-0002',
         type: 'delivery_assigned',
-        label: 'Driver Demo assigned',
+        label: 'Daniel Cruz assigned',
         actorRole: 'admin',
         actorId: 'user-admin-demo',
         occurredAt: '2026-08-10T09:00:00.000Z',
@@ -149,7 +149,7 @@ export const ORDER_FIXTURES: Order[] = [
   },
   {
     id: 'order-0003',
-    reference: 'MRJE-DEMO-0003',
+    reference: 'MRJE-0003',
     customerId: 'customer-demo-01',
     status: 'delivered',
     items: [
@@ -197,7 +197,7 @@ export const ORDER_FIXTURES: Order[] = [
         id: 'order-event-0007',
         orderId: 'order-0003',
         type: 'payment_verified',
-        label: 'Demo GCash payment verified',
+        label: 'GCash payment verified',
         actorRole: 'admin',
         actorId: 'user-admin-demo',
         occurredAt: '2026-08-08T11:30:00.000Z',
@@ -225,7 +225,7 @@ export const ORDER_FIXTURES: Order[] = [
   },
   {
     id: 'order-0004',
-    reference: 'MRJE-DEMO-0004',
+    reference: 'MRJE-0004',
     customerId: 'customer-demo-03',
     status: 'delivery_failed',
     items: [
@@ -272,7 +272,7 @@ export const ORDER_FIXTURES: Order[] = [
         orderId: 'order-0004',
         type: 'delivery_failed',
         label: 'Delivery attempt failed',
-        description: 'Payment issue selected as a fictional prototype reason.',
+        description: 'Payment issue recorded by the assigned deliverer.',
         actorRole: 'deliverer',
         actorId: 'deliverer-demo-01',
         occurredAt: '2026-08-10T06:40:00.000Z',
@@ -282,4 +282,3 @@ export const ORDER_FIXTURES: Order[] = [
     updatedAt: '2026-08-10T06:40:00.000Z',
   },
 ];
-

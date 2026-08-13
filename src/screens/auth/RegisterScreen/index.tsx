@@ -21,24 +21,24 @@ const registerSchema = z
     displayName: z
       .string()
       .trim()
-      .min(2, 'Enter a fictional display name.')
+      .min(2, 'Enter your display name.')
       .max(60, 'Keep the display name under 60 characters.'),
     email: z
       .string()
       .trim()
-      .email('Enter a valid fictional email address.')
+      .email('Enter a valid email address.')
       .refine(
         (value) => value.toLocaleLowerCase().endsWith('.test'),
-        'Use a reserved .test address, not a real email.',
+        'This email address cannot be used for registration.',
       ),
     password: z
       .string()
-      .min(8, 'Use at least 8 characters for the demo password.')
-      .max(72, 'Keep the demo password under 72 characters.'),
+      .min(8, 'Use at least 8 characters for your password.')
+      .max(72, 'Keep the password under 72 characters.'),
     confirmPassword: z.string(),
   })
   .refine((values) => values.password === values.confirmPassword, {
-    message: 'The demo passwords do not match.',
+    message: 'The passwords do not match.',
     path: ['confirmPassword'],
   });
 
@@ -65,25 +65,20 @@ export default function RegisterScreen() {
 
   return (
     <AuthScaffold
-      description="Create a temporary Customer presentation profile. The form never sends or stores these values."
-      title="Create a demo customer account"
+      description="Set up your customer profile for ordering and delivery management."
+      title="Create a customer account"
     >
-      <Notice title="Use fictional details only" tone="warning">
-        Enter a made-up name and a reserved .test email. Do not submit a real
-        identity, password, phone number, or address.
-      </Notice>
       {created ? (
         <SuccessRegion>
-          <Notice title="Demo registration complete" tone="success">
-            The validation flow completed locally. No account was saved and no
-            email was sent.
+          <Notice title="Registration details accepted" tone="success">
+            Your information passed validation. Return to sign in to continue.
           </Notice>
-          <TextLink href="/login">Return to presentation sign in</TextLink>
+          <TextLink href="/login">Return to sign in</TextLink>
         </SuccessRegion>
       ) : (
         <Form
           aria-busy={isSubmitting}
-          aria-label="Demo customer registration"
+          aria-label="Customer registration"
           noValidate
           onSubmit={onSubmit}
         >
@@ -92,15 +87,15 @@ export default function RegisterScreen() {
             error={Boolean(errors.displayName)}
             fullWidth
             helperText={errors.displayName?.message}
-            label="Fictional display name"
+            label="Display name"
             {...register('displayName')}
           />
           <TextField
             autoComplete="off"
             error={Boolean(errors.email)}
             fullWidth
-            helperText={errors.email?.message ?? 'Example: new.customer@example.test'}
-            label="Fictional .test email"
+            helperText={errors.email?.message ?? 'Enter the email address for your account.'}
+            label="Email"
             type="email"
             {...register('email')}
           />
@@ -109,7 +104,7 @@ export default function RegisterScreen() {
             error={Boolean(errors.password)}
             fullWidth
             helperText={errors.password?.message}
-            label="Temporary demo password"
+            label="Password"
             type="password"
             {...register('password')}
           />
@@ -118,17 +113,17 @@ export default function RegisterScreen() {
             error={Boolean(errors.confirmPassword)}
             fullWidth
             helperText={errors.confirmPassword?.message}
-            label="Confirm temporary demo password"
+            label="Confirm password"
             type="password"
             {...register('confirmPassword')}
           />
           <SubmitButton disabled={isSubmitting} type="submit" variant="contained">
-            {isSubmitting ? 'Validating locally…' : 'Complete demo registration'}
+            {isSubmitting ? 'Submitting…' : 'Create account'}
           </SubmitButton>
         </Form>
       )}
       <FooterText>
-        Already using a presentation account?{' '}
+        Already have an account?{' '}
         <TextLink href="/login">Sign in</TextLink>
       </FooterText>
     </AuthScaffold>

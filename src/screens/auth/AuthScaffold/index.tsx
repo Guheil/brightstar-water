@@ -39,10 +39,10 @@ export default function AuthScaffold({
           src="/images/mrje-brightstar-hero.webp"
         />
         <MediaCaption>
-          <MediaTitle>One local ordering prototype</MediaTitle>
+          <MediaTitle>One convenient local ordering service</MediaTitle>
           <MediaText>
             Browse LPG and purified water, schedule delivery, and follow each
-            fictional order across Customer, Admin, and Deliverer views.
+            order from confirmation through delivery.
           </MediaText>
         </MediaCaption>
       </MediaPane>

@@ -24,7 +24,7 @@ export const LOYALTY_ACTIVITY_FIXTURES: LoyaltyActivity[] = [
     customerId: 'customer-demo-01',
     type: 'earned',
     points: 9,
-    description: 'Points earned from delivered demo order MRJE-DEMO-0003.',
+    description: 'Points earned from delivered order MRJE-0003.',
     orderId: 'order-0003',
     createdAt: '2026-08-09T06:35:00.000Z',
   },
@@ -33,9 +33,8 @@ export const LOYALTY_ACTIVITY_FIXTURES: LoyaltyActivity[] = [
     customerId: 'customer-demo-02',
     type: 'manual_credit',
     points: 5,
-    description: 'Fictional prototype adjustment.',
-    reason: 'Demonstrates an Admin adjustment with a recorded reason.',
+    description: 'Manual loyalty adjustment.',
+    reason: 'Customer service adjustment approved by Store Administrator.',
     createdAt: '2026-07-28T10:20:00.000Z',
   },
 ];
-

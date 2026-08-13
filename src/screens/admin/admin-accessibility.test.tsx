@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import MUIStyleProvider from '@/theme/MUIStyleProvider';
+import AccountScreen from './AccountScreen';
 import AdminConfirmDialog from './components/AdminConfirmDialog';
 import AdminDataTable from './components/AdminDataTable';
 
@@ -48,5 +49,16 @@ describe('Admin responsive and confirmation semantics', () => {
     expect(dialog).toHaveAccessibleDescription('This changes shared fictional state.');
     expect(screen.getByRole('button', { name: 'Keep current state' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Apply change' })).toBeInTheDocument();
+  });
+
+  it('presents the administrator session without demo controls or disclaimers', () => {
+    const { container } = renderWithTheme(<AccountScreen />);
+
+    expect(screen.getByRole('heading', { name: 'Admin account' })).toBeInTheDocument();
+    expect(screen.getByText('Current session')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reset/i })).not.toBeInTheDocument();
+    expect(container).not.toHaveTextContent(
+      /demo|fictional|prototype|simulated|frontend-only/i,
+    );
   });
 });

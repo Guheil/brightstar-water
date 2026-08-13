@@ -85,7 +85,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     return (
       <EmptyState
         action={<EmptyActionLink href="/admin/orders">Return to orders</EmptyActionLink>}
-        description="This fictional order may have been removed when the demo state was reset."
+        description="The requested order could not be found."
         title="Order not found"
       />
     );
@@ -97,7 +97,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   ) => {
     setFeedback(
       result.ok
-        ? { tone: 'success', title: successTitle, message: 'Shared demo state updated.' }
+        ? { tone: 'success', title: successTitle, message: 'Order information updated.' }
         : { tone: 'error', title: 'Update failed', message: result.error.message },
     );
   };
@@ -121,7 +121,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           setFeedback({
             tone: 'error',
             title: 'Choose a deliverer',
-            message: 'Select an available fictional deliverer before assigning this order.',
+            message: 'Select an available deliverer before assigning this order.',
           });
           break;
         }
@@ -134,7 +134,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       case 'verify_payment':
         reportResult(
           commands.verifyPayment(order.id, ADMIN_ACTOR_ID, demoReference),
-          'Demo payment verified',
+          'Payment verified',
         );
         break;
       case 'approve_cancellation':
@@ -200,10 +200,6 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
         </Notice>
       ) : null}
 
-      <Notice title="Prototype workflow" tone="info">
-        Every action here updates fictional frontend state only. Final order, cancellation, refund, and payment rules still require stakeholder confirmation.
-      </Notice>
-
       <ContentGrid>
         <MainColumn>
           <Section>
@@ -222,7 +218,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                     {customer.displayName}
                   </InlineLink>
                 ) : (
-                  'Unknown demo customer'
+                  'Unknown customer'
                 )}
               </DetailValue>
               <DetailTerm>Contact</DetailTerm>
@@ -281,7 +277,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                   'No payment record'
                 )}
               </DetailValue>
-              <DetailTerm>Demo reference</DetailTerm>
+              <DetailTerm>Payment reference</DetailTerm>
               <DetailValue>{payment?.demoReference ?? 'Not recorded'}</DetailValue>
               <DetailTerm>Delivery state</DetailTerm>
               <DetailValue>
@@ -395,7 +391,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           {delivery && canAssignDelivery ? (
             <ActionPanel>
               <ActionTitle>Delivery assignment</ActionTitle>
-              <ActionCopy>Only available fictional deliverers can be selected.</ActionCopy>
+              <ActionCopy>Only available deliverers can be selected.</ActionCopy>
               <ActionField
                 label="Deliverer"
                 onChange={(event) => setSelectedDeliverer(event.target.value)}
@@ -430,10 +426,10 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
           {payment?.method === 'gcash' && payment.status === 'awaiting_verification' ? (
             <ActionPanel>
-              <ActionTitle>Fictional GCash verification</ActionTitle>
-              <ActionCopy>Never enter a real transaction ID or payment credential.</ActionCopy>
+              <ActionTitle>GCash verification</ActionTitle>
+              <ActionCopy>Enter the payment reference supplied with the transaction.</ActionCopy>
               <ActionField
-                label="Demo reference (optional)"
+                label="Payment reference (optional)"
                 onChange={(event) => setDemoReference(event.target.value)}
                 value={demoReference}
               />
@@ -441,14 +437,14 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 onClick={() =>
                   setPendingAction({
                     kind: 'verify_payment',
-                    title: 'Verify this fictional payment?',
+                    title: 'Verify this payment?',
                     description:
-                      'This records a demo verification only. It does not contact GCash or move money.',
-                    label: 'Verify demo payment',
+                      'The payment will be marked as verified using the supplied reference.',
+                    label: 'Verify payment',
                   })
                 }
               >
-                Verify demo payment
+                Verify payment
               </ActionButton>
             </ActionPanel>
           ) : null}
@@ -496,7 +492,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           {canBeginRefund ? (
             <ActionPanel>
               <ActionTitle>Refund workflow</ActionTitle>
-              <ActionCopy>Start a fictional refund record for this eligible payment.</ActionCopy>
+              <ActionCopy>Start a refund record for this eligible payment.</ActionCopy>
               <ActionButton
                 onClick={() =>
                   setPendingAction({
@@ -504,7 +500,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                     target: 'pending',
                     title: 'Start refund review?',
                     description:
-                      'A fictional pending refund will be recorded against this order and payment.',
+                      'A pending refund will be recorded against this order and payment.',
                     label: 'Start refund',
                   })
                 }
@@ -517,7 +513,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           {order.refund && ['pending', 'processing'].includes(order.refund.status) ? (
             <ActionPanel>
               <ActionTitle>Advance refund</ActionTitle>
-              <ActionCopy>Record a note before resolving the fictional refund.</ActionCopy>
+              <ActionCopy>Record a note before resolving the refund.</ActionCopy>
               <ActionField
                 label="Refund note (optional)"
                 multiline
@@ -533,7 +529,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                       target: 'processing',
                       title: 'Move refund to processing?',
                       description:
-                        'The refund will remain unresolved but move to the next fictional workflow state.',
+                        'The refund will remain unresolved and move to the processing state.',
                       label: 'Mark processing',
                     })
                   }
@@ -548,7 +544,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                       target: 'refunded',
                       title: 'Mark refund complete?',
                       description:
-                        'The payment will be marked Refunded. This does not move real money.',
+                        'The payment and refund records will be marked as refunded.',
                       label: 'Mark refunded',
                     })
                   }

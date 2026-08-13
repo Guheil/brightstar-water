@@ -7,12 +7,7 @@ import {
   customerPrimaryNavigation,
 } from '@/config';
 import { selectCartItemCount, useAppStore } from '@/store';
-import {
-  Main,
-  PrototypeBanner,
-  PrototypeBannerInner,
-  ShellRoot,
-} from './elements';
+import { Main, ShellRoot } from './elements';
 import type { CustomerAreaShellProps, CustomerCartContextValue } from './interface';
 
 const FOOTER_GROUPS = [
@@ -65,31 +60,29 @@ export default function CustomerAreaShell({ children }: CustomerAreaShellProps) 
   )?.href;
 
   return (
-      <ShellRoot>
-        <CustomerHeader
-          accountHref="/customer/account"
-          activeHref={activeHref}
-          brandName="MRJE Gas + Bright Star Water"
-          cartCount={itemCount}
-          cartHref="/customer/cart"
-          megaMenuGroups={customerMegaMenuGroups}
-          navigation={customerPrimaryNavigation}
-          searchHref="/shop"
-        />
-        <PrototypeBanner>
-          <PrototypeBannerInner>
-            Prototype workspace. All customer, address, payment and delivery data is fictional.
-          </PrototypeBannerInner>
-        </PrototypeBanner>
-        <Main id="main-content">{children}</Main>
-        <CustomerFooter
-          brandName="MRJE Gas + Bright Star Water"
-          contactLines={['Demo contact: 09XX-000-0000', 'Sample City, Laguna (Demo)']}
-          groups={FOOTER_GROUPS}
-          legalText="Frontend prototype only. No real order, payment or delivery is created."
-          summary="Household LPG and purified water prepared for clear, local delivery."
-        />
-      </ShellRoot>
+    <ShellRoot>
+      <CustomerHeader
+        accountHref="/customer/account"
+        activeHref={activeHref}
+        brandName="MRJE Gas + Bright Star Water"
+        cartCount={itemCount}
+        cartHref="/customer/cart"
+        megaMenuGroups={customerMegaMenuGroups}
+        navigation={customerPrimaryNavigation}
+        searchHref="/shop"
+      />
+      <Main id="main-content">{children}</Main>
+      <CustomerFooter
+        brandName="MRJE Gas + Bright Star Water"
+        contactLines={[
+          'Brgy. San Lorenzo Ruiz, San Pedro, Laguna',
+          'Open daily for local delivery orders',
+        ]}
+        groups={FOOTER_GROUPS}
+        legalText="MRJE Gas + Bright Star Water. All rights reserved."
+        summary="Household LPG and purified water prepared for clear, local delivery."
+      />
+    </ShellRoot>
   );
 }
 

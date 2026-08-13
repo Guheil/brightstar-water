@@ -12,7 +12,7 @@ export default function NotFoundScreen({
       <Title id="not-found-title">{title}</Title>
       <Description>
         The product or page may have moved. Return to the shop to continue
-        browsing the current prototype catalog.
+        browsing the current catalog.
       </Description>
       <Action href="/shop">Return to the shop</Action>
     </Root>

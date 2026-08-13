@@ -41,7 +41,7 @@ export default function DeliveryDetailScreen({
         headerTitle="Delivery unavailable"
       >
         <Notice tone="error" title="Delivery not found">
-          This fictional assignment is no longer available.
+          This assignment is no longer available.
         </Notice>
       </DelivererShell>
     );
@@ -66,10 +66,6 @@ export default function DeliveryDetailScreen({
       headerMeta={`${delivery.schedule.date} · ${delivery.schedule.windowLabel}`}
     >
       <Root>
-        <Notice tone="info" title="Fictional delivery record">
-          Use these controls to demonstrate the delivery workflow only. No real
-          customer will be contacted.
-        </Notice>
         <DetailGrid>
           <Column>
             <Section aria-labelledby="delivery-address-title">
@@ -102,7 +98,7 @@ export default function DeliveryDetailScreen({
               <Text>
                 {delivery.paymentMethod === 'cod'
                   ? `${formatPhp(delivery.amountToCollectCentavos)} to collect`
-                  : `Demo payment status: ${payment?.status.replaceAll('_', ' ') ?? 'unavailable'}`}
+                  : `Payment status: ${payment?.status.replaceAll('_', ' ') ?? 'unavailable'}`}
               </Text>
             </Section>
           </Column>

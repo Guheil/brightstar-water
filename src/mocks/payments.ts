@@ -23,7 +23,7 @@ export const PAYMENT_FIXTURES: PaymentRecord[] = [
     method: 'gcash',
     status: 'paid',
     amountCentavos: 97_000,
-    demoReference: 'DEMO-GCASH-0003',
+    demoReference: 'GCASH-0003',
     verifiedAt: '2026-08-08T11:30:00.000Z',
     paidAt: '2026-08-09T06:35:00.000Z',
     updatedAt: '2026-08-09T06:35:00.000Z',
@@ -34,9 +34,8 @@ export const PAYMENT_FIXTURES: PaymentRecord[] = [
     method: 'gcash',
     status: 'verified',
     amountCentavos: 183_000,
-    demoReference: 'DEMO-GCASH-0004',
+    demoReference: 'GCASH-0004',
     verifiedAt: '2026-08-10T05:50:00.000Z',
     updatedAt: '2026-08-10T05:50:00.000Z',
   },
 ];
-

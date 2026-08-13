@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
-import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import type { Delivery } from '@/types';
@@ -124,13 +123,9 @@ export default function DeliveriesScreen({ className }: DeliveriesScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Coordinate assignments and review delivery exceptions without adding fleet-management features."
+        description="Coordinate assignments, delivery schedules, and fulfillment exceptions."
         title="Deliveries"
       />
-
-      <Notice title="Scope-limited delivery prototype" tone="info">
-        There is no live GPS, map tracking, route optimization, or background location collection.
-      </Notice>
 
       <FilterBar aria-label="Delivery filters">
         <FilterField

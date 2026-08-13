@@ -45,7 +45,7 @@ export default function AdminRouteShell({ children }: AdminRouteShellProps) {
     <AdminShell
       activeHref={activeHref}
       brandName="MRJE + Bright Star"
-      brandSubtitle="Frontend operations prototype"
+      brandSubtitle="Operations workspace"
       headerActions={
         <AccountLink
           aria-current={pathname === '/admin/account' ? 'page' : undefined}
@@ -58,8 +58,8 @@ export default function AdminRouteShell({ children }: AdminRouteShellProps) {
       headerLabel={sectionLabels[section] ?? 'Admin workspace'}
       navigation={navigation}
       onSignOut={handleSignOut}
-      userName={session?.user.displayName ?? 'Admin Demo'}
-      userRole="Administrator · Prototype"
+      userName={session?.user.displayName ?? 'Administrator'}
+      userRole="Administrator"
     >
       {children}
     </AdminShell>

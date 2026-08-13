@@ -4,7 +4,7 @@ import DeliveryInfoScreen from '@/screens/public/DeliveryInfoScreen';
 export const metadata: Metadata = {
   title: 'Delivery coverage',
   description:
-    'Review fictional delivery zones, fees, scheduling, COD, and the non-production GCash demonstration.',
+    'Review delivery zones, fees, scheduling, cash on delivery, and GCash payment information.',
 };
 
 export default function DeliveryInfoPage() {

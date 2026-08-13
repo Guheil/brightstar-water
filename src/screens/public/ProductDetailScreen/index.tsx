@@ -57,7 +57,7 @@ export default function ProductDetailScreen({
           <MissingPanel>
             <EmptyState
               action={<BackLink href="/shop">Return to shop</BackLink>}
-              description="This fictional product may have been removed or the link is incorrect."
+              description="This product may have been removed or the link is incorrect."
               title="Product not found"
             />
           </MissingPanel>
@@ -90,7 +90,7 @@ export default function ProductDetailScreen({
             <Price>{formatPhp(product.priceCentavos)}</Price>
             <Availability $available={isAvailable}>
               {isAvailable
-                ? `${availableStock} available in fictional demo stock`
+                ? `${availableStock} available`
                 : 'Currently unavailable'}
             </Availability>
             <Description>{product.description}</Description>
@@ -112,19 +112,19 @@ export default function ProductDetailScreen({
                 }}
                 variant="contained"
               >
-                Add {formatPhp(product.priceCentavos * quantity)} to prototype cart
+                Add {formatPhp(product.priceCentavos * quantity)} to cart
               </AddButton>
             </PurchaseRow>
             <Feedback aria-atomic="true" aria-live="polite">
               {addedQuantity
-                ? `${addedQuantity} ${addedQuantity === 1 ? 'item' : 'items'} added to your prototype cart.`
+                ? `${addedQuantity} ${addedQuantity === 1 ? 'item' : 'items'} added to your cart.`
                 : ''}
             </Feedback>
             <DeliveryNote>
               <DeliveryTitle>Scheduled local delivery</DeliveryTitle>
               <DeliveryText>
-                Delivery fees use a fictional zone distance. Checkout will
-                block addresses outside the 10 km prototype service area.
+                Delivery fees are based on distance from the store. Checkout
+                blocks addresses outside the 10 km service area.
               </DeliveryText>
               <DeliveryLink href="/about-delivery">
                 Review delivery zones and payment options

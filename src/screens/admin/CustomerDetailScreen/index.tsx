@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 
 import EmptyState from '@/components/ui/EmptyState';
-import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import type { Order } from '@/types';
@@ -55,7 +54,7 @@ export default function CustomerDetailScreen({
     return (
       <EmptyState
         action={<EmptyActionLink href="/admin/customers">Return to customers</EmptyActionLink>}
-        description="This fictional customer may have been removed when the demo state was reset."
+        description="The requested customer could not be found."
         title="Customer not found"
       />
     );
@@ -90,19 +89,16 @@ export default function CustomerDetailScreen({
       <AdminPageHeader
         backHref="/admin/customers"
         backLabel="Back to customers"
-        description="Fictional profile, address, order, and loyalty information used only for workflow demonstration."
+        description="Review the customer's profile, delivery addresses, orders, and loyalty activity."
         title={customer.displayName}
       />
-      <Notice title="Data minimization" tone="info">
-        This record intentionally avoids real identity data and invasive customer analytics.
-      </Notice>
 
       <Section>
         <SectionTitle>Profile</SectionTitle>
         <DetailList>
           <DetailTerm>Email</DetailTerm>
           <DetailValue>{customer.email}</DetailValue>
-          <DetailTerm>Contact placeholder</DetailTerm>
+          <DetailTerm>Contact</DetailTerm>
           <DetailValue>{customer.phonePlaceholder}</DetailValue>
           <DetailTerm>Account state</DetailTerm>
           <DetailValue>{humanize(customer.status)}</DetailValue>
@@ -126,7 +122,7 @@ export default function CustomerDetailScreen({
                 {address.province}
               </AddressText>
               <AddressText>
-                {address.distanceKm} km demo distance ·{' '}
+                {address.distanceKm} km distance ·{' '}
                 {address.isDefault ? 'Default address' : 'Additional address'}
               </AddressText>
             </AddressItem>
@@ -144,7 +140,7 @@ export default function CustomerDetailScreen({
             rows={orders}
           />
         ) : (
-          <DetailValue>No fictional orders recorded.</DetailValue>
+          <DetailValue>No orders recorded.</DetailValue>
         )}
       </Section>
     </Root>

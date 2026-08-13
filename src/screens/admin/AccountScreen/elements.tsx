@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
 
 export const Root = styled(Box)(({ theme }) => ({
@@ -46,14 +45,4 @@ export const DetailValue = styled('dd')(({ theme }) => ({
   margin: 0,
   color: theme.vars.palette.text.primary,
   overflowWrap: 'anywhere',
-}));
-
-export const ResetButton = styled(Button)(({ theme }) => ({
-  width: 'fit-content',
-  minHeight: theme.spacing(5.5),
-  color: theme.vars.palette.error.main,
-
-  '&:hover': {
-    backgroundColor: theme.vars.palette.error.light,
-  },
 }));

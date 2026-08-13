@@ -18,7 +18,7 @@ export async function generateMetadata({
     title: product?.name ?? 'Product unavailable',
     description:
       product?.shortDescription ??
-      'The requested fictional catalog product could not be found.',
+      'The requested catalog product could not be found.',
   };
 }
 

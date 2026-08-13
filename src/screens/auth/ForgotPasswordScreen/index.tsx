@@ -20,10 +20,10 @@ const forgotPasswordSchema = z.object({
   email: z
     .string()
     .trim()
-    .email('Enter a valid fictional email address.')
+    .email('Enter a valid email address.')
     .refine(
       (value) => value.toLocaleLowerCase().endsWith('.test'),
-      'Use a reserved .test address, not a real email.',
+      'This email address is not eligible for password recovery.',
     ),
 });
 
@@ -45,25 +45,20 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthScaffold
-      description="Demonstrate the recovery form without sending a message or changing any stored credential."
-      title="Reset a demo password"
+      description="Enter your account email to begin password recovery."
+      title="Reset your password"
     >
-      <Notice title="No email will be sent" tone="info">
-        This frontend has no mail service or production identity system. Use a
-        fictional .test address only.
-      </Notice>
       {requested ? (
         <SuccessRegion>
-          <Notice title="Demo request recorded" tone="success">
-            The local recovery demonstration is complete. No account was
-            changed and no reset link was created.
+          <Notice title="Recovery request received" tone="success">
+            Your request has been accepted. Return to sign in when you are ready.
           </Notice>
-          <TextLink href="/login">Return to presentation sign in</TextLink>
+          <TextLink href="/login">Return to sign in</TextLink>
         </SuccessRegion>
       ) : (
         <Form
           aria-busy={isSubmitting}
-          aria-label="Demo password recovery"
+          aria-label="Password recovery"
           noValidate
           onSubmit={onSubmit}
         >
@@ -71,18 +66,18 @@ export default function ForgotPasswordScreen() {
             autoComplete="off"
             error={Boolean(errors.email)}
             fullWidth
-            helperText={errors.email?.message ?? 'Example: customer.demo@example.test'}
-            label="Fictional .test email"
+            helperText={errors.email?.message ?? 'Enter the email address for your account.'}
+            label="Email"
             type="email"
             {...register('email')}
           />
           <SubmitButton disabled={isSubmitting} type="submit" variant="contained">
-            {isSubmitting ? 'Checking locally…' : 'Demonstrate reset request'}
+            {isSubmitting ? 'Submitting…' : 'Submit request'}
           </SubmitButton>
         </Form>
       )}
       <FooterText>
-        Remember the presentation credential?{' '}
+        Remember your password?{' '}
         <TextLink href="/login">Sign in</TextLink>
       </FooterText>
     </AuthScaffold>

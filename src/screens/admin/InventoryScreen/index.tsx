@@ -127,7 +127,7 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
         ? {
             tone: 'success',
             title: 'Inventory updated',
-            message: 'Product availability changed across the shared frontend state.',
+            message: 'Product availability and inventory history were updated.',
           }
         : { tone: 'error', title: 'Adjustment failed', message: result.error.message },
     );
@@ -141,7 +141,7 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Maintain the fictional physical count while preserving stock reserved by active orders."
+        description="Maintain physical stock counts while preserving inventory reserved by active orders."
         title="Inventory"
       />
 
@@ -151,13 +151,9 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
         </Notice>
       ) : null}
 
-      <Notice title="Prototype inventory interpretation" tone="warning">
-        Admin adjustments represent manual physical counts. Orders reserve, release, or commit stock in shared demo state; the final production timing still requires approval.
-      </Notice>
-
       <AdjustmentSection>
         <SectionTitle>Record an adjustment</SectionTitle>
-        <SectionCopy>A reason is required so the fictional audit history remains understandable.</SectionCopy>
+        <SectionCopy>A reason is required to keep the inventory history clear.</SectionCopy>
         <AdjustmentForm onSubmit={openConfirmation}>
           <FormField
             label="Product"
@@ -231,7 +227,7 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
 
       <AdminConfirmDialog
         confirmLabel="Apply adjustment"
-        description="This changes shared fictional product availability and records an inventory history event. Reserved stock cannot be undercut."
+        description="This changes product availability and records an inventory history event. Reserved stock cannot be undercut."
         onClose={() => setConfirmOpen(false)}
         onConfirm={confirmAdjustment}
         open={confirmOpen}

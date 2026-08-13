@@ -51,7 +51,7 @@ export default function FailureReportScreen({
         headerTitle="Report unavailable"
       >
         <Notice tone="error" title="Delivery not found">
-          This fictional assignment is no longer available.
+          This assignment is no longer available.
         </Notice>
       </DelivererShell>
     );
@@ -81,8 +81,8 @@ export default function FailureReportScreen({
       headerMeta={delivery.schedule.windowLabel}
     >
       <Root>
-        <Notice tone="warning" title="This action changes the demo workflow">
-          Reporting a failure marks this fictional delivery as failed. It does
+        <Notice tone="warning" title="This action updates the delivery">
+          Reporting a failure marks this delivery as failed. It does
           not issue a refund or restore stock automatically.
         </Notice>
         <Intro>
@@ -116,7 +116,7 @@ export default function FailureReportScreen({
             multiline
             minRows={4}
             slotProps={{ htmlInput: { maxLength: 240 } }}
-            helperText={`${note.length}/240 characters · fictional details only`}
+            helperText={`${note.length}/240 characters`}
           />
           <Actions>
             <SubmitButton type="submit" variant="contained" color="error">

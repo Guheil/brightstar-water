@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import DelivererShell from '@/components/layout/DelivererShell';
 import EmptyState from '@/components/ui/EmptyState';
-import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import { demoDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
@@ -42,10 +41,6 @@ export default function HistoryScreen() {
       headerMeta={`${deliveries.length} completed records`}
     >
       <Root>
-        <Notice tone="info" title="Fictional history">
-          These records demonstrate delivered and failed states only. No live
-          tracking or real recipient data is stored.
-        </Notice>
         <Intro>
           Review prior assignments and their final operational outcome.
         </Intro>
@@ -64,7 +59,7 @@ export default function HistoryScreen() {
                       <Secondary>{delivery.schedule.windowLabel}</Secondary>
                     </div>
                     <div>
-                      <Primary>{customer?.displayName ?? 'Demo customer'}</Primary>
+                      <Primary>{customer?.displayName ?? 'Customer'}</Primary>
                       <Secondary>
                         {order?.reference ?? delivery.orderId} · {delivery.address.area}
                       </Secondary>

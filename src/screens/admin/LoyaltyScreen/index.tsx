@@ -60,7 +60,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
     },
     {
       key: 'peso_value',
-      label: 'Prototype peso value',
+      label: 'Peso value',
       align: 'right',
       render: (customer) => {
         const points =
@@ -97,7 +97,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
         ? {
             tone: 'success',
             title: 'Loyalty balance updated',
-            message: 'The fictional customer balance and loyalty history changed together.',
+            message: 'The customer balance and loyalty history were updated together.',
           }
         : { tone: 'error', title: 'Adjustment failed', message: result.error.message },
     );
@@ -111,7 +111,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Review balances and record controlled, reasoned adjustments in the fictional loyalty history."
+        description="Review balances and record controlled adjustments in customer loyalty history."
         title="Loyalty"
       />
 
@@ -120,10 +120,6 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
           {feedback.message}
         </Notice>
       ) : null}
-
-      <Notice title="Rule pending confirmation" tone="warning">
-        {LOYALTY_CONFIG.notice} Manual adjustments are for demonstration and would require audited permissions in production.
-      </Notice>
 
       <AdjustmentSection>
         <SectionTitle>Record a points adjustment</SectionTitle>
@@ -192,7 +188,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
 
       <AdminConfirmDialog
         confirmLabel="Apply points adjustment"
-        description="The fictional customer balance will change and a reasoned loyalty activity record will be added."
+        description="The customer balance will change and a reasoned loyalty activity record will be added."
         onClose={() => setConfirmOpen(false)}
         onConfirm={confirmAdjustment}
         open={confirmOpen}

@@ -13,12 +13,12 @@ export default function PublicRouteStateScreen({
     <Root>
       {mode === 'loading' ? (
         <LoadingState
-          description="Preparing the fictional catalog and delivery information."
+          description="Preparing the catalog and delivery information."
           label="Loading page"
         />
       ) : (
         <ErrorState
-          description="We could not open this prototype page. Try again, or return to the shop from the main navigation."
+          description="We could not open this page. Try again, or return to the shop from the main navigation."
           onRetry={onRetry}
           title="This page did not load"
         />

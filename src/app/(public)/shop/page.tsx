@@ -4,7 +4,7 @@ import ShopScreen from '@/screens/public/ShopScreen';
 export const metadata: Metadata = {
   title: 'Shop',
   description:
-    'Browse fictional demo stock for LPG refills, purified water, and household accessories.',
+    'Browse available LPG refills, purified water, and household accessories.',
 };
 
 interface ShopPageProps {
