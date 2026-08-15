@@ -1,5 +1,7 @@
 'use client';
 
+import { Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import StatusText from '@/components/ui/StatusText';
@@ -7,6 +9,7 @@ import { useAppStore } from '@/store';
 import type { Delivery } from '@/types';
 import { formatPhp } from '@/utils';
 import AdminDataTable from '../components/AdminDataTable';
+import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
 import { getStatusTone, humanize } from '../utils';
@@ -22,6 +25,7 @@ import {
 import type { DeliveriesScreenProps } from './interface';
 
 export default function DeliveriesScreen({ className }: DeliveriesScreenProps) {
+  const router = useRouter();
   const deliveries = useAppStore((state) => state.deliveries.records);
   const deliverers = useAppStore((state) => state.deliveries.deliverers);
   const orders = useAppStore((state) => state.orders.records);
@@ -109,6 +113,22 @@ export default function DeliveriesScreen({ className }: DeliveriesScreenProps) {
         <StatusText tone={getStatusTone(delivery.status)}>
           {humanize(delivery.status)}
         </StatusText>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (delivery) => (
+        <AdminEntityActionMenu
+          actions={[
+            {
+              label: 'Open delivery workflow',
+              icon: Eye,
+              onSelect: () => router.push(`/admin/deliveries/${delivery.id}`),
+            },
+          ]}
+          ariaLabel={`Actions for delivery ${delivery.id}`}
+        />
       ),
     },
   ];

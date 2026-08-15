@@ -8,3 +8,8 @@ export interface PaymentOptionView {
   description: string;
   title: string;
 }
+
+export interface DeliveryInfoScreenProps {
+  shopHref?: string;
+  storefrontName?: string;
+}

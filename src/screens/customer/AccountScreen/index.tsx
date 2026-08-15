@@ -115,7 +115,7 @@ export default function AccountScreen() {
             </OrderPanel>
           ) : (
             <EmptyState
-              action={<InlineLink href="/shop">Browse products</InlineLink>}
+              action={<InlineLink href="/">Choose a storefront</InlineLink>}
               description="Your placed orders will appear here."
               icon={<PackageSearch />}
               title="No orders yet"

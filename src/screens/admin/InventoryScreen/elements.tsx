@@ -10,13 +10,6 @@ export const Root = styled(Box)(({ theme }) => ({
   gap: theme.spacing(4),
 }));
 
-export const AdjustmentSection = styled('section')(({ theme }) => ({
-  borderTopWidth: theme.spacing(0.25),
-  borderTopStyle: 'solid',
-  borderTopColor: theme.vars.palette.primary.main,
-  paddingBlockStart: theme.spacing(2),
-}));
-
 export const SectionTitle = styled('h2')(({ theme }) => ({
   ...theme.typography.h5,
   margin: 0,
@@ -30,27 +23,7 @@ export const SectionCopy = styled('p')(({ theme }) => ({
   color: theme.vars.palette.text.secondary,
 }));
 
-export const AdjustmentForm = styled('form')(({ theme }) => ({
-  display: 'grid',
-  gridTemplateColumns: `minmax(${theme.spacing(26)}, 2fr) minmax(${theme.spacing(18)}, 1fr) minmax(${theme.spacing(16)}, 1fr) minmax(${theme.spacing(30)}, 2fr) auto`,
-  alignItems: 'start',
-  gap: theme.spacing(1.5),
-  marginBlockStart: theme.spacing(2),
-
-  [theme.breakpoints.down('xl')]: {
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  },
-
-  [theme.breakpoints.down('sm')]: {
-    gridTemplateColumns: '1fr',
-  },
-}));
-
-export const FormField = styled(TextField)(() => ({}));
-
-export const FormOption = styled(MenuItem)(() => ({}));
-
-export const SubmitButton = styled(Button)(({ theme }) => ({
+export const AdjustButton = styled(Button)(({ theme }) => ({
   minHeight: theme.spacing(5.5),
   backgroundColor: theme.vars.palette.primary.main,
   color: theme.vars.palette.primary.contrastText,
@@ -59,6 +32,15 @@ export const SubmitButton = styled(Button)(({ theme }) => ({
     backgroundColor: theme.vars.palette.primary.dark,
   },
 }));
+
+export const AdjustmentForm = styled('form')(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(2),
+  paddingTop: theme.spacing(1),
+}));
+
+export const FormField = styled(TextField)(() => ({}));
+export const FormOption = styled(MenuItem)(() => ({}));
 
 export const HistorySection = styled('section')(({ theme }) => ({
   borderTopWidth: theme.spacing(0.25),

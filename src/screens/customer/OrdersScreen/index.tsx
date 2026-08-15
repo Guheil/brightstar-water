@@ -61,7 +61,7 @@ export default function OrdersScreen() {
             Follow active deliveries and review completed, cancelled, or failed orders.
           </Lead>
         </HeaderCopy>
-        <ShopLink href="/shop">Start another order</ShopLink>
+        <ShopLink href="/">Choose a storefront</ShopLink>
       </Header>
 
       <FilterBar aria-label="Filter customer orders">
@@ -98,7 +98,7 @@ export default function OrdersScreen() {
         </OrderList>
       ) : (
         <EmptyState
-          action={<ShopLink href="/shop">Browse products</ShopLink>}
+          action={<ShopLink href="/">Choose a storefront</ShopLink>}
           description={
             filter === 'all'
               ? 'Placed orders will appear here.'

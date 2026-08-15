@@ -22,9 +22,12 @@ export interface CustomerHeaderProps {
   condensed?: boolean;
   homeHref?: string;
   logoSrc?: string;
+  logoSources?: readonly string[];
   mainId?: string;
   megaMenuGroups: readonly CustomerMegaMenuGroup[];
   navigation: readonly CustomerNavigationItem[];
   searchHref?: string;
+  shopHref?: string;
   transparentAtTop?: boolean;
+  wordmark?: string;
 }

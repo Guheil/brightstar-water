@@ -34,7 +34,7 @@ export const HeroGrid = styled(Box)(({ theme }) => ({
     gridRow: 1,
     display: 'flex',
     alignItems: 'flex-end',
-    maxWidth: 'none',
+    maxWidth: theme.layout.maxContentWidth,
     minHeight: 'inherit',
   },
 }));

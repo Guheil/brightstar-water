@@ -1,28 +1,20 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { getProductStorefrontPath } from '@/config';
 import { PRODUCT_FIXTURES } from '@/mocks';
-import ProductDetailScreen from '@/screens/public/ProductDetailScreen';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({
-  params,
-}: ProductPageProps): Promise<Metadata> {
+export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
   const product = PRODUCT_FIXTURES.find(
     (item) => item.id === id || item.slug === id,
   );
 
-  return {
-    title: product?.name ?? 'Product unavailable',
-    description:
-      product?.shortDescription ??
-      'The requested catalog product could not be found.',
-  };
-}
+  if (!product) {
+    redirect('/');
+  }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
-  return <ProductDetailScreen productId={id} />;
+  redirect(getProductStorefrontPath(product.category, product.id));
 }

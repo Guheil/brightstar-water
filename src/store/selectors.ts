@@ -1,4 +1,4 @@
-import type { CartLine, Delivery, LoyaltyAccount, Order, Product } from '@/types';
+import type { CartLine, Delivery, InventoryItem, LoyaltyAccount, Order, Product } from '@/types';
 import { getAvailableStock, isLowStock } from '@/utils';
 import type { AppStore } from './interface';
 
@@ -16,11 +16,12 @@ export const selectCartItemCount = (state: AppStore): number =>
 export const selectLastPlacedOrderId = (state: AppStore): string | null =>
   state.cart.lastPlacedOrderId;
 
-export const selectProductsWithAvailability = (
-  state: AppStore,
+export const deriveProductsWithAvailability = (
+  products: readonly Product[],
+  inventoryItems: readonly InventoryItem[],
 ): ProductWithAvailability[] =>
-  state.catalog.products.map((product) => {
-    const inventory = state.inventory.items.find((item) => item.productId === product.id);
+  products.map((product) => {
+    const inventory = inventoryItems.find((item) => item.productId === product.id);
     const availableStock = inventory ? getAvailableStock(inventory) : 0;
 
     return {
@@ -30,6 +31,31 @@ export const selectProductsWithAvailability = (
       isLowStock: inventory ? isLowStock(inventory) : true,
     };
   });
+
+const productAvailabilityCache = new WeakMap<
+  readonly Product[],
+  WeakMap<readonly InventoryItem[], ProductWithAvailability[]>
+>();
+
+export const selectProductsWithAvailability = (
+  state: AppStore,
+): ProductWithAvailability[] => {
+  const products = state.catalog.products;
+  const inventoryItems = state.inventory.items;
+  let inventoryCache = productAvailabilityCache.get(products);
+
+  if (!inventoryCache) {
+    inventoryCache = new WeakMap<readonly InventoryItem[], ProductWithAvailability[]>();
+    productAvailabilityCache.set(products, inventoryCache);
+  }
+
+  const cached = inventoryCache.get(inventoryItems);
+  if (cached) return cached;
+
+  const derived = deriveProductsWithAvailability(products, inventoryItems);
+  inventoryCache.set(inventoryItems, derived);
+  return derived;
+};
 
 export const selectOrderById =
   (orderId: string) =>

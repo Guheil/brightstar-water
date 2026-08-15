@@ -38,6 +38,7 @@ import {
   UserRole,
   Workspace,
   WorkspaceHeader,
+  WorkspaceHeaderInner,
 } from './elements';
 import type {
   AdminNavigationIcon,
@@ -164,17 +165,19 @@ export default function AdminShell({
 
       <Workspace>
         <WorkspaceHeader>
-          <MenuButton
-            aria-expanded={navigationOpen}
-            aria-label="Open admin navigation"
-            onClick={() => setNavigationOpen(true)}
-          >
-            <Menu aria-hidden="true" />
-          </MenuButton>
-          <HeaderLabel>{headerLabel}</HeaderLabel>
-          {headerActions ? (
-            <HeaderActions>{headerActions}</HeaderActions>
-          ) : null}
+          <WorkspaceHeaderInner>
+            <MenuButton
+              aria-expanded={navigationOpen}
+              aria-label="Open admin navigation"
+              onClick={() => setNavigationOpen(true)}
+            >
+              <Menu aria-hidden="true" />
+            </MenuButton>
+            <HeaderLabel>{headerLabel}</HeaderLabel>
+            {headerActions ? (
+              <HeaderActions>{headerActions}</HeaderActions>
+            ) : null}
+          </WorkspaceHeaderInner>
         </WorkspaceHeader>
 
         <Main id={mainId} tabIndex={-1}>

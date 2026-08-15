@@ -63,6 +63,25 @@ export const CoverageLink = styled(AppLink)(({ theme }) => ({
   },
 }));
 
+
+export const StoreVisual = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  width: '100%',
+  minHeight: theme.spacing(42),
+  marginBottom: theme.spacing(5),
+  overflow: 'hidden',
+  borderRadius: theme.radii.media,
+  backgroundColor: theme.vars.palette.neutral.light,
+
+  [theme.breakpoints.down('sm')]: {
+    minHeight: theme.spacing(30),
+  },
+}));
+
+export const StoreVisualImage = styled(Image)({
+  objectFit: 'cover',
+});
+
 export const ToolBar = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'minmax(14rem, 1fr) minmax(12rem, 0.34fr)',

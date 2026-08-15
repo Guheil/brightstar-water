@@ -5,12 +5,21 @@ import Image from 'next/image';
 import AppLink from '@/components/ui/AppLink';
 
 export const Root = styled(Box)(({ theme }) => ({
-  display: 'grid',
-  gridTemplateColumns: 'minmax(22rem, 0.86fr) minmax(0, 1.14fr)',
+  width: '100%',
   minHeight: '100dvh',
-  backgroundColor: theme.vars.palette.background.default,
+  overflowX: 'hidden',
+  backgroundColor: theme.vars.palette.background.paper,
+}));
+
+export const ContentFrame = styled(Box)(({ theme }) => ({
+  width: '100%',
+  minHeight: '100dvh',
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+  backgroundColor: theme.vars.palette.background.paper,
 
   [theme.breakpoints.down('md')]: {
+    minHeight: 'auto',
     gridTemplateColumns: '1fr',
   },
 }));
@@ -32,14 +41,153 @@ export const SkipLink = styled('a')(({ theme }) => ({
   },
 }));
 
-export const FormPane = styled('main')(({ theme }) => ({
+export const MobileHeader = styled(Box)(({ theme }) => ({
+  display: 'none',
+  width: '100%',
+  backgroundColor: theme.vars.palette.background.paper,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
+
+  [theme.breakpoints.down('md')]: {
+    display: 'block',
+  },
+}));
+
+export const MobileHeaderInner = styled(Box)(({ theme }) => ({
+  boxSizing: 'border-box',
+  width: '100%',
+  maxWidth: theme.layout.maxContentWidth,
+  minHeight: theme.spacing(8),
   display: 'flex',
-  flexDirection: 'column',
-  minWidth: 0,
-  padding: theme.spacing(4),
+  alignItems: 'center',
+  marginInline: 'auto',
+  paddingInline: theme.layout.tabletGutter,
 
   [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
+    minHeight: theme.spacing(7.5),
+    paddingInline: theme.layout.mobileGutter,
+  },
+}));
+
+export const MediaPane = styled('aside')(({ theme }) => ({
+  position: 'relative',
+  minWidth: 0,
+  minHeight: '100dvh',
+  overflow: 'hidden',
+  backgroundColor: theme.vars.palette.primary.main,
+
+  [theme.breakpoints.down('md')]: {
+    minHeight: theme.spacing(32),
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    minHeight: theme.spacing(22),
+  },
+}));
+
+export const MediaGrid = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  inset: 0,
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+
+  [theme.breakpoints.down('sm')]: {
+    gridTemplateColumns: 'minmax(0, 1.08fr) minmax(0, 0.92fr)',
+  },
+}));
+
+export const MediaCell = styled(Box)({
+  position: 'relative',
+  minWidth: 0,
+  overflow: 'hidden',
+});
+
+export const MediaImage = styled(Image)(({ theme }) => ({
+  objectFit: 'cover',
+
+  [theme.breakpoints.down('sm')]: {
+    objectPosition: 'center',
+  },
+}));
+
+export const MediaBrandRail = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  insetInlineEnd: 0,
+  insetBlockEnd: 0,
+  width: '100%',
+  maxWidth: theme.layout.maxContentWidth / 2,
+
+  [theme.breakpoints.down('md')]: {
+    display: 'none',
+  },
+}));
+
+export const MediaBrand = styled(Box)(({ theme }) => ({
+  width: '78%',
+  padding: theme.spacing(4),
+  backgroundColor: theme.vars.palette.primary.main,
+  color: theme.vars.palette.primary.contrastText,
+
+  [theme.breakpoints.down('lg')]: {
+    width: '82%',
+    padding: theme.spacing(3.5),
+  },
+}));
+
+export const MediaBrandTitle = styled(Typography)(({ theme }) => ({
+  ...theme.typography.h3,
+  maxWidth: theme.spacing(60),
+  color: 'inherit',
+}));
+
+export const MediaBrandText = styled(Typography)(({ theme }) => ({
+  ...theme.typography.body1,
+  maxWidth: theme.spacing(62),
+  marginTop: theme.spacing(1),
+  color: 'inherit',
+  opacity: 0.82,
+}));
+
+export const FormPane = styled('main')(({ theme }) => ({
+  minWidth: 0,
+  minHeight: '100dvh',
+  backgroundColor: theme.vars.palette.background.paper,
+  borderInlineStartWidth: theme.spacing(0.125),
+  borderInlineStartStyle: 'solid',
+  borderInlineStartColor: theme.vars.palette.divider,
+
+  [theme.breakpoints.down('md')]: {
+    minHeight: 'auto',
+    borderInlineStartWidth: 0,
+  },
+}));
+
+export const FormPaneInner = styled(Box)(({ theme }) => ({
+  boxSizing: 'border-box',
+  width: '100%',
+  maxWidth: theme.layout.maxContentWidth / 2,
+  minHeight: '100dvh',
+  display: 'flex',
+  flexDirection: 'column',
+  marginInlineEnd: 'auto',
+  padding: theme.spacing(4, 5),
+
+  [theme.breakpoints.down('lg')]: {
+    paddingInline: theme.layout.tabletGutter,
+  },
+
+  [theme.breakpoints.down('md')]: {
+    maxWidth: theme.layout.maxContentWidth,
+    minHeight: 'auto',
+    marginInline: 'auto',
+    padding: theme.spacing(1, 0, 5),
+    paddingInline: theme.layout.tabletGutter,
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(0, 0, 4),
+    paddingInline: theme.layout.mobileGutter,
   },
 }));
 
@@ -48,9 +196,51 @@ export const BrandLink = styled(AppLink)(({ theme }) => ({
   alignSelf: 'flex-start',
   minHeight: theme.spacing(5.5),
   alignItems: 'center',
+  gap: theme.spacing(1.25),
   color: theme.vars.palette.primary.main,
+  textDecoration: 'none',
+}));
+
+export const DesktopBrandLink = styled(BrandLink)(({ theme }) => ({
+  [theme.breakpoints.down('md')]: {
+    display: 'none',
+  },
+}));
+
+export const BrandName = styled('span')(({ theme }) => ({
+  ...theme.typography.subtitle1,
   fontWeight: theme.typography.fontWeightBold,
 }));
+
+export const BrandLockup = styled(Box)(({ theme }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: theme.spacing(1.25),
+  flexWrap: 'wrap',
+
+  [theme.breakpoints.down('sm')]: {
+    gap: theme.spacing(1),
+  },
+}));
+
+export const BrandLogoFrame = styled('span')(({ theme }) => ({
+  position: 'relative',
+  display: 'block',
+  width: theme.spacing(18),
+  height: theme.spacing(5.75),
+  backgroundColor: 'transparent',
+
+  [theme.breakpoints.down('sm')]: {
+    width: theme.spacing(14),
+    height: theme.spacing(4.5),
+  },
+}));
+
+export const BrandLogoImage = styled(Image)({
+  backgroundColor: 'transparent',
+  objectFit: 'contain',
+  objectPosition: 'left center',
+});
 
 export const FormRegion = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -58,65 +248,36 @@ export const FormRegion = styled(Box)(({ theme }) => ({
   marginBlock: 'auto',
   marginInline: 'auto',
   paddingBlock: theme.spacing(6),
+
+  [theme.breakpoints.down('md')]: {
+    maxWidth: theme.spacing(64),
+    marginBlock: 0,
+    paddingBlock: theme.spacing(5, 1),
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    maxWidth: 'none',
+    paddingBlock: theme.spacing(4, 0),
+  },
 }));
 
 export const Title = styled('h1')(({ theme }) => ({
-  ...theme.typography.h1,
+  ...theme.typography.h2,
   margin: 0,
   color: theme.vars.palette.primary.main,
+
+  [theme.breakpoints.down('sm')]: {
+    ...theme.typography.h3,
+  },
 }));
 
 export const Description = styled(Typography)(({ theme }) => ({
   ...theme.typography.body1,
-  marginBlock: theme.spacing(1.5, 3),
+  maxWidth: theme.spacing(56),
+  marginBlock: theme.spacing(1.5, 4),
   color: theme.vars.palette.text.secondary,
-}));
-
-export const MediaPane = styled(Box)(({ theme }) => ({
-  position: 'relative',
-  minHeight: theme.spacing(70),
-  overflow: 'hidden',
-  backgroundColor: theme.vars.palette.neutral.light,
-
-  [theme.breakpoints.down('md')]: {
-    order: -1,
-    minHeight: theme.spacing(30),
-  },
 
   [theme.breakpoints.down('sm')]: {
-    minHeight: theme.spacing(22),
+    marginBlockEnd: theme.spacing(3),
   },
-}));
-
-export const MediaImage = styled(Image)({
-  objectFit: 'cover',
-});
-
-export const MediaCaption = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  insetInline: theme.spacing(4),
-  insetBlockEnd: theme.spacing(4),
-  maxWidth: theme.spacing(58),
-  padding: theme.spacing(3),
-  borderRadius: theme.radii.surface,
-  backgroundColor: theme.vars.palette.primary.main,
-  color: theme.vars.palette.primary.contrastText,
-
-  [theme.breakpoints.down('sm')]: {
-    insetInline: theme.spacing(2),
-    insetBlockEnd: theme.spacing(2),
-    padding: theme.spacing(2),
-  },
-}));
-
-export const MediaTitle = styled(Typography)(({ theme }) => ({
-  ...theme.typography.h4,
-  color: 'inherit',
-}));
-
-export const MediaText = styled(Typography)(({ theme }) => ({
-  ...theme.typography.body2,
-  marginTop: theme.spacing(0.75),
-  color: 'inherit',
-  opacity: 0.84,
 }));

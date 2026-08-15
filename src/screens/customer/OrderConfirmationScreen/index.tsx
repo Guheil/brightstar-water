@@ -76,7 +76,7 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
         </NextSection>
         <Actions>
           <PrimaryLink href={`/customer/orders/${order.id}`}>Track this order</PrimaryLink>
-          <SecondaryLink href="/shop">Continue shopping</SecondaryLink>
+          <SecondaryLink href="/">Choose a storefront</SecondaryLink>
         </Actions>
       </ConfirmationPanel>
     </ConfirmationPage>

@@ -41,7 +41,7 @@ export default function RootLayout({
       lang="en"
       className={`${ibmPlexSans.variable} ${ibmPlexSerif.variable}`}
     >
-      <body>
+      <body suppressHydrationWarning>
         <AppRouterCacheProvider>
           <MUIStyleProvider>{children}</MUIStyleProvider>
         </AppRouterCacheProvider>

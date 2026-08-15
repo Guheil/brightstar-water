@@ -81,6 +81,13 @@ export const useAppStore = create<AppStore>()((set, get) => {
       return commandFailure('invalid_input', 'The email or password is incorrect.');
     }
 
+    if (account.customerId) {
+      const customer = get().customers.records.find((item) => item.id === account.customerId);
+      if (customer?.status === 'inactive') {
+        return commandFailure('not_allowed', 'This account is currently unavailable.');
+      }
+    }
+
     const session = {
       user: {
         id: account.id,

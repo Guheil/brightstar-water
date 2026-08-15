@@ -1,5 +1,7 @@
 'use client';
 
+import { Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import StatusText from '@/components/ui/StatusText';
@@ -7,6 +9,7 @@ import { useAppStore } from '@/store';
 import type { Order } from '@/types';
 import { formatPhp } from '@/utils';
 import AdminDataTable from '../components/AdminDataTable';
+import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
 import { formatDate, getStatusTone, humanize } from '../utils';
@@ -26,6 +29,7 @@ import type { OrdersScreenProps, OrderSort } from './interface';
 const pageSize = 8;
 
 export default function OrdersScreen({ className }: OrdersScreenProps) {
+  const router = useRouter();
   const orders = useAppStore((state) => state.orders.records);
   const customers = useAppStore((state) => state.customers.records);
   const payments = useAppStore((state) => state.payments.records);
@@ -134,6 +138,22 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
           'No delivery record'
         );
       },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (order) => (
+        <AdminEntityActionMenu
+          actions={[
+            {
+              label: 'Open order workflow',
+              icon: Eye,
+              onSelect: () => router.push(`/admin/orders/${order.id}`),
+            },
+          ]}
+          ariaLabel={`Actions for ${order.reference}`}
+        />
+      ),
     },
   ];
 

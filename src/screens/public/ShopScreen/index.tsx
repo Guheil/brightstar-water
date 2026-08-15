@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { STOREFRONT_MEDIA } from '@/config';
 import EmptyState from '@/components/ui/EmptyState';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
@@ -44,6 +45,8 @@ import {
   SortLabel,
   SortOption,
   SortSelect,
+  StoreVisual,
+  StoreVisualImage,
   Title,
   ToolBar,
 } from './elements';
@@ -68,8 +71,13 @@ function normalizeCategory(value?: string): ShopCategoryFilter {
 }
 
 export default function ShopScreen({
+  coverageHref = '/about-delivery',
   initialCategory,
   initialQuery = '',
+  introduction = 'Browse LPG refills, purified water, and practical accessories. Current availability is shown for every product.',
+  lockedCategory,
+  productHrefPrefix = '/product',
+  title = 'Shop household essentials',
 }: ShopScreenProps) {
   const products = useAppStore((state) => state.catalog.products);
   const inventory = useAppStore((state) => state.inventory.items);
@@ -81,6 +89,12 @@ export default function ShopScreen({
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
   const [sort, setSort] = useState<ShopSort>('featured');
   const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null);
+  const storefrontImage =
+    lockedCategory === 'water'
+      ? STOREFRONT_MEDIA.water.refillStation
+      : lockedCategory === 'gas'
+        ? STOREFRONT_MEDIA.gas.hero
+        : null;
 
   const productViews = useMemo<ShopProductView[]>(
     () =>
@@ -102,12 +116,18 @@ export default function ShopScreen({
 
   const visibleProducts = useMemo(() => {
     const filtered = productViews.filter((product) => {
+      const matchesStorefront =
+        !lockedCategory || product.category === lockedCategory;
       const matchesCategory =
         category === 'all' ||
-        product.category === category ||
+        (!lockedCategory && product.category === category) ||
         (category === 'accessories' && accessoryUnits.includes(product.unit as ProductUnit));
       const searchableText = `${product.name} ${product.shortDescription} ${product.category}`.toLocaleLowerCase();
-      return matchesCategory && searchableText.includes(deferredQuery);
+      return (
+        matchesStorefront &&
+        matchesCategory &&
+        searchableText.includes(deferredQuery)
+      );
     });
 
     return [...filtered].sort((left, right) => {
@@ -118,7 +138,22 @@ export default function ShopScreen({
       const rightProduct = products.find((product) => product.id === right.id);
       return Number(Boolean(rightProduct?.isFeatured)) - Number(Boolean(leftProduct?.isFeatured));
     });
-  }, [category, deferredQuery, productViews, products, sort]);
+  }, [category, deferredQuery, lockedCategory, productViews, products, sort]);
+
+  const visibleCategoryOptions = lockedCategory
+    ? [
+        {
+          label: lockedCategory === 'gas' ? 'All gas products' : 'All water products',
+          value: 'all' as ShopCategoryFilter,
+          tone: lockedCategory,
+        },
+        {
+          label: 'Accessories',
+          value: 'accessories' as ShopCategoryFilter,
+          tone: 'neutral' as const,
+        },
+      ]
+    : categoryOptions;
 
   const resetFilters = () => {
     setCategory('all');
@@ -131,23 +166,38 @@ export default function ShopScreen({
       <Container>
         <Intro>
           <div>
-            <Title>Shop household essentials</Title>
-            <Introduction>
-              Browse LPG refills, purified water, and practical accessories.
-              Current availability is shown for every product.
-            </Introduction>
+            <Title>{title}</Title>
+            <Introduction>{introduction}</Introduction>
           </div>
-          <CoverageLink href="/about-delivery">
+          <CoverageLink href={coverageHref}>
             Check delivery coverage and fees
           </CoverageLink>
         </Intro>
+
+        {storefrontImage ? (
+          <StoreVisual>
+            <StoreVisualImage
+              alt={storefrontImage.alt}
+              fill
+              priority
+              sizes="(max-width: 1440px) 100vw, 1440px"
+              src={storefrontImage.src}
+            />
+          </StoreVisual>
+        ) : null}
 
         <ToolBar role="search" aria-label="Search and sort products">
           <SearchField
             fullWidth
             label="Search products"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Try LPG, water, or regulator"
+            placeholder={
+              lockedCategory === 'gas'
+                ? 'Try LPG or regulator'
+                : lockedCategory === 'water'
+                  ? 'Try refill or container'
+                  : 'Try LPG, water, or regulator'
+            }
             type="search"
             value={query}
             slotProps={{
@@ -187,7 +237,7 @@ export default function ShopScreen({
         </ToolBar>
 
         <CategoryControls aria-label="Product categories" role="group">
-          {categoryOptions.map((option) => (
+          {visibleCategoryOptions.map((option) => (
             <CategoryButton
               aria-pressed={category === option.value}
               key={option.value}
@@ -216,7 +266,7 @@ export default function ShopScreen({
                 aria-labelledby={`shop-product-${product.id}`}
                 key={product.id}
               >
-                <ProductLink href={`/product/${product.id}`}>
+                <ProductLink href={`${productHrefPrefix}/${product.id}`}>
                   <ProductMedia>
                     <ProductImage
                       alt={product.imageAlt}
@@ -231,7 +281,7 @@ export default function ShopScreen({
                   <CategoryLine $tone={product.category}>
                     {product.category} · {product.unit}
                   </CategoryLine>
-                  <ProductLink href={`/product/${product.id}`}>
+                  <ProductLink href={`${productHrefPrefix}/${product.id}`}>
                     <ProductName id={`shop-product-${product.id}`}>
                       {product.name}
                     </ProductName>

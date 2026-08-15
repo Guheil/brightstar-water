@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import HomeScreen from '@/screens/public/HomeScreen';
+import ServiceGatewayScreen from '@/screens/public/ServiceGatewayScreen';
 
 export const metadata: Metadata = {
-  title: 'Local LPG and water delivery',
+  title: 'Choose MRJE Gas or Bright Star Water',
   description:
-    'Browse LPG and purified water for scheduled local delivery from MRJE Gas and Bright Star Water.',
+    'Choose MRJE Gas for LPG delivery or Bright Star Water for purified water delivery from one connected local ordering platform.',
 };
 
 export default function Page() {
-  return <HomeScreen />;
+  return <ServiceGatewayScreen />;
 }

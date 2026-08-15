@@ -13,20 +13,20 @@ export const customerMegaMenuGroups: readonly CustomerMegaMenuGroup[] = [
     title: 'Products',
     links: [
       {
-        label: 'Shop all',
-        description: 'Browse every available household essential.',
-        href: '/shop',
+        label: 'Choose a storefront',
+        description: 'Choose MRJE Gas or Bright Star Water before browsing.',
+        href: '/',
       },
       {
         label: 'LPG',
         description: 'Household cylinders and practical accessories.',
-        href: '/shop?category=gas',
+        href: '/mrje/shop',
         tone: 'gas',
       },
       {
         label: 'Purified water',
         description: 'Refills, containers, and bottled water.',
-        href: '/shop?category=water',
+        href: '/brightstar/shop',
         tone: 'water',
       },
     ],

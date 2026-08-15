@@ -1,5 +1,6 @@
 'use client';
 
+import { ClipboardList, PackagePlus, SlidersHorizontal, Truck } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import StatusText from '@/components/ui/StatusText';
 import { selectAdminWorkCounts, useAppStore } from '@/store';
@@ -8,6 +9,8 @@ import AdminPageHeader from '../components/AdminPageHeader';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
   AttentionGrid,
+  ControlBar,
+  ControlLink,
   EmptyMessage,
   Item,
   ItemCopy,
@@ -44,6 +47,25 @@ export default function OverviewScreen({ className }: OverviewScreenProps) {
         description="Review the orders, deliveries, and inventory items that need attention."
         title="Operational overview"
       />
+
+      <ControlBar aria-label="Admin shortcuts">
+        <ControlLink href="/admin/products/new">
+          <PackagePlus aria-hidden="true" />
+          Add product
+        </ControlLink>
+        <ControlLink href="/admin/inventory">
+          <SlidersHorizontal aria-hidden="true" />
+          Adjust inventory
+        </ControlLink>
+        <ControlLink href="/admin/orders">
+          <ClipboardList aria-hidden="true" />
+          Review order queue
+        </ControlLink>
+        <ControlLink href="/admin/deliveries">
+          <Truck aria-hidden="true" />
+          Coordinate deliveries
+        </ControlLink>
+      </ControlBar>
 
       <SummaryStrip aria-label="Current work summary">
         <SummaryItem>

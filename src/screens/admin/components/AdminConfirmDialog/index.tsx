@@ -11,6 +11,7 @@ import type { AdminConfirmDialogProps } from './interface';
 
 export default function AdminConfirmDialog({
   confirmLabel,
+  confirmTone = 'danger',
   description,
   onClose,
   onConfirm,
@@ -26,8 +27,10 @@ export default function AdminConfirmDialog({
         </ConfirmDialogText>
       </ConfirmDialogContent>
       <ConfirmDialogActions>
-        <CancelButton onClick={onClose}>Keep current state</CancelButton>
-        <ConfirmButton onClick={onConfirm}>{confirmLabel}</ConfirmButton>
+        <CancelButton onClick={onClose}>Cancel</CancelButton>
+        <ConfirmButton $tone={confirmTone} onClick={onConfirm}>
+          {confirmLabel}
+        </ConfirmButton>
       </ConfirmDialogActions>
     </ConfirmDialog>
   );

@@ -185,23 +185,20 @@ export const WorkspaceHeader = styled('header')(({ theme }) => ({
   position: 'sticky',
   top: 0,
   zIndex: theme.zIndex.appBar,
-  minHeight: theme.spacing(9),
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(2),
-  paddingInline: theme.layout.desktopGutter,
   borderBottomWidth: theme.spacing(0.125),
   borderBottomStyle: 'solid',
   borderBottomColor: theme.vars.palette.divider,
   backgroundColor: theme.vars.palette.background.paper,
+}));
 
-  [theme.breakpoints.down('lg')]: {
-    paddingInline: theme.layout.tabletGutter,
-  },
+export const WorkspaceHeaderInner = styled(PageContainer)(({ theme }) => ({
+  minHeight: theme.spacing(9),
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(2),
 
   [theme.breakpoints.down('sm')]: {
     minHeight: theme.spacing(8),
-    paddingInline: theme.layout.mobileGutter,
   },
 }));
 

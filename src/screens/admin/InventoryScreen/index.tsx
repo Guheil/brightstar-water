@@ -1,23 +1,22 @@
 'use client';
 
+import { SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
-import {
-  selectProductsWithAvailability,
-  useAppStore,
-} from '@/store';
+import { selectProductsWithAvailability, useAppStore } from '@/store';
 import type { InventoryItem } from '@/types';
 import { getAvailableStock, isLowStock } from '@/utils';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminDataTable from '../components/AdminDataTable';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
+import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
+import AdminFormDialog from '../components/AdminFormDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
 import { ADMIN_ACTOR_ID, formatDateTime, humanize } from '../utils';
 import {
+  AdjustButton,
   AdjustmentForm,
-  AdjustmentSection,
   FormField,
   FormOption,
   HistoryItem,
@@ -28,14 +27,13 @@ import {
   Root,
   SectionCopy,
   SectionTitle,
-  SubmitButton,
 } from './elements';
 import type { AdminInventoryMode, InventoryScreenProps } from './interface';
 
 type Feedback = { tone: 'success' | 'error'; title: string; message: string };
 
 export default function InventoryScreen({ className }: InventoryScreenProps) {
-  const products = useAppStore(useShallow(selectProductsWithAvailability));
+  const products = useAppStore(selectProductsWithAvailability);
   const inventory = useAppStore((state) => state.inventory.items);
   const adjustments = useAppStore((state) => state.inventory.adjustments);
   const adjustStock = useAppStore((state) => state.commands.adjustStock);
@@ -43,8 +41,17 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
   const [mode, setMode] = useState<AdminInventoryMode>('increase');
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  const openAdjustment = (nextProductId?: string) => {
+    if (nextProductId) setProductId(nextProductId);
+    setMode('increase');
+    setQuantity('');
+    setReason('');
+    setAdjustmentOpen(true);
+  };
 
   const columns: readonly AdminDataColumn<InventoryItem>[] = [
     {
@@ -63,34 +70,12 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
       key: 'category',
       label: 'Category',
       render: (item) =>
-        humanize(
-          products.find((product) => product.id === item.productId)?.category ?? 'unknown',
-        ),
+        humanize(products.find((product) => product.id === item.productId)?.category ?? 'unknown'),
     },
-    {
-      key: 'on_hand',
-      label: 'On hand',
-      align: 'right',
-      render: (item) => item.stockOnHand,
-    },
-    {
-      key: 'reserved',
-      label: 'Reserved',
-      align: 'right',
-      render: (item) => item.stockReserved,
-    },
-    {
-      key: 'available',
-      label: 'Available',
-      align: 'right',
-      render: (item) => getAvailableStock(item),
-    },
-    {
-      key: 'reorder',
-      label: 'Reorder level',
-      align: 'right',
-      render: (item) => item.reorderLevel,
-    },
+    { key: 'on_hand', label: 'On hand', align: 'right', render: (item) => item.stockOnHand },
+    { key: 'reserved', label: 'Reserved', align: 'right', render: (item) => item.stockReserved },
+    { key: 'available', label: 'Available', align: 'right', render: (item) => getAvailableStock(item) },
+    { key: 'reorder', label: 'Reorder level', align: 'right', render: (item) => item.reorderLevel },
     {
       key: 'condition',
       label: 'Condition',
@@ -100,15 +85,40 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
         </StatusText>
       ),
     },
+    { key: 'updated', label: 'Last update', render: (item) => formatDateTime(item.updatedAt) },
     {
-      key: 'updated',
-      label: 'Last update',
-      render: (item) => formatDateTime(item.updatedAt),
+      key: 'actions',
+      label: 'Actions',
+      render: (item) => {
+        const product = products.find((candidate) => candidate.id === item.productId);
+        return (
+          <AdminEntityActionMenu
+            actions={[
+              {
+                label: 'Adjust stock',
+                icon: SlidersHorizontal,
+                onSelect: () => openAdjustment(item.productId),
+              },
+            ]}
+            ariaLabel={`Inventory actions for ${product?.name ?? item.productId}`}
+          />
+        );
+      },
     },
   ];
 
-  const openConfirmation = (event: React.FormEvent<HTMLFormElement>) => {
+  const reviewAdjustment = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const numericQuantity = Number(quantity);
+    if (!productId || !Number.isInteger(numericQuantity) || numericQuantity < 0 || !reason.trim()) {
+      setFeedback({
+        tone: 'error',
+        title: 'Adjustment not ready',
+        message: 'Choose a product, enter a whole-number quantity, and provide a reason.',
+      });
+      return;
+    }
+    setAdjustmentOpen(false);
     setConfirmOpen(true);
   };
 
@@ -127,21 +137,18 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
         ? {
             tone: 'success',
             title: 'Inventory updated',
-            message: 'Product availability and inventory history were updated.',
+            message: 'Available stock and inventory history were updated together.',
           }
         : { tone: 'error', title: 'Adjustment failed', message: result.error.message },
     );
-    if (result.ok) {
-      setQuantity('');
-      setReason('');
-    }
     setConfirmOpen(false);
   };
 
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Maintain physical stock counts while preserving inventory reserved by active orders."
+        actions={<AdjustButton onClick={() => openAdjustment()}>Record adjustment</AdjustButton>}
+        description="Review stock, reservations, reorder thresholds, and reasoned inventory adjustments."
         title="Inventory"
       />
 
@@ -151,10 +158,48 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
         </Notice>
       ) : null}
 
-      <AdjustmentSection>
-        <SectionTitle>Record an adjustment</SectionTitle>
-        <SectionCopy>A reason is required to keep the inventory history clear.</SectionCopy>
-        <AdjustmentForm onSubmit={openConfirmation}>
+      <section aria-labelledby="inventory-table-title">
+        <SectionTitle id="inventory-table-title">Current stock</SectionTitle>
+        <SectionCopy>
+          Available stock already subtracts quantities reserved by active customer orders.
+        </SectionCopy>
+        <AdminDataTable
+          ariaLabel="Current inventory"
+          columns={columns}
+          getRowKey={(item) => item.productId}
+          rows={inventory}
+        />
+      </section>
+
+      <HistorySection>
+        <SectionTitle>Recent inventory history</SectionTitle>
+        <SectionCopy>Every prototype stock correction keeps its reason and timestamp.</SectionCopy>
+        <HistoryList>
+          {adjustments.slice(0, 8).map((adjustment) => {
+            const product = products.find((item) => item.id === adjustment.productId);
+            return (
+              <HistoryItem key={adjustment.id}>
+                <HistoryText>{product?.name ?? adjustment.productId}</HistoryText>
+                <HistoryText>
+                  {humanize(adjustment.mode)} {adjustment.quantity}
+                </HistoryText>
+                <HistoryMeta>{adjustment.reason}</HistoryMeta>
+                <HistoryMeta>{formatDateTime(adjustment.createdAt)}</HistoryMeta>
+              </HistoryItem>
+            );
+          })}
+        </HistoryList>
+      </HistorySection>
+
+      <AdminFormDialog
+        description="Record the physical stock change and a clear reason. Reserved inventory cannot be undercut by an adjustment."
+        formId="inventory-adjustment-form"
+        onClose={() => setAdjustmentOpen(false)}
+        open={adjustmentOpen}
+        submitLabel="Review adjustment"
+        title="Record inventory adjustment"
+      >
+        <AdjustmentForm id="inventory-adjustment-form" onSubmit={reviewAdjustment}>
           <FormField
             label="Product"
             onChange={(event) => setProductId(event.target.value)}
@@ -188,46 +233,19 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
           />
           <FormField
             label="Reason"
+            multiline
             onChange={(event) => setReason(event.target.value)}
             required
+            rows={3}
             value={reason}
           />
-          <SubmitButton type="submit">Review adjustment</SubmitButton>
         </AdjustmentForm>
-      </AdjustmentSection>
-
-      <section aria-labelledby="inventory-table-title">
-        <SectionTitle id="inventory-table-title">Current stock</SectionTitle>
-        <AdminDataTable
-          ariaLabel="Current inventory"
-          columns={columns}
-          getRowKey={(item) => item.productId}
-          rows={inventory}
-        />
-      </section>
-
-      <HistorySection>
-        <SectionTitle>Recent inventory history</SectionTitle>
-        <HistoryList>
-          {adjustments.slice(0, 8).map((adjustment) => {
-            const product = products.find((item) => item.id === adjustment.productId);
-            return (
-              <HistoryItem key={adjustment.id}>
-                <HistoryText>{product?.name ?? adjustment.productId}</HistoryText>
-                <HistoryText>
-                  {humanize(adjustment.mode)} {adjustment.quantity}
-                </HistoryText>
-                <HistoryMeta>{adjustment.reason}</HistoryMeta>
-                <HistoryMeta>{formatDateTime(adjustment.createdAt)}</HistoryMeta>
-              </HistoryItem>
-            );
-          })}
-        </HistoryList>
-      </HistorySection>
+      </AdminFormDialog>
 
       <AdminConfirmDialog
         confirmLabel="Apply adjustment"
-        description="This changes product availability and records an inventory history event. Reserved stock cannot be undercut."
+        confirmTone="primary"
+        description="This changes product availability and creates an inventory-history event. The adjustment cannot reduce physical stock below reserved stock."
         onClose={() => setConfirmOpen(false)}
         onConfirm={confirmAdjustment}
         open={confirmOpen}

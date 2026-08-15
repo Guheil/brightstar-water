@@ -19,6 +19,10 @@ interface LogoImageProps {
   $inverted: boolean;
 }
 
+interface LogoFrameProps {
+  $paired: boolean;
+}
+
 interface MenuToneProps {
   $tone: 'neutral' | 'gas' | 'water';
 }
@@ -103,25 +107,47 @@ export const BrandLink = styled(AppLink)({
   color: 'inherit',
 });
 
-export const LogoFrame = styled('span')(({ theme }) => ({
+export const BrandWordmark = styled('span')(({ theme }) => ({
+  ...theme.typography.h5,
+  display: 'inline-flex',
+  alignItems: 'center',
+  minHeight: theme.spacing(5.5),
+  color: 'inherit',
+  letterSpacing: '-0.02em',
+  whiteSpace: 'nowrap',
+}));
+
+export const LogoCluster = styled('span')(({ theme }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  backgroundColor: 'transparent',
+}));
+
+export const LogoFrame = styled('span', {
+  shouldForwardProp: (prop) => prop !== '$paired',
+})<LogoFrameProps>(({ theme, $paired }) => ({
   position: 'relative',
-  width: theme.spacing(18),
-  height: theme.spacing(8.5),
+  width: $paired ? theme.spacing(15) : theme.spacing(22),
+  height: theme.spacing(7),
   display: 'block',
+  backgroundColor: 'transparent',
 
   [theme.breakpoints.down('lg')]: {
-    width: theme.spacing(15),
+    width: $paired ? theme.spacing(13) : theme.spacing(18),
+    height: theme.spacing(6.5),
   },
 
   [theme.breakpoints.down('sm')]: {
-    width: theme.spacing(12),
-    height: theme.spacing(7),
+    width: $paired ? theme.spacing(9.5) : theme.spacing(15),
+    height: theme.spacing(6),
   },
 }));
 
 export const LogoImage = styled(Image, {
   shouldForwardProp: (prop) => prop !== '$inverted',
 })<LogoImageProps>(({ theme, $inverted }) => ({
+  backgroundColor: 'transparent',
   objectFit: 'contain',
   objectPosition: 'left center',
   filter: $inverted ? 'grayscale(1) brightness(0) invert(1)' : 'none',

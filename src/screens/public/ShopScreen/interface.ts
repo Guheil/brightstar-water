@@ -4,8 +4,13 @@ export type ShopCategoryFilter = 'all' | ProductCategory | 'accessories';
 export type ShopSort = 'featured' | 'price-low' | 'price-high' | 'name';
 
 export interface ShopScreenProps {
+  coverageHref?: string;
   initialCategory?: string;
   initialQuery?: string;
+  introduction?: string;
+  lockedCategory?: ProductCategory;
+  productHrefPrefix?: string;
+  title?: string;
 }
 
 export interface ShopProductView {

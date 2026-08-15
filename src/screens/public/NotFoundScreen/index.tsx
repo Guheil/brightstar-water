@@ -11,10 +11,10 @@ export default function NotFoundScreen({
       <Code>404</Code>
       <Title id="not-found-title">{title}</Title>
       <Description>
-        The product or page may have moved. Return to the shop to continue
+        The product or page may have moved. Choose a storefront to continue
         browsing the current catalog.
       </Description>
-      <Action href="/shop">Return to the shop</Action>
+      <Action href="/">Choose a storefront</Action>
     </Root>
   );
 }

@@ -59,7 +59,7 @@ export default function CartScreen() {
 
       {!lines.length ? (
         <EmptyState
-          action={<ContinueLink href="/shop">Browse LPG and water</ContinueLink>}
+          action={<ContinueLink href="/">Choose a storefront</ContinueLink>}
           description="Add a product to begin your order."
           icon={<ShoppingBasket />}
           title="Your cart is empty"
@@ -113,7 +113,7 @@ export default function CartScreen() {
               </SummaryTotal>
             </SummaryList>
             <CheckoutLink href="/customer/checkout">Continue to checkout</CheckoutLink>
-            <ContinueLink href="/shop">Continue shopping</ContinueLink>
+            <ContinueLink href="/">Choose a storefront</ContinueLink>
             <FeeNote>
               Delivery fees: free through 3 km, ₱30 over 3 through 6 km, and ₱50 over 6 through 10 km. Addresses beyond 10 km are outside the service area.
             </FeeNote>

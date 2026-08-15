@@ -32,7 +32,10 @@ import {
 } from './elements';
 
 export default function ProductDetailScreen({
+  deliveryHref = '/about-delivery',
+  expectedCategory,
   productId,
+  shopHref = '/shop',
 }: ProductDetailScreenProps) {
   const product = useAppStore((state) =>
     state.catalog.products.find(
@@ -50,13 +53,13 @@ export default function ProductDetailScreen({
   const [quantity, setQuantity] = useState(1);
   const [addedQuantity, setAddedQuantity] = useState(0);
 
-  if (!product) {
+  if (!product || (expectedCategory && product.category !== expectedCategory)) {
     return (
       <Root>
         <Container>
           <MissingPanel>
             <EmptyState
-              action={<BackLink href="/shop">Return to shop</BackLink>}
+              action={<BackLink href={shopHref}>Return to shop</BackLink>}
               description="This product may have been removed or the link is incorrect."
               title="Product not found"
             />
@@ -71,7 +74,7 @@ export default function ProductDetailScreen({
   return (
     <Root>
       <Container>
-        <BackLink href="/shop">← Back to all products</BackLink>
+        <BackLink href={shopHref}>← Back to storefront products</BackLink>
         <DetailGrid>
           <ProductMedia>
             <ProductImage
@@ -126,7 +129,7 @@ export default function ProductDetailScreen({
                 Delivery fees are based on distance from the store. Checkout
                 blocks addresses outside the 10 km service area.
               </DeliveryText>
-              <DeliveryLink href="/about-delivery">
+              <DeliveryLink href={deliveryHref}>
                 Review delivery zones and payment options
               </DeliveryLink>
             </DeliveryNote>

@@ -5,6 +5,7 @@ import { CustomerFooter, CustomerHeader } from '@/components';
 import {
   customerMegaMenuGroups,
   customerPrimaryNavigation,
+  SHARED_STOREFRONT_LOGO_SOURCES,
 } from '@/config';
 import { selectCartItemCount, useAppStore } from '@/store';
 import { Main, ShellRoot } from './elements';
@@ -14,7 +15,7 @@ const FOOTER_GROUPS = [
   {
     title: 'Order',
     links: [
-      { href: '/shop', label: 'Browse products' },
+      { href: '/', label: 'Browse products' },
       { href: '/customer/cart', label: 'Cart' },
       { href: '/customer/orders', label: 'Track orders' },
     ],
@@ -69,7 +70,8 @@ export default function CustomerAreaShell({ children }: CustomerAreaShellProps) 
         cartHref="/customer/cart"
         megaMenuGroups={customerMegaMenuGroups}
         navigation={customerPrimaryNavigation}
-        searchHref="/shop"
+        shopHref="/"
+        logoSources={SHARED_STOREFRONT_LOGO_SOURCES}
       />
       <Main id="main-content">{children}</Main>
       <CustomerFooter

@@ -1,11 +1,4 @@
-import type { Metadata } from 'next';
-import ShopScreen from '@/screens/public/ShopScreen';
-
-export const metadata: Metadata = {
-  title: 'Shop',
-  description:
-    'Browse available LPG refills, purified water, and household accessories.',
-};
+import { redirect } from 'next/navigation';
 
 interface ShopPageProps {
   searchParams: Promise<{
@@ -16,11 +9,15 @@ interface ShopPageProps {
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const { category, q } = await searchParams;
-  return (
-    <ShopScreen
-      initialCategory={category}
-      initialQuery={q}
-      key={`${category ?? 'all'}:${q ?? ''}`}
-    />
-  );
+  const query = q ? `?q=${encodeURIComponent(q)}` : '';
+
+  if (category === 'water') {
+    redirect(`/brightstar/shop${query}`);
+  }
+
+  if (category === 'gas') {
+    redirect(`/mrje/shop${query}`);
+  }
+
+  redirect('/');
 }

@@ -34,7 +34,16 @@ The implementation must be structured so the mock layer can later be replaced wi
 
 # 1. System Interpretation
 
-The software is a **single-store web-based ordering and operations system** for MRJE Gas and Bright Star Water Refilling Station.
+The software is a **single platform with two customer-facing storefronts and one shared operations system** for MRJE Gas and Bright Star Water Refilling Station.
+
+Customer-facing routes must keep the brands visibly separated:
+
+- `/` is a service gateway where the customer chooses MRJE Gas or Bright Star Water.
+- `/mrje` is the MRJE Gas storefront and must show gas products only.
+- `/brightstar` is the Bright Star Water storefront and must show water products only.
+- Customer account, cart, checkout, order history, loyalty, admin, inventory, and deliverer workflows remain shared.
+- A customer may keep products from both storefronts in the same cart.
+- Storefront styling may differ by brand, but operational business rules and shared customer state must not be duplicated.
 
 It combines:
 
@@ -57,6 +66,38 @@ The system must support exactly **three direct user roles**:
 3. **Deliverer**
 
 There is no separate staff role in this implementation.
+
+---
+
+# 1.1 Multi-Storefront Routing Rule
+
+The two brands must feel like separate websites to the customer without becoming separate applications.
+
+Use explicit App Router segments rather than a generic dynamic brand slug:
+
+```text
+/
+├── /mrje
+│   ├── /shop
+│   ├── /product/[id]
+│   └── /delivery
+├── /brightstar
+│   ├── /shop
+│   ├── /product/[id]
+│   └── /delivery
+├── /customer
+├── /admin
+└── /deliverer
+```
+
+Rules:
+
+- Never show water catalog items in MRJE storefront product listings.
+- Never show gas catalog items in Bright Star storefront product listings.
+- Cross-brand product URLs should resolve to the correct storefront rather than rendering the wrong brand shell.
+- Legacy `/shop` and `/product/[id]` links should remain compatible through redirects.
+- Do not duplicate authentication, cart, checkout, loyalty, order, inventory, or delivery state by storefront.
+- Storefront-specific navigation should always provide a clear path to switch to the other brand and return to the service gateway.
 
 ---
 
@@ -1323,7 +1364,11 @@ Do not build fake security and then treat it as production authentication.
 
 ## Prototype behavior
 
-Create a normal login interface.
+Create a normal login interface that remains password-manager friendly, allows password paste, uses generic invalid-credential messaging, and offers a show/hide password control.
+
+For the frontend prototype, login fields should start empty. Fictional demo accounts may be exposed through clearly labeled prototype shortcuts that populate the form, but the interface must not present a public role selector.
+
+The authentication shell should use full-bleed service photography on desktop while keeping meaningful copy and form content within the shared 1440px content system. On tablet and mobile, authentication must recompose intentionally: show the platform identity first, use a compact full-width service-image strip, then prioritize the form and prototype controls without preserving a desktop split layout.
 
 During development, provide test accounts such as:
 
@@ -1934,15 +1979,35 @@ Introduce the business and move users into ordering quickly.
 
 ### Required sections
 
-1. Header
-2. Hero
-3. Primary product categories
-4. Popular / commonly ordered products
-5. Delivery service explanation
-6. Payment options
-7. Loyalty explanation
-8. Simple business/service information
-9. Footer
+The root `/` page is a short service gateway. The full landing-page depth belongs to `/mrje` and `/brightstar`. Each storefront landing page must contain enough service information to feel complete without copying the other brand's composition.
+
+MRJE Gas should include, at minimum:
+
+1. Brand header and image-led hero
+2. Gas product preview
+3. Everyday cooking / service context
+4. LPG ordering and product-selection guidance
+5. Delivery coverage and transparent fee explanation
+6. COD and simulated GCash payment explanation
+7. Shared account and order-tracking explanation
+8. Loyalty information without inventing unresolved reward formulas
+9. Strong storefront closing action
+10. Footer
+
+Bright Star Water should include, at minimum:
+
+1. Brand header and image-led hero
+2. Water product preview
+3. Refill / container service explanation
+4. Repeat-ordering and household routine context
+5. Delivery coverage and scheduling explanation
+6. COD and simulated GCash payment explanation
+7. Shared account and order-history explanation
+8. Loyalty information without inventing unresolved reward formulas
+9. Strong storefront closing action
+10. Footer
+
+The two storefronts may share system behavior and theme tokens, but their section order, imagery, pacing, and visual composition should remain intentionally distinct. Representative service photography must never be described as an actual MRJE or Bright Star facility unless it is verified as such.
 
 ### Hero direction
 
@@ -2381,6 +2446,8 @@ Actions:
 
 Do not build warehouse complexity that the thesis does not require.
 
+Stock adjustment is a small, focused operation and may use a modal from the inventory page or a row action. Require a reason and confirm before applying the adjustment. Do not expose arbitrary inventory-record deletion.
+
 ---
 
 # 31. Admin Products
@@ -2396,6 +2463,8 @@ Admin should be able to simulate:
 - Update category
 
 Product availability should reflect inventory in the mock state.
+
+Admin product controls should include a visible Add Product action plus a compact per-row action menu. Full product editing remains a dedicated page because it is a large form. Small pricing/visibility changes may use a modal. Hard deletion is only allowed for prototype products without order, cart, reserved-stock, or inventory-history references; otherwise preserve history and require deactivation instead.
 
 ---
 
@@ -2420,6 +2489,8 @@ Customer detail:
 - Current active orders
 
 Do not add invasive customer analytics.
+
+Admin may edit prototype customer contact details and activate/deactivate the prototype account through a small modal. Do not hard-delete customers because order, address, and loyalty history must remain coherent.
 
 ---
 

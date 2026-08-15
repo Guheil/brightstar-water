@@ -9,6 +9,7 @@ import {
   DesktopSidebar,
   Header,
   HeaderAction,
+  HeaderInner,
   HeaderMeta,
   HeaderText,
   HeaderTitle,
@@ -75,13 +76,15 @@ export default function DelivererShell({
 
       <Workspace>
         <Header>
-          <HeaderText>
-            <HeaderTitle>{headerTitle}</HeaderTitle>
-            {headerMeta ? (
-              <HeaderMeta>{headerMeta}</HeaderMeta>
-            ) : null}
-          </HeaderText>
-          {headerAction ? <HeaderAction>{headerAction}</HeaderAction> : null}
+          <HeaderInner>
+            <HeaderText>
+              <HeaderTitle>{headerTitle}</HeaderTitle>
+              {headerMeta ? (
+                <HeaderMeta>{headerMeta}</HeaderMeta>
+              ) : null}
+            </HeaderText>
+            {headerAction ? <HeaderAction>{headerAction}</HeaderAction> : null}
+          </HeaderInner>
         </Header>
 
         <Main id={mainId} tabIndex={-1}>

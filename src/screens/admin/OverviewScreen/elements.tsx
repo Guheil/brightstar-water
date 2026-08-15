@@ -8,6 +8,49 @@ export const Root = styled(Box)(({ theme }) => ({
   gap: theme.spacing(4),
 }));
 
+export const ControlBar = styled('nav')(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+  borderTopWidth: theme.spacing(0.25),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.primary.main,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
+
+  [theme.breakpoints.down('lg')]: {
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    gridTemplateColumns: '1fr',
+  },
+}));
+
+export const ControlLink = styled(AppLink)(({ theme }) => ({
+  minHeight: theme.spacing(8),
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1.5),
+  padding: theme.spacing(2),
+  borderInlineEndWidth: theme.spacing(0.125),
+  borderInlineEndStyle: 'solid',
+  borderInlineEndColor: theme.vars.palette.divider,
+  color: theme.vars.palette.text.primary,
+  fontWeight: theme.typography.fontWeightSemiBold,
+  textDecoration: 'none',
+
+  '&:hover, &:focus-visible': {
+    backgroundColor: theme.vars.palette.neutral.light,
+  },
+
+  '& svg': {
+    width: theme.spacing(2.5),
+    height: theme.spacing(2.5),
+    color: theme.vars.palette.primary.main,
+  },
+}));
+
 export const SummaryStrip = styled('dl')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',

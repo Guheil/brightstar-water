@@ -5,5 +5,6 @@ export interface LoginFormValues {
 
 export interface DemoCredentialView {
   email: string;
+  password: string;
   roleLabel: string;
 }

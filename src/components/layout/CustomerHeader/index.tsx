@@ -24,6 +24,7 @@ import {
   ActionLink,
   ActionText,
   BrandLink,
+  BrandWordmark,
   CartCount,
   CloseButton,
   CustomerDrawer,
@@ -34,6 +35,7 @@ import {
   HeaderLink,
   HeaderRoot,
   LogoFrame,
+  LogoCluster,
   LogoImage,
   MegaMenu,
   MegaMenuGroup,
@@ -78,11 +80,14 @@ export default function CustomerHeader({
   condensed = false,
   homeHref = '/',
   logoSrc = '/logo.png',
+  logoSources,
   mainId = 'main-content',
   megaMenuGroups,
   navigation,
   searchHref,
+  shopHref = '/shop',
   transparentAtTop = false,
+  wordmark,
 }: CustomerHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopMenuPhase, setShopMenuPhase] =
@@ -104,6 +109,25 @@ export default function CustomerHeader({
   const cartLabel = cartCount
     ? `Cart with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`
     : 'Cart';
+  const brandLogoSources = logoSources?.length ? logoSources : [logoSrc];
+  const pairedLogos = brandLogoSources.length > 1;
+
+  const renderBrandArtwork = (sizes: string, inverted: boolean) => (
+    <LogoCluster aria-hidden="true">
+      {brandLogoSources.map((source) => (
+        <LogoFrame $paired={pairedLogos} key={source}>
+          <LogoImage
+            alt=""
+            fill
+            priority
+            sizes={sizes}
+            src={source}
+            $inverted={inverted}
+          />
+        </LogoFrame>
+      ))}
+    </LogoCluster>
+  );
 
   const clearMotionTimers = useCallback(() => {
     motionTimersRef.current.forEach(clearTimeout);
@@ -190,17 +214,14 @@ export default function CustomerHeader({
       <SkipLink href={`#${mainId}`}>Skip to main content</SkipLink>
       <HeaderContainer>
         <BrandLink aria-label={brandName} href={homeHref}>
-          <LogoFrame>
-            <LogoImage
-              alt=""
-              aria-hidden="true"
-              fill
-              priority
-              sizes="(max-width: 600px) 96px, (max-width: 1200px) 120px, 144px"
-              src={logoSrc}
-              $inverted={transparent}
-            />
-          </LogoFrame>
+          {wordmark ? (
+            <BrandWordmark>{wordmark}</BrandWordmark>
+          ) : (
+            renderBrandArtwork(
+              '(max-width: 600px) 76px, (max-width: 1200px) 104px, 120px',
+              transparent,
+            )
+          )}
         </BrandLink>
 
         <DesktopNavigation aria-label="Customer navigation">
@@ -210,7 +231,7 @@ export default function CustomerHeader({
             onClick={toggleMegaMenu}
             ref={shopButtonRef}
             type="button"
-            $active={activeHref === '/shop'}
+            $active={activeHref === shopHref}
           >
             Shop
             <ChevronDown aria-hidden="true" />
@@ -301,17 +322,12 @@ export default function CustomerHeader({
               aria-label={brandName}
               href={homeHref}
               onClick={() => setMenuOpen(false)}
-            >
-              <LogoFrame>
-                <LogoImage
-                  alt=""
-                  aria-hidden="true"
-                  fill
-                  sizes="144px"
-                  src={logoSrc}
-                  $inverted={false}
-                />
-              </LogoFrame>
+>
+              {wordmark ? (
+                <BrandWordmark>{wordmark}</BrandWordmark>
+              ) : (
+                renderBrandArtwork('104px', false)
+              )}
             </BrandLink>
             <CloseButton
               aria-label="Close navigation"
