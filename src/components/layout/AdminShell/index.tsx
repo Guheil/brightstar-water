@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog';
 import {
   BrandLink,
   BrandName,
@@ -21,6 +22,12 @@ import {
   CloseButton,
   DesktopSidebar,
   HeaderActions,
+  HeaderCopy,
+  HeaderDescription,
+  HeaderIdentity,
+  HeaderIdentityCopy,
+  HeaderIdentityName,
+  HeaderIdentityRole,
   HeaderLabel,
   Main,
   MainContainer,
@@ -93,16 +100,18 @@ export default function AdminShell({
   children,
   className,
   headerActions,
+  headerDescription,
   headerLabel = 'Operations',
   homeHref = '/admin/overview',
   mainId = 'admin-main-content',
   navigation,
   onSignOut,
-  signOutLabel = 'Sign out',
+  signOutLabel = 'Log out',
   userName,
   userRole = 'Administrator',
 }: AdminShellProps) {
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   const sidebarContent = (mobile = false) => (
     <SidebarBody>
@@ -112,9 +121,7 @@ export default function AdminShell({
           onClick={mobile ? () => setNavigationOpen(false) : undefined}
         >
           <BrandName>{brandName}</BrandName>
-          {brandSubtitle ? (
-            <BrandSubtitle>{brandSubtitle}</BrandSubtitle>
-          ) : null}
+          {brandSubtitle ? <BrandSubtitle>{brandSubtitle}</BrandSubtitle> : null}
         </BrandLink>
         {mobile ? (
           <CloseButton
@@ -139,7 +146,10 @@ export default function AdminShell({
         </div>
         {onSignOut ? (
           <SignOutButton
-            onClick={onSignOut}
+            onClick={() => {
+              if (mobile) setNavigationOpen(false);
+              setLogoutOpen(true);
+            }}
             startIcon={<LogOut aria-hidden="true" />}
           >
             {signOutLabel}
@@ -150,7 +160,8 @@ export default function AdminShell({
   );
 
   return (
-    <ShellRoot className={className}>
+    <>
+      <ShellRoot className={className}>
       <SkipLink href={`#${mainId}`}>Skip to main content</SkipLink>
 
       <DesktopSidebar>{sidebarContent()}</DesktopSidebar>
@@ -173,10 +184,19 @@ export default function AdminShell({
             >
               <Menu aria-hidden="true" />
             </MenuButton>
-            <HeaderLabel>{headerLabel}</HeaderLabel>
-            {headerActions ? (
-              <HeaderActions>{headerActions}</HeaderActions>
-            ) : null}
+            <HeaderCopy>
+              <HeaderLabel>{headerLabel}</HeaderLabel>
+              {headerDescription ? (
+                <HeaderDescription>{headerDescription}</HeaderDescription>
+              ) : null}
+            </HeaderCopy>
+            <HeaderIdentity>
+              <HeaderIdentityCopy>
+                <HeaderIdentityName>{userName}</HeaderIdentityName>
+                <HeaderIdentityRole>{userRole}</HeaderIdentityRole>
+              </HeaderIdentityCopy>
+              {headerActions ? <HeaderActions>{headerActions}</HeaderActions> : null}
+            </HeaderIdentity>
           </WorkspaceHeaderInner>
         </WorkspaceHeader>
 
@@ -185,5 +205,18 @@ export default function AdminShell({
         </Main>
       </Workspace>
     </ShellRoot>
+      {onSignOut ? (
+        <LogoutConfirmDialog
+          description="Your current operations session will end."
+          onClose={() => setLogoutOpen(false)}
+          onConfirm={() => {
+            setLogoutOpen(false);
+            onSignOut();
+          }}
+          open={logoutOpen}
+          title="Log out of Admin?"
+        />
+      ) : null}
+    </>
   );
 }

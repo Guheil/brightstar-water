@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type DelivererNavigationIcon = 'active' | 'history' | 'profile';
+export type DelivererNavigationIcon = 'home' | 'active' | 'history' | 'profile';
 
 export interface DelivererNavigationItem {
   href: string;

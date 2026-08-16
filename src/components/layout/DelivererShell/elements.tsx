@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import PageContainer from '@/components/layout/PageContainer';
@@ -10,13 +11,7 @@ interface NavLinkProps {
 
 export const ShellRoot = styled(Box)(({ theme }) => ({
   minHeight: '100dvh',
-  display: 'grid',
-  gridTemplateColumns: `${theme.spacing(28)} minmax(0, 1fr)`,
   backgroundColor: theme.vars.palette.background.default,
-
-  [theme.breakpoints.down('md')]: {
-    gridTemplateColumns: 'minmax(0, 1fr)',
-  },
 }));
 
 export const SkipLink = styled(AppLink)(({ theme }) => ({
@@ -35,9 +30,11 @@ export const SkipLink = styled(AppLink)(({ theme }) => ({
 }));
 
 export const DesktopSidebar = styled('aside')(({ theme }) => ({
-  position: 'sticky',
-  top: 0,
-  height: '100dvh',
+  position: 'fixed',
+  insetBlock: 0,
+  insetInlineStart: 0,
+  width: theme.spacing(28),
+  zIndex: theme.zIndex.appBar,
   backgroundColor: theme.vars.palette.primary.main,
 
   [theme.breakpoints.down('md')]: {
@@ -55,11 +52,13 @@ export const SidebarBody = styled(Box)(({ theme }) => ({
 
 export const BrandLink = styled(AppLink)(({ theme }) => ({
   ...theme.typography.h6,
+  display: 'block',
   color: theme.vars.palette.primary.contrastText,
   fontWeight: theme.typography.fontWeightBold,
+  textDecoration: 'none',
 
   '&:focus-visible': {
-    outlineColor: theme.vars.palette.water.light,
+    outlineColor: theme.vars.palette.primary.contrastText,
   },
 }));
 
@@ -73,46 +72,75 @@ export const DesktopNavLink = styled(AppLink, {
   shouldForwardProp: (prop) => prop !== '$active',
 })<NavLinkProps>(({ theme, $active }) => ({
   ...theme.typography.body2,
-  minHeight: theme.spacing(5.5),
+  minHeight: theme.spacing(5.75),
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(1.5),
   paddingInline: theme.spacing(1.5),
-  backgroundColor: $active
-    ? theme.vars.palette.primary.dark
-    : undefined,
-  color: theme.vars.palette.primary.contrastText,
-  fontWeight: $active
-    ? theme.typography.fontWeightBold
-    : theme.typography.fontWeightMedium,
+  borderRadius: theme.radii.control,
+  backgroundColor: $active ? theme.vars.palette.background.paper : 'transparent',
+  color: $active ? theme.vars.palette.primary.main : theme.vars.palette.primary.contrastText,
+  fontWeight: $active ? theme.typography.fontWeightBold : theme.typography.fontWeightMedium,
+  textDecoration: 'none',
+  transition: theme.transitions.create(['background-color', 'color'], {
+    duration: theme.transitions.duration.shorter,
+  }),
 
   '&:hover': {
-    backgroundColor: theme.vars.palette.primary.dark,
+    backgroundColor: $active ? theme.vars.palette.background.paper : theme.vars.palette.primary.dark,
   },
 
   '&:focus-visible': {
-    outlineColor: theme.vars.palette.water.light,
+    outlineColor: theme.vars.palette.primary.contrastText,
   },
 
   '& svg': {
     width: theme.spacing(2.25),
     height: theme.spacing(2.25),
   },
+
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
+  },
 }));
 
-export const SidebarUser = styled(Typography)(({ theme }) => ({
-  ...theme.typography.body2,
+export const SidebarFooter = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(1.5),
   marginTop: 'auto',
   paddingBlockStart: theme.spacing(3),
   borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
   borderTopColor: theme.vars.palette.primary.dark,
+}));
+
+export const SidebarUser = styled(Typography)(({ theme }) => ({
+  ...theme.typography.body2,
   color: theme.vars.palette.neutral.light,
 }));
 
-export const Workspace = styled(Box)({
+export const SidebarLogoutButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+  justifyContent: 'flex-start',
+  paddingInline: theme.spacing(1.5),
+  color: theme.vars.palette.primary.contrastText,
+  borderColor: theme.vars.palette.primary.dark,
+
+  '&:hover': {
+    borderColor: theme.vars.palette.primary.contrastText,
+    backgroundColor: theme.vars.palette.primary.dark,
+  },
+}));
+
+export const Workspace = styled(Box)(({ theme }) => ({
   minWidth: 0,
-});
+  minHeight: '100dvh',
+  marginInlineStart: theme.spacing(28),
+
+  [theme.breakpoints.down('md')]: {
+    marginInlineStart: 0,
+  },
+}));
 
 export const Header = styled('header')(({ theme }) => ({
   position: 'sticky',
@@ -125,13 +153,13 @@ export const Header = styled('header')(({ theme }) => ({
 }));
 
 export const HeaderInner = styled(PageContainer)(({ theme }) => ({
-  minHeight: theme.spacing(9),
+  minHeight: theme.spacing(9.5),
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(2),
 
   [theme.breakpoints.down('sm')]: {
-    minHeight: theme.spacing(8),
+    minHeight: theme.spacing(8.5),
   },
 }));
 
@@ -139,16 +167,20 @@ export const HeaderText = styled(Box)(({ theme }) => ({
   minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(0.25),
+  gap: theme.spacing(0.2),
 }));
 
 export const HeaderTitle = styled('h1')(({ theme }) => ({
-  ...theme.typography.h6,
+  ...theme.typography.h5,
   overflow: 'hidden',
   margin: 0,
-  color: theme.vars.palette.text.primary,
+  color: theme.vars.palette.primary.main,
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+
+  [theme.breakpoints.down('sm')]: {
+    ...theme.typography.h6,
+  },
 }));
 
 export const HeaderMeta = styled(Typography)(({ theme }) => ({
@@ -159,20 +191,56 @@ export const HeaderMeta = styled(Typography)(({ theme }) => ({
   whiteSpace: 'nowrap',
 }));
 
-export const HeaderAction = styled(Box)({
+export const HeaderControls = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
   marginInlineStart: 'auto',
-});
+}));
+
+export const HeaderAction = styled(Box)({});
+
+export const HeaderLogoutButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+  display: 'none',
+  color: theme.vars.palette.primary.main,
+
+  [theme.breakpoints.down('md')]: {
+    display: 'inline-flex',
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    minWidth: theme.spacing(5.5),
+    paddingInline: theme.spacing(1),
+
+    '& .MuiButton-startIcon': {
+      margin: 0,
+    },
+
+  },
+}));
+
+export const HeaderLogoutLabel = styled('span')(({ theme }) => ({
+  [theme.breakpoints.down('sm')]: {
+    display: 'none',
+  },
+}));
 
 export const Main = styled('main')(({ theme }) => ({
   minWidth: 0,
+  paddingBlockEnd: theme.spacing(3),
 
   [theme.breakpoints.down('md')]: {
-    paddingBlockEnd: theme.spacing(10),
+    paddingBlockEnd: `calc(${theme.spacing(11)} + env(safe-area-inset-bottom))`,
   },
 }));
 
 export const MainContainer = styled(PageContainer)(({ theme }) => ({
-  paddingBlock: theme.spacing(3),
+  paddingBlock: theme.spacing(3.5, 5),
+
+  [theme.breakpoints.down('sm')]: {
+    paddingBlock: theme.spacing(2.5, 4),
+  },
 }));
 
 export const BottomNavigation = styled('nav')(({ theme }) => ({
@@ -200,24 +268,29 @@ export const BottomNavLink = styled(AppLink, {
 })<NavLinkProps>(({ theme, $active }) => ({
   ...theme.typography.body2,
   minWidth: 0,
-  minHeight: theme.spacing(7),
+  minHeight: theme.spacing(8),
   display: 'flex',
   flex: '1 1 0',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: theme.spacing(0.5),
+  gap: theme.spacing(0.4),
   padding: theme.spacing(0.75),
-  color: $active
-    ? theme.vars.palette.water.dark
-    : theme.vars.palette.text.secondary,
-  fontWeight: $active
-    ? theme.typography.fontWeightBold
-    : theme.typography.fontWeightMedium,
+  backgroundColor: $active ? theme.vars.palette.neutral.light : 'transparent',
+  color: $active ? theme.vars.palette.primary.main : theme.vars.palette.text.secondary,
+  fontWeight: $active ? theme.typography.fontWeightBold : theme.typography.fontWeightMedium,
   textAlign: 'center',
+  textDecoration: 'none',
+  transition: theme.transitions.create(['background-color', 'color'], {
+    duration: theme.transitions.duration.shorter,
+  }),
 
   '& svg': {
     width: theme.spacing(2.5),
     height: theme.spacing(2.5),
+  },
+
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
   },
 }));

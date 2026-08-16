@@ -18,3 +18,6 @@ export type { QuantityControlProps } from './QuantityControl/interface';
 
 export { default as StatusText } from './StatusText';
 export type { StatusTextProps, StatusTone } from './StatusText/interface';
+
+export { default as LogoutConfirmDialog } from './LogoutConfirmDialog';
+export type { LogoutConfirmDialogProps } from './LogoutConfirmDialog/interface';

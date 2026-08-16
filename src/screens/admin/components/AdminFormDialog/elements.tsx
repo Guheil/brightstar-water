@@ -6,11 +6,17 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { styled } from '@mui/material/styles';
 
-export const FormDialog = styled(Dialog)(() => ({}));
+export const FormDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    borderRadius: theme.radii.control,
+    boxShadow: theme.shadows[8],
+  },
+}));
 
 export const FormDialogTitle = styled(DialogTitle)(({ theme }) => ({
   ...theme.typography.h4,
-  color: theme.vars.palette.text.primary,
+  paddingTop: theme.spacing(3),
+  color: theme.vars.palette.primary.main,
 }));
 
 export const FormDialogContent = styled(DialogContent)(({ theme }) => ({
@@ -27,6 +33,9 @@ export const FormDialogDescription = styled(DialogContentText)(({ theme }) => ({
 export const FormDialogActions = styled(DialogActions)(({ theme }) => ({
   gap: theme.spacing(1),
   padding: theme.spacing(2, 3, 3),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
 }));
 
 export const CancelButton = styled(Button)(({ theme }) => ({

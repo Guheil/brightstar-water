@@ -3,7 +3,9 @@ import { selectCartItemCount, selectCartItems, useAppStore } from '../../../stor
 
 describe('cross-route cart state', () => {
   beforeEach(() => {
-    useAppStore.getState().commands.resetDemoState();
+    const commands = useAppStore.getState().commands;
+    commands.resetAppState();
+    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
   });
 
   it('makes a public product addition visible to customer cart and checkout selectors', () => {
@@ -25,10 +27,11 @@ describe('cross-route cart state', () => {
 
   it('clears items and records the confirmation target after checkout succeeds', () => {
     const commands = useAppStore.getState().commands;
+    commands.addCartItem('product-water-pump', 1);
     const placed = commands.placeOrder({
-      customerId: 'customer-demo-01',
+      customerId: 'customer-01',
       items: selectCartItems(useAppStore.getState()),
-      deliveryAddressId: 'address-demo-01-a',
+      deliveryAddressId: 'address-01-a',
       deliverySchedule: {
         date: '2026-08-14',
         windowLabel: '9:00 AM–12:00 PM',

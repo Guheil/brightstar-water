@@ -14,7 +14,8 @@ import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import AdminFormDialog from '../components/AdminFormDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
-import { updatePrototypeCustomer } from '../customerPrototypeState';
+import AdminMetricStrip from '../components/AdminMetricStrip';
+import { updateCustomerState } from '../customerState';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
   EditField,
@@ -43,6 +44,12 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState<CustomerAccountStatus>('active');
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const customerMetrics = [
+    { label: 'Customers', value: customers.length },
+    { label: 'Active accounts', value: customers.filter((customer) => customer.status === 'active').length, tone: 'success' as const },
+    { label: 'With orders', value: customers.filter((customer) => orders.some((order) => order.customerId === customer.id)).length, tone: 'water' as const },
+    { label: 'Inactive accounts', value: customers.filter((customer) => customer.status === 'inactive').length, tone: 'warning' as const },
+  ];
 
   const filteredCustomers = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -133,7 +140,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
   const submitEdit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingCustomer) return;
-    const result = updatePrototypeCustomer(editingCustomer.id, {
+    const result = updateCustomerState(editingCustomer.id, {
       displayName,
       email,
       phonePlaceholder: phone,
@@ -146,7 +153,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
     setFeedback({
       tone: 'success',
       title: 'Customer updated',
-      message: `${result.value.displayName}'s prototype account details were updated.`,
+      message: `${result.value.displayName}'s account details were updated.`,
     });
     setEditingCustomer(null);
   };
@@ -155,7 +162,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
     if (!pendingStatusCustomer) return;
     const nextStatus: CustomerAccountStatus =
       pendingStatusCustomer.status === 'active' ? 'inactive' : 'active';
-    const result = updatePrototypeCustomer(pendingStatusCustomer.id, {
+    const result = updateCustomerState(pendingStatusCustomer.id, {
       displayName: pendingStatusCustomer.displayName,
       email: pendingStatusCustomer.email,
       phonePlaceholder: pendingStatusCustomer.phonePlaceholder,
@@ -168,8 +175,8 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
             title: nextStatus === 'active' ? 'Customer activated' : 'Customer deactivated',
             message:
               nextStatus === 'active'
-                ? 'The prototype customer account is active again.'
-                : 'The prototype account is inactive while order and loyalty history remain preserved.',
+                ? 'The customer account is active again.'
+                : 'The account is inactive while order and loyalty history remain preserved.',
           }
         : { tone: 'error', title: 'Account state not changed', message: result.error.message },
     );
@@ -179,9 +186,11 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Review customer profiles, purchase history, saved delivery information, and account state."
+        description="Review customer profiles, order history, saved delivery information, and account state."
         title="Customers"
       />
+
+      <AdminMetricStrip ariaLabel="Customer summary" items={customerMetrics} />
 
       {feedback ? (
         <Notice title={feedback.title} tone={feedback.tone}>
@@ -213,7 +222,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
       )}
 
       <AdminFormDialog
-        description="Update prototype contact details or account state. Purchase, address, and loyalty history are managed separately and are not deleted here."
+        description="Update contact details or account state. Purchase, address, and loyalty history are managed separately and are not deleted here."
         formId="customer-edit-form"
         onClose={() => setEditingCustomer(null)}
         open={Boolean(editingCustomer)}
@@ -261,7 +270,7 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
         description={
           pendingStatusCustomer?.status === 'active'
             ? 'The customer account will become inactive, but its order, address, and loyalty history will remain available to Admin.'
-            : 'The customer account will return to active prototype status.'
+            : 'The customer account will return to active status.'
         }
         onClose={() => setPendingStatusCustomer(null)}
         onConfirm={confirmStatus}

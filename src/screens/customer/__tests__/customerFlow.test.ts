@@ -8,12 +8,12 @@ import {
 import { getAvailableStock } from '../../../utils';
 
 const ORDER_INPUT = {
-  customerId: 'customer-demo-01',
+  customerId: 'customer-01',
   items: [
     { productId: 'product-gas-regulator', quantity: 1 },
     { productId: 'product-water-pump', quantity: 1 },
   ],
-  deliveryAddressId: 'address-demo-01-a',
+  deliveryAddressId: 'address-01-a',
   deliverySchedule: {
     date: '2026-08-14',
     windowLabel: '9:00 AM–12:00 PM',
@@ -24,7 +24,9 @@ const ORDER_INPUT = {
 
 describe('customer order continuity', () => {
   beforeEach(() => {
-    useAppStore.getState().commands.resetDemoState();
+    const commands = useAppStore.getState().commands;
+    commands.resetAppState();
+    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
   });
 
   it('keeps one placed order synchronized for confirmation and detail selectors', () => {
@@ -66,17 +68,17 @@ describe('customer order continuity', () => {
     expect(
       commands.requestCancellation(
         placed.value.id,
-        'customer-demo-02',
+        'customer-02',
         'Wrong customer request',
       ).ok,
     ).toBe(false);
     expect(
-      commands.requestCancellation(placed.value.id, 'customer-demo-01', 'no').ok,
+      commands.requestCancellation(placed.value.id, 'customer-01', 'no').ok,
     ).toBe(false);
 
     const requested = commands.requestCancellation(
       placed.value.id,
-      'customer-demo-01',
+      'customer-01',
       'No longer needed',
       '2026-08-12T12:05:00.000Z',
     );
@@ -84,7 +86,7 @@ describe('customer order continuity', () => {
     expect(
       commands.requestCancellation(
         placed.value.id,
-        'customer-demo-01',
+        'customer-01',
         'Second request',
       ).ok,
     ).toBe(false);
@@ -105,7 +107,7 @@ describe('customer order continuity', () => {
 
     const requested = useAppStore.getState().commands.requestCancellation(
       placed.value.id,
-      'customer-demo-01',
+      'customer-01',
       'Schedule changed',
       '2026-08-12T12:05:00.000Z',
     );
@@ -113,7 +115,7 @@ describe('customer order continuity', () => {
 
     const approved = useAppStore.getState().commands.resolveCancellation(
       placed.value.id,
-      'user-admin-demo',
+      'user-admin-01',
       'approve',
       'Approved in QA.',
       '2026-08-12T12:10:00.000Z',
@@ -128,7 +130,7 @@ describe('customer order continuity', () => {
     expect(
       finalState.commands.resolveCancellation(
         placed.value.id,
-        'user-admin-demo',
+        'user-admin-01',
         'approve',
       ).ok,
     ).toBe(false);

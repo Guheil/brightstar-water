@@ -3,42 +3,56 @@ import { styled } from '@mui/material/styles';
 import AppLink from '@/components/ui/AppLink';
 
 export const Root = styled('header')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: theme.spacing(3),
-  marginBlockEnd: theme.spacing(4),
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  alignItems: 'end',
+  gap: theme.spacing(4),
+  marginBlockEnd: theme.spacing(4.5),
+  paddingBlockEnd: theme.spacing(3),
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('sm')]: {
-    flexDirection: 'column',
+    gridTemplateColumns: '1fr',
+    gap: theme.spacing(2),
     marginBlockEnd: theme.spacing(3),
+    paddingBlockEnd: theme.spacing(2.5),
   },
 }));
 
 export const Copy = styled(Box)(({ theme }) => ({
   display: 'flex',
-  maxWidth: theme.spacing(82),
+  maxWidth: theme.spacing(92),
   flexDirection: 'column',
-  gap: theme.spacing(1),
+  gap: theme.spacing(0.75),
 }));
 
 export const BackLink = styled(AppLink)(({ theme }) => ({
   ...theme.typography.body2,
   width: 'fit-content',
+  minHeight: theme.spacing(5.5),
+  display: 'inline-flex',
+  alignItems: 'center',
   color: theme.vars.palette.water.dark,
-  fontWeight: theme.typography.fontWeightMedium,
-  textDecoration: 'underline',
-  textUnderlineOffset: theme.spacing(0.5),
+  fontWeight: theme.typography.fontWeightSemiBold,
+  textDecoration: 'none',
+
+  '&:hover': {
+    textDecoration: 'underline',
+    textUnderlineOffset: theme.spacing(0.5),
+  },
 }));
 
 export const Title = styled('h1')(({ theme }) => ({
-  ...theme.typography.h3,
+  ...theme.typography.h1,
   margin: 0,
-  color: theme.vars.palette.text.primary,
+  color: theme.vars.palette.primary.main,
 }));
 
 export const Description = styled('p')(({ theme }) => ({
   ...theme.typography.body1,
+  maxWidth: theme.spacing(78),
   margin: 0,
   color: theme.vars.palette.text.secondary,
 }));

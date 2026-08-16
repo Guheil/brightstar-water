@@ -99,6 +99,8 @@ export interface PlaceOrderInput {
   deliveryAddressId: EntityId;
   deliverySchedule: DeliverySchedule;
   paymentMethod: PaymentMethod;
+  paymentProofImageDataUrl?: string;
+  paymentProofFileName?: string;
   customerNote?: string;
   requestedLoyaltyPoints?: number;
   placedAt?: ISODateString;

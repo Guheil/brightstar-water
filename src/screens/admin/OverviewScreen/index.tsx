@@ -1,27 +1,45 @@
 'use client';
 
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 import { ClipboardList, PackagePlus, SlidersHorizontal, Truck } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import StatusText from '@/components/ui/StatusText';
 import { selectAdminWorkCounts, useAppStore } from '@/store';
 import { formatPhp, getAvailableStock, isLowStock } from '@/utils';
-import AdminPageHeader from '../components/AdminPageHeader';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
   AttentionGrid,
-  ControlBar,
-  ControlLink,
+  CommandBar,
+  CommandIcon,
+  CommandLink,
+  CommandText,
   EmptyMessage,
   Item,
   ItemCopy,
   ItemList,
   ItemMeta,
   ItemTitle,
+  PrimarySection,
   Root,
   Section,
+  SectionHeader,
   SectionHeading,
   SectionIntro,
   SectionLink,
+  SideStack,
+  Stage,
+  StageCopy,
+  StageDescription,
+  StageFocus,
+  StageFocusCaption,
+  StageFocusGrid,
+  StageFocusItem,
+  StageFocusLabel,
+  StageFocusValue,
+  StageGrid,
+  StageTitle,
   SummaryItem,
   SummaryStrip,
   SummaryTerm,
@@ -30,6 +48,7 @@ import {
 import type { OverviewScreenProps } from './interface';
 
 export default function OverviewScreen({ className }: OverviewScreenProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const counts = useAppStore(useShallow(selectAdminWorkCounts));
   const orders = useAppStore((state) => state.orders.records);
   const deliveries = useAppStore((state) => state.deliveries.records);
@@ -40,62 +59,102 @@ export default function OverviewScreen({ className }: OverviewScreenProps) {
     .filter((delivery) => ['unassigned', 'failed'].includes(delivery.status))
     .slice(0, 4);
   const lowStockItems = inventory.filter(isLowStock).slice(0, 4);
+  const immediateAttention = counts.pendingOrders + counts.unassignedDeliveries + counts.failedDeliveries;
+  const reviewBacklog = counts.pendingCancellations + counts.pendingRefunds;
+
+  useGSAP(
+    () => {
+      const media = gsap.matchMedia();
+      media.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap
+          .timeline({ defaults: { ease: 'power2.out' } })
+          .from('[data-overview-stage]', { opacity: 0, duration: 0.42 })
+          .from('[data-overview-command]', { opacity: 0, x: -8, duration: 0.32 }, '-=0.16');
+      });
+      return () => media.revert();
+    },
+    { scope: rootRef },
+  );
 
   return (
-    <Root className={className}>
-      <AdminPageHeader
-        description="Review the orders, deliveries, and inventory items that need attention."
-        title="Operational overview"
-      />
+    <Root className={className} ref={rootRef}>
+      <Stage data-overview-stage>
+        <StageGrid>
+          <StageCopy>
+            <StageTitle>Operational overview</StageTitle>
+            <StageDescription>
+              Review the work that needs a decision now, then move directly into orders,
+              deliveries, inventory, or catalog control.
+            </StageDescription>
+          </StageCopy>
+          <StageFocus>
+            <StageFocusValue>{immediateAttention}</StageFocusValue>
+            <StageFocusCaption>order and delivery items need immediate routing.</StageFocusCaption>
+            <StageFocusGrid>
+              <StageFocusItem>
+                <StageFocusLabel>Low stock</StageFocusLabel>
+                <strong>{counts.lowStockProducts}</strong>
+              </StageFocusItem>
+              <StageFocusItem>
+                <StageFocusLabel>Review backlog</StageFocusLabel>
+                <strong>{reviewBacklog}</strong>
+              </StageFocusItem>
+            </StageFocusGrid>
+          </StageFocus>
+        </StageGrid>
+      </Stage>
 
-      <ControlBar aria-label="Admin shortcuts">
-        <ControlLink href="/admin/products/new">
-          <PackagePlus aria-hidden="true" />
-          Add product
-        </ControlLink>
-        <ControlLink href="/admin/inventory">
-          <SlidersHorizontal aria-hidden="true" />
-          Adjust inventory
-        </ControlLink>
-        <ControlLink href="/admin/orders">
-          <ClipboardList aria-hidden="true" />
-          Review order queue
-        </ControlLink>
-        <ControlLink href="/admin/deliveries">
-          <Truck aria-hidden="true" />
-          Coordinate deliveries
-        </ControlLink>
-      </ControlBar>
+      <CommandBar aria-label="Admin shortcuts" data-overview-command>
+        <CommandLink href="/admin/products/new">
+          <CommandIcon><PackagePlus aria-hidden="true" /></CommandIcon>
+          <CommandText>Add product</CommandText>
+        </CommandLink>
+        <CommandLink href="/admin/inventory">
+          <CommandIcon><SlidersHorizontal aria-hidden="true" /></CommandIcon>
+          <CommandText>Adjust inventory</CommandText>
+        </CommandLink>
+        <CommandLink href="/admin/orders">
+          <CommandIcon><ClipboardList aria-hidden="true" /></CommandIcon>
+          <CommandText>Review order queue</CommandText>
+        </CommandLink>
+        <CommandLink href="/admin/deliveries">
+          <CommandIcon><Truck aria-hidden="true" /></CommandIcon>
+          <CommandText>Coordinate deliveries</CommandText>
+        </CommandLink>
+      </CommandBar>
 
       <SummaryStrip aria-label="Current work summary">
-        <SummaryItem>
+        <SummaryItem data-overview-metric data-tone="water">
           <SummaryTerm>Pending orders</SummaryTerm>
           <SummaryValue>{counts.pendingOrders}</SummaryValue>
         </SummaryItem>
-        <SummaryItem>
+        <SummaryItem data-overview-metric data-tone="primary">
           <SummaryTerm>Unassigned deliveries</SummaryTerm>
           <SummaryValue>{counts.unassignedDeliveries}</SummaryValue>
         </SummaryItem>
-        <SummaryItem>
+        <SummaryItem data-overview-metric data-tone="error">
           <SummaryTerm>Failed deliveries</SummaryTerm>
           <SummaryValue>{counts.failedDeliveries}</SummaryValue>
         </SummaryItem>
-        <SummaryItem>
+        <SummaryItem data-overview-metric data-tone="warning">
           <SummaryTerm>Low-stock products</SummaryTerm>
           <SummaryValue>{counts.lowStockProducts}</SummaryValue>
         </SummaryItem>
-        <SummaryItem>
+        <SummaryItem data-overview-metric data-tone="gas">
           <SummaryTerm>Cancellation / refund review</SummaryTerm>
-          <SummaryValue>
-            {counts.pendingCancellations + counts.pendingRefunds}
-          </SummaryValue>
+          <SummaryValue>{reviewBacklog}</SummaryValue>
         </SummaryItem>
       </SummaryStrip>
 
       <AttentionGrid>
-        <Section>
-          <SectionHeading>Orders awaiting review</SectionHeading>
-          <SectionIntro>Confirm valid orders before preparation or assignment.</SectionIntro>
+        <PrimarySection data-overview-work>
+          <SectionHeader>
+            <div>
+              <SectionHeading>Orders awaiting review</SectionHeading>
+              <SectionIntro>Confirm valid orders before preparation or assignment.</SectionIntro>
+            </div>
+            <SectionLink href="/admin/orders">Open order queue</SectionLink>
+          </SectionHeader>
           {pendingOrders.length ? (
             <ItemList>
               {pendingOrders.map((order) => (
@@ -115,60 +174,69 @@ export default function OverviewScreen({ className }: OverviewScreenProps) {
           ) : (
             <EmptyMessage>No orders are waiting for review.</EmptyMessage>
           )}
-          <SectionLink href="/admin/orders">Open order queue</SectionLink>
-        </Section>
+        </PrimarySection>
 
-        <Section>
-          <SectionHeading>Delivery attention</SectionHeading>
-          <SectionIntro>Assign pending work and review failed attempts.</SectionIntro>
-          {attentionDeliveries.length ? (
-            <ItemList>
-              {attentionDeliveries.map((delivery) => (
-                <Item key={delivery.id}>
-                  <ItemCopy>
-                    <ItemTitle>{delivery.address.recipientName}</ItemTitle>
-                    <ItemMeta>
-                      {delivery.schedule.date} · {delivery.schedule.windowLabel}
-                    </ItemMeta>
-                  </ItemCopy>
-                  <StatusText tone={getStatusTone(delivery.status)}>
-                    {humanize(delivery.status)}
-                  </StatusText>
-                </Item>
-              ))}
-            </ItemList>
-          ) : (
-            <EmptyMessage>No delivery exceptions need review.</EmptyMessage>
-          )}
-          <SectionLink href="/admin/deliveries">Open delivery queue</SectionLink>
-        </Section>
-
-        <Section>
-          <SectionHeading>Low stock</SectionHeading>
-          <SectionIntro>Available stock accounts for active reservations.</SectionIntro>
-          {lowStockItems.length ? (
-            <ItemList>
-              {lowStockItems.map((item) => {
-                const product = products.find((candidate) => candidate.id === item.productId);
-
-                return (
-                  <Item key={item.productId}>
+        <SideStack>
+          <Section data-overview-work>
+            <SectionHeader>
+              <div>
+                <SectionHeading>Delivery attention</SectionHeading>
+                <SectionIntro>Assign pending work and review failed attempts.</SectionIntro>
+              </div>
+              <SectionLink href="/admin/deliveries">Open queue</SectionLink>
+            </SectionHeader>
+            {attentionDeliveries.length ? (
+              <ItemList>
+                {attentionDeliveries.map((delivery) => (
+                  <Item key={delivery.id}>
                     <ItemCopy>
-                      <ItemTitle>{product?.name ?? item.productId}</ItemTitle>
-                      <ItemMeta>Reorder level {item.reorderLevel}</ItemMeta>
+                      <ItemTitle>{delivery.address.recipientName}</ItemTitle>
+                      <ItemMeta>
+                        {delivery.schedule.date} · {delivery.schedule.windowLabel}
+                      </ItemMeta>
                     </ItemCopy>
-                    <StatusText tone="warning">
-                      {getAvailableStock(item)} available
+                    <StatusText tone={getStatusTone(delivery.status)}>
+                      {humanize(delivery.status)}
                     </StatusText>
                   </Item>
-                );
-              })}
-            </ItemList>
-          ) : (
-            <EmptyMessage>No products are at or below reorder level.</EmptyMessage>
-          )}
-          <SectionLink href="/admin/inventory">Open inventory</SectionLink>
-        </Section>
+                ))}
+              </ItemList>
+            ) : (
+              <EmptyMessage>No delivery exceptions need review.</EmptyMessage>
+            )}
+          </Section>
+
+          <Section data-overview-work>
+            <SectionHeader>
+              <div>
+                <SectionHeading>Low stock</SectionHeading>
+                <SectionIntro>Available stock accounts for active reservations.</SectionIntro>
+              </div>
+              <SectionLink href="/admin/inventory">Open inventory</SectionLink>
+            </SectionHeader>
+            {lowStockItems.length ? (
+              <ItemList>
+                {lowStockItems.map((item) => {
+                  const product = products.find((candidate) => candidate.id === item.productId);
+
+                  return (
+                    <Item key={item.productId}>
+                      <ItemCopy>
+                        <ItemTitle>{product?.name ?? item.productId}</ItemTitle>
+                        <ItemMeta>Reorder level {item.reorderLevel}</ItemMeta>
+                      </ItemCopy>
+                      <StatusText tone="warning">
+                        {getAvailableStock(item)} available
+                      </StatusText>
+                    </Item>
+                  );
+                })}
+              </ItemList>
+            ) : (
+              <EmptyMessage>No products are at or below reorder level.</EmptyMessage>
+            )}
+          </Section>
+        </SideStack>
       </AttentionGrid>
     </Root>
   );

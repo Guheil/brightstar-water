@@ -8,7 +8,7 @@ import AppLink from '@/components/ui/AppLink';
 export const Root = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(3.5),
 }));
 
 export const FilterBar = styled('section')(({ theme }) => ({
@@ -16,6 +16,13 @@ export const FilterBar = styled('section')(({ theme }) => ({
   gridTemplateColumns: `minmax(${theme.spacing(30)}, 2fr) repeat(3, minmax(${theme.spacing(20)}, 1fr)) auto`,
   alignItems: 'end',
   gap: theme.spacing(1.5),
+  paddingBlock: theme.spacing(2),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('lg')]: {
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -27,7 +34,6 @@ export const FilterBar = styled('section')(({ theme }) => ({
 }));
 
 export const FilterField = styled(TextField)(() => ({}));
-
 export const FilterOption = styled(MenuItem)(() => ({}));
 
 export const ResetButton = styled(Button)(({ theme }) => ({

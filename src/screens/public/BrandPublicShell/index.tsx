@@ -1,3 +1,5 @@
+'use client';
+
 import CustomerFooter from '@/components/layout/CustomerFooter';
 import CustomerHeader from '@/components/layout/CustomerHeader';
 import { selectCartItemCount, useAppStore } from '@/store';
@@ -10,6 +12,9 @@ export default function BrandPublicShell({
   pathname,
 }: BrandPublicShellProps) {
   const cartCount = useAppStore(selectCartItemCount);
+  const session = useAppStore((state) => state.auth.session);
+  const signOut = useAppStore((state) => state.commands.signOut);
+  const canLogout = session?.user.role === 'customer';
   const homeHero = pathname === brand.homeHref;
   const activeHref =
     pathname === brand.shopHref || pathname.startsWith(`${brand.productHrefPrefix}/`)
@@ -45,7 +50,8 @@ export default function BrandPublicShell({
   return (
     <>
       <CustomerHeader
-        accountHref="/customer/account"
+        accountHref={canLogout ? '/customer/account' : `/login?next=${encodeURIComponent(pathname)}`}
+        accountLabel={canLogout ? 'Account' : 'Sign In'}
         activeHref={activeHref}
         brandName={brand.brandName}
         cartCount={cartCount}
@@ -53,8 +59,10 @@ export default function BrandPublicShell({
         homeHref={brand.homeHref}
         megaMenuGroups={brand.megaMenuGroups}
         navigation={brand.navigation}
+        onLogout={canLogout ? signOut : undefined}
         logoSrc={brand.logoSrc}
         searchHref={brand.searchHref}
+        showOrderNavigation={canLogout}
         shopHref={brand.shopHref}
         transparentAtTop={homeHero && brand.tone === 'gas'}
       />

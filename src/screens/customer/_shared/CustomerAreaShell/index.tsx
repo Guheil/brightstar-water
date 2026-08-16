@@ -1,6 +1,7 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { CustomerFooter, CustomerHeader } from '@/components';
 import {
   customerMegaMenuGroups,
@@ -8,6 +9,7 @@ import {
   SHARED_STOREFRONT_LOGO_SOURCES,
 } from '@/config';
 import { selectCartItemCount, useAppStore } from '@/store';
+import AuthRequiredDialog from '@/screens/public/AuthRequiredDialog';
 import { Main, ShellRoot } from './elements';
 import type { CustomerAreaShellProps, CustomerCartContextValue } from './interface';
 
@@ -55,25 +57,49 @@ export function useCustomerCart(): CustomerCartContextValue {
 
 export default function CustomerAreaShell({ children }: CustomerAreaShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const session = useAppStore((state) => state.auth.session);
+  const isCustomer = session?.user.role === 'customer' && Boolean(session.user.customerId);
+  const accountRoute = pathname === '/customer/account';
   const itemCount = useAppStore(selectCartItemCount);
+  const signOut = useAppStore((state) => state.commands.signOut);
   const activeHref = customerPrimaryNavigation.find((item) =>
     pathname.startsWith(item.href),
   )?.href;
 
+  const handleLogout = () => {
+    signOut();
+    router.push('/');
+  };
+
+  useEffect(() => {
+    if (!isCustomer && accountRoute) {
+      router.replace(`/login?next=${encodeURIComponent('/customer/account')}`);
+    }
+  }, [accountRoute, isCustomer, router]);
+
   return (
     <ShellRoot>
       <CustomerHeader
-        accountHref="/customer/account"
+        accountHref={isCustomer ? '/customer/account' : `/login?next=${encodeURIComponent(pathname)}`}
+        accountLabel={isCustomer ? 'Account' : 'Sign In'}
         activeHref={activeHref}
         brandName="MRJE Gas + Bright Star Water"
         cartCount={itemCount}
         cartHref="/customer/cart"
         megaMenuGroups={customerMegaMenuGroups}
         navigation={customerPrimaryNavigation}
+        onLogout={isCustomer ? handleLogout : undefined}
         shopHref="/"
         logoSources={SHARED_STOREFRONT_LOGO_SOURCES}
       />
-      <Main id="main-content">{children}</Main>
+      <Main id="main-content">{isCustomer ? children : null}</Main>
+      <AuthRequiredDialog
+        nextPath={pathname}
+        onClose={() => router.push('/')}
+        open={!isCustomer && !accountRoute}
+        purpose="protected"
+      />
       <CustomerFooter
         brandName="MRJE Gas + Bright Star Water"
         contactLines={[

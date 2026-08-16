@@ -8,3 +8,5 @@ export * from './refundPolicy';
 export * from './brands';
 
 export * from './storefrontMedia';
+
+export * from './deliveryMapConfig';

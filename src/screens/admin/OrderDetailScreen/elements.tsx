@@ -8,13 +8,13 @@ import AppLink from '@/components/ui/AppLink';
 export const Root = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(4),
 }));
 
 export const ContentGrid = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: `minmax(0, 2fr) minmax(${theme.spacing(36)}, 1fr)`,
-  gap: theme.spacing(4),
+  gap: theme.spacing(5),
   alignItems: 'start',
 
   [theme.breakpoints.down('lg')]: {
@@ -30,10 +30,10 @@ export const MainColumn = styled(Box)(({ theme }) => ({
 
 export const SideColumn = styled(Box)(({ theme }) => ({
   position: 'sticky',
-  top: theme.spacing(12),
+  top: theme.spacing(17),
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(4),
 
   [theme.breakpoints.down('lg')]: {
     position: 'static',
@@ -41,14 +41,14 @@ export const SideColumn = styled(Box)(({ theme }) => ({
 }));
 
 export const Section = styled('section')(({ theme }) => ({
-  borderTopWidth: theme.spacing(0.25),
+  paddingBlock: theme.spacing(2.5),
+  borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
-  borderTopColor: theme.vars.palette.primary.main,
-  paddingBlockStart: theme.spacing(2),
+  borderTopColor: theme.vars.palette.divider,
 }));
 
 export const SectionTitle = styled('h2')(({ theme }) => ({
-  ...theme.typography.h5,
+  ...theme.typography.h4,
   margin: 0,
   marginBlockEnd: theme.spacing(2),
   color: theme.vars.palette.text.primary,
@@ -57,7 +57,7 @@ export const SectionTitle = styled('h2')(({ theme }) => ({
 export const DetailList = styled('dl')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: `minmax(${theme.spacing(18)}, auto) minmax(0, 1fr)`,
-  gap: theme.spacing(1, 2),
+  gap: theme.spacing(1.25, 2),
   margin: 0,
 
   [theme.breakpoints.down('sm')]: {
@@ -122,10 +122,10 @@ export const Totals = styled(DetailList)(({ theme }) => ({
   borderTopColor: theme.vars.palette.divider,
 }));
 
-export const TotalValue = styled(DetailValue)(() => ({
+export const TotalValue = styled(DetailValue)({
   fontVariantNumeric: 'tabular-nums',
   textAlign: 'right',
-}));
+});
 
 export const Timeline = styled('ol')(({ theme }) => ({
   margin: 0,
@@ -138,7 +138,7 @@ export const TimelineItem = styled('li')(({ theme }) => ({
   color: theme.vars.palette.text.primary,
 
   '&::marker': {
-    color: theme.vars.palette.water.main,
+    color: theme.vars.palette.text.secondary,
   },
 }));
 
@@ -156,16 +156,17 @@ export const ActionPanel = styled('section')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: theme.spacing(1.5),
-  padding: theme.spacing(2),
-  borderWidth: theme.spacing(0.125),
-  borderStyle: 'solid',
-  borderColor: theme.vars.palette.divider,
-  borderRadius: theme.radii.surface,
-  backgroundColor: theme.vars.palette.background.paper,
+  paddingBlock: theme.spacing(2.5),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 }));
 
 export const ActionTitle = styled('h2')(({ theme }) => ({
-  ...theme.typography.h6,
+  ...theme.typography.h5,
   margin: 0,
   color: theme.vars.palette.text.primary,
 }));
@@ -196,7 +197,9 @@ export const SecondaryButton = styled(AppLink)(({ theme }) => ({
   borderWidth: theme.spacing(0.125),
   borderStyle: 'solid',
   borderColor: theme.vars.palette.divider,
+  borderRadius: theme.radii.control,
   color: theme.vars.palette.text.primary,
+  textDecoration: 'none',
 
   '&:hover': {
     backgroundColor: theme.vars.palette.neutral.light,
@@ -214,7 +217,6 @@ export const DangerButton = styled(Button)(({ theme }) => ({
 }));
 
 export const ActionField = styled(TextField)(() => ({}));
-
 export const ActionOption = styled(MenuItem)(() => ({}));
 
 export const InlineLink = styled(AppLink)(({ theme }) => ({
@@ -229,7 +231,18 @@ export const EmptyActionLink = styled(AppLink)(({ theme }) => ({
   display: 'inline-flex',
   alignItems: 'center',
   paddingInline: theme.spacing(2),
+  borderRadius: theme.radii.control,
   backgroundColor: theme.vars.palette.primary.main,
   color: theme.vars.palette.primary.contrastText,
   fontWeight: theme.typography.fontWeightSemiBold,
+}));
+
+export const PaymentProofImage = styled('img')(({ theme }) => ({
+  width: '100%',
+  maxHeight: theme.spacing(42),
+  objectFit: 'contain',
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
+  backgroundColor: theme.vars.palette.neutral.light,
 }));

@@ -24,17 +24,17 @@ describe('production-facing fixture copy', () => {
     expect(customerAccount).toMatchObject({
       displayName: CUSTOMER_FIXTURES[0].displayName,
       email: CUSTOMER_FIXTURES[0].email,
-      demoPassword: 'BrightStar123!',
+      password: 'BrightStar123!',
     });
     expect(adminAccount).toMatchObject({
       displayName: 'Store Administrator',
       email: 'admin@brightstar.local',
-      demoPassword: 'BrightStar123!',
+      password: 'BrightStar123!',
     });
     expect(delivererAccount).toMatchObject({
       displayName: DELIVERER_FIXTURES[0].displayName,
       email: DELIVERER_FIXTURES[0].email,
-      demoPassword: 'BrightStar123!',
+      password: 'BrightStar123!',
     });
   });
 
@@ -72,7 +72,7 @@ describe('production-facing fixture copy', () => {
       'MRJE-0004',
     ]);
     expect(createOrderReference(5)).toBe('MRJE-0005');
-    expect(PAYMENT_FIXTURES.flatMap((payment) => payment.demoReference ?? [])).toEqual([
+    expect(PAYMENT_FIXTURES.flatMap((payment) => payment.reference ?? [])).toEqual([
       'GCASH-0003',
       'GCASH-0004',
     ]);
@@ -113,7 +113,7 @@ describe('production-facing fixture copy', () => {
         order.customerNote,
         ...order.events.flatMap((event) => [event.label, event.description]),
       ]),
-      ...PAYMENT_FIXTURES.map((payment) => payment.demoReference),
+      ...PAYMENT_FIXTURES.map((payment) => payment.reference),
       ...INVENTORY_ADJUSTMENT_FIXTURES.map((adjustment) => adjustment.reason),
       ...LOYALTY_ACTIVITY_FIXTURES.flatMap((activity) => [
         activity.description,

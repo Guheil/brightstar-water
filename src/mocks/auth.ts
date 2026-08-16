@@ -1,20 +1,20 @@
-import type { DemoAuthAccount } from '@/types';
+import type { AuthAccount } from '@/types';
 
-export const DEMO_AUTH_ACCOUNTS: DemoAuthAccount[] = [
+export const DEMO_AUTH_ACCOUNTS: AuthAccount[] = [
   {
     id: 'user-customer-demo',
     role: 'customer',
     displayName: 'Maya Santos',
     email: 'customer@brightstar.local',
     customerId: 'customer-demo-01',
-    demoPassword: 'BrightStar123!',
+    password: 'BrightStar123!',
   },
   {
     id: 'user-admin-demo',
     role: 'admin',
     displayName: 'Store Administrator',
     email: 'admin@brightstar.local',
-    demoPassword: 'BrightStar123!',
+    password: 'BrightStar123!',
   },
   {
     id: 'user-deliverer-demo',
@@ -22,6 +22,6 @@ export const DEMO_AUTH_ACCOUNTS: DemoAuthAccount[] = [
     displayName: 'Daniel Cruz',
     email: 'deliverer@brightstar.local',
     delivererId: 'deliverer-demo-01',
-    demoPassword: 'BrightStar123!',
+    password: 'BrightStar123!',
   },
 ];

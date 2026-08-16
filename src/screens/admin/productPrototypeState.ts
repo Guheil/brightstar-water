@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store';
 import type { CommandResult, Product } from '@/types';
 import { commandFailure, commandSuccess } from '@/utils';
-import { canHardDeletePrototypeProduct } from './productDeletionPolicy';
+import { canHardDeleteProduct } from './productDeletionPolicy';
 
 /**
  * Frontend-only catalog update used until a production ProductService exists.
@@ -63,7 +63,7 @@ export function deletePrototypeProduct(productId: string): CommandResult<Product
   const hasReservedStock = Boolean(inventoryItem?.stockReserved);
   const isInCart = state.cart.items.some((item) => item.productId === productId);
 
-  if (!canHardDeletePrototypeProduct({
+  if (!canHardDeleteProduct({
     hasOrderHistory,
     hasInventoryHistory,
     hasReservedStock,

@@ -14,6 +14,7 @@ export type CustomerMegaMenuPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 export interface CustomerHeaderProps {
   accountHref: string;
+  accountLabel?: string;
   activeHref?: string;
   brandName: string;
   cartCount?: number;
@@ -26,7 +27,9 @@ export interface CustomerHeaderProps {
   mainId?: string;
   megaMenuGroups: readonly CustomerMegaMenuGroup[];
   navigation: readonly CustomerNavigationItem[];
+  onLogout?: () => void;
   searchHref?: string;
+  showOrderNavigation?: boolean;
   shopHref?: string;
   transparentAtTop?: boolean;
   wordmark?: string;

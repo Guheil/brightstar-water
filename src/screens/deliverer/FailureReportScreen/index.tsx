@@ -7,7 +7,7 @@ import DelivererShell from '@/components/layout/DelivererShell';
 import Notice from '@/components/ui/Notice';
 import { selectDeliveryById, selectOrderById, useAppStore } from '@/store';
 import type { DeliveryFailureReason } from '@/types';
-import { demoDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
+import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
 import {
   Actions,
   CancelLink,
@@ -61,7 +61,7 @@ export default function FailureReportScreen({
     event.preventDefault();
     const result = failDelivery(
       delivery.id,
-      demoDelivererId,
+      currentDelivererId,
       reason,
       note.trim() || undefined,
     );

@@ -1,6 +1,12 @@
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Radio from '@mui/material/Radio';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { AppLink, PageContainer } from '@/components';
 import type { ChoiceVisualProps, StepVisualProps } from './interface';
@@ -13,7 +19,7 @@ export const CheckoutPage = styled(PageContainer)(({ theme }) => ({
 export const Header = styled('header')(({ theme }) => ({
   display: 'grid',
   gap: theme.spacing(2),
-  maxWidth: '48rem',
+  maxWidth: theme.spacing(82),
   marginBottom: theme.spacing(5),
 }));
 
@@ -35,14 +41,18 @@ export const Lead = styled('p')(({ theme }) => ({
 
 export const StepList = styled('ol')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
   gap: theme.spacing(1),
   margin: theme.spacing(0, 0, 5),
   padding: 0,
   listStyle: 'none',
 
+  [theme.breakpoints.down('md')]: {
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  },
+
   [theme.breakpoints.down('sm')]: {
-    gridTemplateColumns: '1fr',
+    gridTemplateColumns: '1fr 1fr',
   },
 }));
 
@@ -52,33 +62,24 @@ export const Step = styled('li', {
   display: 'flex',
   gap: theme.spacing(1),
   alignItems: 'center',
-  minHeight: 44,
-  padding: theme.spacing(1, 1.5),
-  borderBottom: `3px solid ${
-    $active
-      ? theme.vars.palette.primary.main
-      : $complete
-        ? theme.vars.palette.success.main
-        : theme.vars.palette.divider
-  }`,
-  color: $active
-    ? theme.vars.palette.text.primary
-    : theme.vars.palette.text.secondary,
-  fontWeight: $active
-    ? theme.typography.fontWeightSemiBold
-    : theme.typography.fontWeightRegular,
+  minHeight: theme.spacing(5.5),
+  padding: theme.spacing(1, 0.5),
+  borderBottomWidth: theme.spacing(0.25),
+  borderBottomStyle: 'solid',
+  borderBottomColor: $active
+    ? theme.vars.palette.primary.main
+    : $complete
+      ? theme.vars.palette.success.main
+      : theme.vars.palette.divider,
+  color: $active ? theme.vars.palette.text.primary : theme.vars.palette.text.secondary,
+  fontWeight: $active ? theme.typography.fontWeightSemiBold : theme.typography.fontWeightRegular,
 }));
 
 export const StepNumber = styled('span')(({ theme }) => ({
-  width: 24,
-  height: 24,
-  display: 'grid',
-  placeItems: 'center',
-  flex: '0 0 auto',
-  borderRadius: '50%',
-  backgroundColor: theme.vars.palette.neutral.main,
   ...theme.typography.caption,
-  fontWeight: theme.typography.fontWeightSemiBold,
+  color: theme.vars.palette.text.secondary,
+  fontWeight: theme.typography.fontWeightBold,
+  fontVariantNumeric: 'tabular-nums',
 }));
 
 export const CheckoutLayout = styled('div')(({ theme }) => ({
@@ -94,7 +95,9 @@ export const StagePanel = styled('section')(({ theme }) => ({
   gap: theme.spacing(3),
   padding: theme.spacing(4),
   backgroundColor: theme.vars.palette.background.paper,
-  border: `1px solid ${theme.vars.palette.divider}`,
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
   borderRadius: theme.radii.surface,
   [theme.breakpoints.down('sm')]: { padding: theme.spacing(3, 2) },
 }));
@@ -106,6 +109,26 @@ export const StageDescription = styled('p')(({ theme }) => ({
   margin: 0,
   color: theme.vars.palette.text.secondary,
 }));
+
+export const LocationFields = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: theme.spacing(2),
+
+  [theme.breakpoints.down('sm')]: {
+    gridTemplateColumns: '1fr',
+  },
+}));
+
+export const FullField = styled(TextField)(({ theme }) => ({
+  gridColumn: '1 / -1',
+
+  [theme.breakpoints.down('sm')]: {
+    gridColumn: 'auto',
+  },
+}));
+
+export const Field = styled(TextField)(() => ({}));
 
 export const ChoiceList = styled('div')(({ theme }) => ({
   display: 'grid',
@@ -120,13 +143,11 @@ export const ChoiceCard = styled('label', {
   gap: theme.spacing(1.5),
   alignItems: 'start',
   padding: theme.spacing(2),
-  border: `1px solid ${
-    $selected ? theme.vars.palette.water.main : theme.vars.palette.divider
-  }`,
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: $selected ? theme.vars.palette.water.main : theme.vars.palette.divider,
   borderRadius: theme.radii.control,
-  backgroundColor: $selected
-    ? theme.vars.palette.action.selected
-    : theme.vars.palette.background.paper,
+  backgroundColor: $selected ? theme.vars.palette.action.selected : theme.vars.palette.background.paper,
   cursor: 'pointer',
 }));
 
@@ -152,7 +173,7 @@ export const ChoiceDescription = styled('span')(({ theme }) => ({
 
 export const NoteField = styled(TextField)({});
 
-export const DemoPaymentPanel = styled('div')(({ theme }) => ({
+export const PaymentPanel = styled('div')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'auto 1fr',
   gap: theme.spacing(2),
@@ -165,9 +186,48 @@ export const DemoPaymentPanel = styled('div')(({ theme }) => ({
   '& svg': { color: theme.vars.palette.water.main },
 }));
 
+export const PaymentAmount = styled(Typography)(({ theme }) => ({
+  ...theme.typography.h4,
+  color: theme.vars.palette.primary.main,
+}));
+
+export const UploadArea = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(1.5),
+  padding: theme.spacing(2),
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
+  borderRadius: theme.radii.control,
+}));
+
+export const UploadButton = styled(Button)(({ theme }) => ({
+  width: 'fit-content',
+  minHeight: theme.spacing(5.5),
+})) as typeof Button;
+
+export const HiddenFileInput = styled('input')(({ theme }) => ({
+  position: 'absolute',
+  width: theme.spacing(0.125),
+  height: theme.spacing(0.125),
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+}));
+
+export const ProofPreview = styled('img')(({ theme }) => ({
+  width: '100%',
+  maxHeight: theme.spacing(48),
+  objectFit: 'contain',
+  borderRadius: theme.radii.control,
+  backgroundColor: theme.vars.palette.neutral.light,
+}));
+
 export const ReviewList = styled('div')(({ theme }) => ({
   display: 'grid',
-  borderTop: `1px solid ${theme.vars.palette.divider}`,
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
 }));
 
 export const ReviewItem = styled('div')(({ theme }) => ({
@@ -175,7 +235,9 @@ export const ReviewItem = styled('div')(({ theme }) => ({
   justifyContent: 'space-between',
   gap: theme.spacing(2),
   paddingBlock: theme.spacing(1.5),
-  borderBottom: `1px solid ${theme.vars.palette.divider}`,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
   ...theme.typography.body2,
 }));
 
@@ -191,13 +253,13 @@ export const Actions = styled('div')(({ theme }) => ({
 }));
 
 export const SecondaryButton = styled(Button)(({ theme }) => ({
-  minHeight: 44,
+  minHeight: theme.spacing(5.5),
   color: theme.vars.palette.text.primary,
 }));
 
 export const PrimaryButton = styled(Button)(({ theme }) => ({
-  minWidth: 152,
-  minHeight: 44,
+  minWidth: theme.spacing(19),
+  minHeight: theme.spacing(5.5),
   color: theme.vars.palette.primary.contrastText,
   backgroundColor: theme.vars.palette.primary.main,
   '&:hover': { backgroundColor: theme.vars.palette.primary.dark },
@@ -208,7 +270,9 @@ export const SummaryPanel = styled('aside')(({ theme }) => ({
   gap: theme.spacing(3),
   padding: theme.spacing(3),
   backgroundColor: theme.vars.palette.background.paper,
-  border: `1px solid ${theme.vars.palette.divider}`,
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
   borderRadius: theme.radii.surface,
   position: 'sticky',
   top: theme.spacing(3),
@@ -234,7 +298,9 @@ export const SummaryRow = styled('div')(({ theme }) => ({
 
 export const SummaryTotal = styled(SummaryRow)(({ theme }) => ({
   paddingTop: theme.spacing(2),
-  borderTop: `1px solid ${theme.vars.palette.divider}`,
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
   ...theme.typography.subtitle1,
 }));
 
@@ -244,3 +310,25 @@ export const FinePrint = styled('p')(({ theme }) => ({
   color: theme.vars.palette.text.secondary,
 }));
 
+export const PaymentNoticeDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    width: '100%',
+    maxWidth: theme.spacing(62),
+    borderRadius: theme.radii.surface,
+  },
+}));
+
+export const PaymentNoticeTitle = styled(DialogTitle)(({ theme }) => ({
+  ...theme.typography.h4,
+  padding: theme.spacing(3, 3, 1),
+}));
+
+export const PaymentNoticeContent = styled(DialogContent)(({ theme }) => ({
+  ...theme.typography.body1,
+  padding: theme.spacing(1, 3, 2),
+  color: theme.vars.palette.text.secondary,
+}));
+
+export const PaymentNoticeActions = styled(DialogActions)(({ theme }) => ({
+  padding: theme.spacing(1, 3, 3),
+}));

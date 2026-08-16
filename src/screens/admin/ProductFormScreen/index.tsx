@@ -7,7 +7,7 @@ import Notice from '@/components/ui/Notice';
 import { useAppStore } from '@/store';
 import type { Product, ProductCategory, ProductUnit } from '@/types';
 import AdminPageHeader from '../components/AdminPageHeader';
-import { savePrototypeProduct } from '../productPrototypeState';
+import { saveProductState } from '../productState';
 import {
   CancelLink,
   EmptyActionLink,
@@ -87,7 +87,7 @@ export default function ProductFormScreen({ productId }: ProductFormScreenProps)
     }
 
     const now = new Date().toISOString();
-    const id = product?.id ?? `product-prototype-${Date.now()}`;
+    const id = product?.id ?? `product-${Date.now()}`;
     const nextProduct: Product = {
       id,
       slug: form.slug.trim(),
@@ -106,7 +106,7 @@ export default function ProductFormScreen({ productId }: ProductFormScreenProps)
       createdAt: product?.createdAt ?? now,
       updatedAt: now,
     };
-    savePrototypeProduct(nextProduct, !product);
+    saveProductState(nextProduct, !product);
     router.push('/admin/products');
   };
 

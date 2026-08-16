@@ -2,7 +2,6 @@
 
 import { create } from 'zustand';
 import { CANCELLATION_POLICY } from '@/config';
-import { DEMO_AUTH_ACCOUNTS } from '@/mocks';
 import type {
   DeliveryAddressSnapshot,
   EntityId,
@@ -67,17 +66,36 @@ const toDeliveryAddressSnapshot = (
   municipality: address.municipality,
   province: address.province,
   distanceKm: address.distanceKm,
+  ...(address.latitude != null ? { latitude: address.latitude } : {}),
+  ...(address.longitude != null ? { longitude: address.longitude } : {}),
   ...(address.deliveryNote ? { deliveryNote: address.deliveryNote } : {}),
 });
+
+const cleanPlainText = (value: string): string =>
+  value.replace(/[\u0000-\u001F\u007F<>]/g, '').trim();
+
+const VERIFICATION_TTL_MS = 10 * 60 * 1000;
+const VERIFICATION_ATTEMPTS = 5;
+
+const createVerificationCode = (): string => {
+  const values = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(values);
+  return String(values[0] % 1_000_000).padStart(6, '0');
+};
+
+const getAuthenticatedCustomerId = (state: AppStore): EntityId | null =>
+  state.auth.session?.user.role === 'customer' && state.auth.session.user.customerId
+    ? state.auth.session.user.customerId
+    : null;
 
 export const useAppStore = create<AppStore>()((set, get) => {
   const signIn: AppCommands['signIn'] = (credentials, at) => {
     const normalizedEmail = credentials.email.trim().toLocaleLowerCase();
-    const account = DEMO_AUTH_ACCOUNTS.find(
+    const account = get().auth.accounts.find(
       (candidate) => candidate.email.toLocaleLowerCase() === normalizedEmail,
     );
 
-    if (!account || account.demoPassword !== credentials.password) {
+    if (!account || account.password !== credentials.password) {
       return commandFailure('invalid_input', 'The email or password is incorrect.');
     }
 
@@ -98,19 +116,235 @@ export const useAppStore = create<AppStore>()((set, get) => {
         ...(account.delivererId ? { delivererId: account.delivererId } : {}),
       },
       signedInAt: resolveTimestamp(at),
-      isPrototypeSession: true as const,
     };
 
-    set((state) => ({ auth: { ...state.auth, session } }));
+    set((state) => ({ auth: { ...state.auth, session, pendingRegistration: null } }));
     return commandSuccess(session);
   };
 
   const signOut: AppCommands['signOut'] = () => {
-    set((state) => ({ auth: { ...state.auth, session: null } }));
+    set((state) => ({
+      auth: { ...state.auth, session: null, pendingRegistration: null },
+      cart: { items: [], lastPlacedOrderId: null },
+    }));
+  };
+
+
+  const beginCustomerRegistration: AppCommands['beginCustomerRegistration'] = (input, at) => {
+    const state = get();
+    const displayName = cleanPlainText(input.displayName);
+    const email = input.email.trim().toLocaleLowerCase();
+    const phone = cleanPlainText(input.phone);
+    if (displayName.length < 2 || displayName.length > 60) {
+      return commandFailure('invalid_input', 'Enter a name between 2 and 60 characters.', 'displayName');
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return commandFailure('invalid_input', 'Enter a valid email address.', 'email');
+    }
+    if (!/^09\d{9}$/.test(phone.replace(/[\s-]/g, ''))) {
+      return commandFailure('invalid_input', 'Enter an 11-digit Philippine mobile number.', 'phone');
+    }
+    if (input.password.length < 8 || input.password.length > 72) {
+      return commandFailure('invalid_input', 'Use a password between 8 and 72 characters.', 'password');
+    }
+    if (state.auth.accounts.some((account) => account.email.toLocaleLowerCase() === email)) {
+      return commandFailure('conflict', 'An account already uses this email address.', 'email');
+    }
+    const startedAt = new Date(resolveTimestamp(at));
+    const verificationCode = createVerificationCode();
+    const pendingRegistration = {
+      displayName,
+      email,
+      phone: phone.replace(/[\s-]/g, ''),
+      password: input.password,
+      verificationCode,
+      expiresAt: new Date(startedAt.getTime() + VERIFICATION_TTL_MS).toISOString(),
+      attemptsRemaining: VERIFICATION_ATTEMPTS,
+    };
+    set({ auth: { ...state.auth, pendingRegistration } });
+    return commandSuccess({
+      email,
+      verificationCode,
+      expiresAt: pendingRegistration.expiresAt,
+      attemptsRemaining: pendingRegistration.attemptsRemaining,
+    });
+  };
+
+  const resendCustomerVerification: AppCommands['resendCustomerVerification'] = (at) => {
+    const state = get();
+    const pending = state.auth.pendingRegistration;
+    if (!pending) {
+      return commandFailure('not_found', 'Start account registration before requesting another code.');
+    }
+    const verificationCode = createVerificationCode();
+    const now = new Date(resolveTimestamp(at));
+    const nextPending = {
+      ...pending,
+      verificationCode,
+      expiresAt: new Date(now.getTime() + VERIFICATION_TTL_MS).toISOString(),
+      attemptsRemaining: VERIFICATION_ATTEMPTS,
+    };
+    set({ auth: { ...state.auth, pendingRegistration: nextPending } });
+    return commandSuccess({
+      email: nextPending.email,
+      verificationCode,
+      expiresAt: nextPending.expiresAt,
+      attemptsRemaining: nextPending.attemptsRemaining,
+    });
+  };
+
+  const verifyCustomerRegistration: AppCommands['verifyCustomerRegistration'] = (code, at) => {
+    const state = get();
+    const pending = state.auth.pendingRegistration;
+    if (!pending) {
+      return commandFailure('not_found', 'Start account registration before entering a verification code.');
+    }
+    const occurredAt = resolveTimestamp(at);
+    if (new Date(occurredAt).getTime() > new Date(pending.expiresAt).getTime()) {
+      return commandFailure('not_allowed', 'This verification code has expired. Request a new code.');
+    }
+    const cleanCode = code.trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      return commandFailure('invalid_input', 'Enter the 6-digit verification code.', 'verificationCode');
+    }
+    if (cleanCode !== pending.verificationCode) {
+      const attemptsRemaining = Math.max(0, pending.attemptsRemaining - 1);
+      set({
+        auth: {
+          ...state.auth,
+          pendingRegistration: { ...pending, attemptsRemaining },
+        },
+      });
+      return commandFailure(
+        'invalid_input',
+        attemptsRemaining
+          ? `That code is not correct. ${attemptsRemaining} attempts remaining.`
+          : 'Too many incorrect attempts. Request a new verification code.',
+        'verificationCode',
+      );
+    }
+    if (pending.attemptsRemaining <= 0) {
+      return commandFailure('not_allowed', 'Request a new verification code before trying again.');
+    }
+
+    const customerId = createSequenceId('customer', state.meta.nextCustomerSequence);
+    const userId = createSequenceId('user-customer', state.meta.nextUserSequence);
+    const customer = {
+      id: customerId,
+      displayName: pending.displayName,
+      email: pending.email,
+      phonePlaceholder: pending.phone,
+      status: 'active' as const,
+      addresses: [],
+      createdAt: occurredAt,
+      updatedAt: occurredAt,
+    };
+    const account = {
+      id: userId,
+      role: 'customer' as const,
+      displayName: pending.displayName,
+      email: pending.email,
+      customerId,
+      password: pending.password,
+    };
+    const session = {
+      user: {
+        id: userId,
+        role: 'customer' as const,
+        displayName: pending.displayName,
+        email: pending.email,
+        customerId,
+      },
+      signedInAt: occurredAt,
+    };
+    set({
+      auth: {
+        ...state.auth,
+        accounts: [...state.auth.accounts, account],
+        pendingRegistration: null,
+        session,
+      },
+      customers: { records: [customer, ...state.customers.records] },
+      loyalty: {
+        ...state.loyalty,
+        accounts: [
+          { customerId, pointsAvailable: 0, updatedAt: occurredAt },
+          ...state.loyalty.accounts,
+        ],
+      },
+      meta: {
+        ...state.meta,
+        nextCustomerSequence: state.meta.nextCustomerSequence + 1,
+        nextUserSequence: state.meta.nextUserSequence + 1,
+      },
+    });
+    return commandSuccess(session);
+  };
+
+  const cancelCustomerRegistration: AppCommands['cancelCustomerRegistration'] = () => {
+    set((state) => ({ auth: { ...state.auth, pendingRegistration: null } }));
+  };
+
+  const saveDeliveryAddress: AppCommands['saveDeliveryAddress'] = (input) => {
+    const state = get();
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId || activeCustomerId !== input.customerId) {
+      return commandFailure('not_allowed', 'Sign in to your customer account to save a delivery location.');
+    }
+    const customer = state.customers.records.find((item) => item.id === input.customerId);
+    if (!customer || customer.status !== 'active') {
+      return commandFailure('not_found', 'Customer account not found.');
+    }
+    if (!Number.isFinite(input.latitude) || input.latitude < -90 || input.latitude > 90 ||
+        !Number.isFinite(input.longitude) || input.longitude < -180 || input.longitude > 180) {
+      return commandFailure('invalid_input', 'Choose a valid point on the delivery map.');
+    }
+    if (!Number.isFinite(input.distanceKm) || input.distanceKm < 0) {
+      return commandFailure('invalid_input', 'Delivery distance could not be calculated.');
+    }
+    const occurredAt = resolveTimestamp(input.at);
+    const addressId = createSequenceId('address', state.meta.nextAddressSequence);
+    const makeDefault = input.makeDefault ?? customer.addresses.length === 0;
+    const nextAddress = {
+      id: addressId,
+      label: cleanPlainText(input.label) || 'Delivery location',
+      recipientName: cleanPlainText(input.recipientName),
+      phonePlaceholder: cleanPlainText(input.phone),
+      addressLine: cleanPlainText(input.addressLine),
+      area: cleanPlainText(input.area),
+      municipality: cleanPlainText(input.municipality) || 'San Pedro',
+      province: cleanPlainText(input.province) || 'Laguna',
+      distanceKm: input.distanceKm,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      ...(input.deliveryNote && cleanPlainText(input.deliveryNote) ? { deliveryNote: cleanPlainText(input.deliveryNote) } : {}),
+      isDefault: makeDefault,
+    };
+    if (!nextAddress.recipientName || !nextAddress.phonePlaceholder || !nextAddress.addressLine || !nextAddress.area) {
+      return commandFailure('invalid_input', 'Complete the recipient and delivery address details.');
+    }
+    const nextCustomer = {
+      ...customer,
+      addresses: [
+        ...(makeDefault ? customer.addresses.map((address) => ({ ...address, isDefault: false })) : customer.addresses),
+        nextAddress,
+      ],
+      updatedAt: occurredAt,
+    };
+    set({
+      customers: {
+        records: state.customers.records.map((item) => item.id === customer.id ? nextCustomer : item),
+      },
+      meta: { ...state.meta, nextAddressSequence: state.meta.nextAddressSequence + 1 },
+    });
+    return commandSuccess(nextAddress);
   };
 
   const addCartItem: AppCommands['addCartItem'] = (productId, quantity = 1) => {
     const state = get();
+    if (!getAuthenticatedCustomerId(state)) {
+      return commandFailure('not_allowed', 'Sign in or create a customer account to start an order.');
+    }
     const product = state.catalog.products.find((item) => item.id === productId);
     const inventoryItem = state.inventory.items.find((item) => item.productId === productId);
     if (!product || !product.isActive || !inventoryItem) {
@@ -146,6 +380,9 @@ export const useAppStore = create<AppStore>()((set, get) => {
     quantity,
   ) => {
     const state = get();
+    if (!getAuthenticatedCustomerId(state)) {
+      return commandFailure('not_allowed', 'Sign in to update your cart.');
+    }
     const current = state.cart.items.find((item) => item.productId === productId);
     if (!current) return commandFailure('not_found', 'Cart item not found.');
     if (!Number.isInteger(quantity) || quantity <= 0) {
@@ -175,6 +412,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
   };
 
   const removeCartItem: AppCommands['removeCartItem'] = (productId) => {
+    if (!getAuthenticatedCustomerId(get())) return;
     set((state) => ({
       cart: {
         ...state.cart,
@@ -184,6 +422,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
   };
 
   const clearCart: AppCommands['clearCart'] = () => {
+    if (!getAuthenticatedCustomerId(get())) return;
     set((state) => ({ cart: { ...state.cart, items: [] } }));
   };
 
@@ -193,6 +432,10 @@ export const useAppStore = create<AppStore>()((set, get) => {
 
   const placeOrder: AppCommands['placeOrder'] = (input) => {
     const state = get();
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId || activeCustomerId !== input.customerId) {
+      return commandFailure('not_allowed', 'Sign in to your customer account before placing this order.', 'customerId');
+    }
     const customer = state.customers.records.find((item) => item.id === input.customerId);
 
     if (!customer || customer.status !== 'active') {
@@ -206,6 +449,16 @@ export const useAppStore = create<AppStore>()((set, get) => {
 
     if (!input.items.length) {
       return commandFailure('invalid_input', 'Add at least one product before placing an order.', 'items');
+    }
+
+    if (input.paymentMethod === 'gcash') {
+      const proof = input.paymentProofImageDataUrl ?? '';
+      if (!/^data:image\/(png|jpeg|webp);base64,/.test(proof)) {
+        return commandFailure('invalid_input', 'Upload a valid GCash payment screenshot.', 'paymentProofImageDataUrl');
+      }
+      if (proof.length > 7_200_000) {
+        return commandFailure('invalid_input', 'The payment screenshot is too large.', 'paymentProofImageDataUrl');
+      }
     }
 
     if ((input.requestedLoyaltyPoints ?? 0) > 0) {
@@ -304,7 +557,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       deliveryId,
       deliveryAddressId: address.id,
       deliverySchedule: input.deliverySchedule,
-      ...(input.customerNote?.trim() ? { customerNote: input.customerNote.trim() } : {}),
+      ...(input.customerNote && cleanPlainText(input.customerNote) ? { customerNote: cleanPlainText(input.customerNote) } : {}),
       loyalty: {
         qualifyingSubtotalCentavos: subtotalCentavos,
         pointsPending,
@@ -322,6 +575,9 @@ export const useAppStore = create<AppStore>()((set, get) => {
       method: input.paymentMethod,
       status: input.paymentMethod === 'cod' ? 'collection_due' : 'awaiting_verification',
       amountCentavos: totals.totalCentavos,
+      ...(input.paymentMethod === 'gcash' && input.paymentProofImageDataUrl
+        ? { proofImageDataUrl: input.paymentProofImageDataUrl, ...(input.paymentProofFileName ? { proofFileName: cleanPlainText(input.paymentProofFileName).slice(0, 100) } : {}) }
+        : {}),
       updatedAt: occurredAt,
     };
     const delivery: AppStore['deliveries']['records'][number] = {
@@ -627,6 +883,58 @@ export const useAppStore = create<AppStore>()((set, get) => {
     return commandSuccess(nextDelivery);
   };
 
+  const recordDeliveryCompletion: AppCommands['recordDeliveryCompletion'] = (input) => {
+    const state = get();
+    const delivery = state.deliveries.records.find((item) => item.id === input.deliveryId);
+    if (!delivery) return commandFailure('not_found', 'Delivery not found.');
+    if (delivery.delivererId !== input.delivererId) {
+      return commandFailure('not_allowed', 'This delivery is assigned to another deliverer.');
+    }
+    if (delivery.status !== 'out_for_delivery') {
+      return commandFailure('invalid_transition', 'Start the delivery before recording completion details.');
+    }
+    if (input.cashReceivedCentavos != null) {
+      if (!Number.isInteger(input.cashReceivedCentavos) || input.cashReceivedCentavos < 0) {
+        return commandFailure('invalid_input', 'Enter a valid cash amount.');
+      }
+      if (delivery.paymentMethod !== 'cod') {
+        return commandFailure('invalid_input', 'Cash collection only applies to cash on delivery orders.');
+      }
+    }
+    const proof = input.proofImageDataUrl?.trim();
+    if (proof) {
+      if (!/^data:image\/(png|jpeg|webp);base64,/.test(proof)) {
+        return commandFailure('invalid_input', 'Use a PNG, JPG, or WebP delivery photo.');
+      }
+      if (proof.length > 7_000_000) {
+        return commandFailure('invalid_input', 'The delivery photo is too large.');
+      }
+    }
+    const note = input.note ? cleanPlainText(input.note).slice(0, 240) : undefined;
+    const occurredAt = resolveTimestamp(input.at);
+    const nextDelivery = {
+      ...delivery,
+      completionEvidence: {
+        ...(input.cashReceivedCentavos != null ? { cashReceivedCentavos: input.cashReceivedCentavos } : {}),
+        ...(proof ? { proofImageDataUrl: proof } : {}),
+        ...(input.proofFileName ? { proofFileName: cleanPlainText(input.proofFileName).slice(0, 100) } : {}),
+        ...(note ? { note } : {}),
+        recordedAt: occurredAt,
+        recordedBy: input.delivererId,
+      },
+      updatedAt: occurredAt,
+    };
+    set({
+      deliveries: {
+        ...state.deliveries,
+        records: state.deliveries.records.map((item) =>
+          item.id === delivery.id ? nextDelivery : item,
+        ),
+      },
+    });
+    return commandSuccess(nextDelivery);
+  };
+
   const completeDelivery: AppCommands['completeDelivery'] = (
     deliveryId,
     delivererId,
@@ -895,6 +1203,10 @@ export const useAppStore = create<AppStore>()((set, get) => {
     at,
   ) => {
     const state = get();
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId || activeCustomerId !== customerId) {
+      return commandFailure('not_allowed', 'Sign in to the customer account that owns this order.');
+    }
     const order = state.orders.records.find((item) => item.id === orderId);
     if (!order) return commandFailure('not_found', 'Order not found.');
     if (order.customerId !== customerId) {
@@ -906,7 +1218,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
         'This order can no longer receive a cancellation request.',
       );
     }
-    const cleanReason = reason.trim();
+    const cleanReason = cleanPlainText(reason);
     if (cleanReason.length < CANCELLATION_POLICY.minimumReasonLength) {
       return commandFailure(
         'invalid_input',
@@ -1121,7 +1433,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
   const verifyPayment: AppCommands['verifyPayment'] = (
     orderId,
     actorId,
-    demoReference,
+    reference,
     at,
   ) => {
     const state = get();
@@ -1138,7 +1450,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const nextPayment: PaymentRecord = {
       ...payment,
       status: 'verified',
-      demoReference: demoReference?.trim() || `GCASH-${order.reference}`,
+      reference: reference?.trim() || `GCASH-${order.reference}`,
       verifiedAt: occurredAt,
       updatedAt: occurredAt,
     };
@@ -1392,7 +1704,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
     return commandSuccess(nextAccount);
   };
 
-  const resetDemoState: AppCommands['resetDemoState'] = () => {
+  const resetAppState: AppCommands['resetAppState'] = () => {
     set(createInitialAppData());
   };
 
@@ -1401,6 +1713,11 @@ export const useAppStore = create<AppStore>()((set, get) => {
     commands: {
       signIn,
       signOut,
+      beginCustomerRegistration,
+      resendCustomerVerification,
+      verifyCustomerRegistration,
+      cancelCustomerRegistration,
+      saveDeliveryAddress,
       addCartItem,
       updateCartItemQuantity,
       removeCartItem,
@@ -1412,6 +1729,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       assignDelivery,
       acceptDelivery,
       startDelivery,
+      recordDeliveryCompletion,
       completeDelivery,
       failDelivery,
       requestCancellation,
@@ -1420,7 +1738,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       updateRefund,
       adjustStock,
       adjustLoyalty,
-      resetDemoState,
+      resetAppState,
     },
   };
 });

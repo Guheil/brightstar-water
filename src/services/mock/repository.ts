@@ -10,11 +10,11 @@ import {
   PAYMENT_FIXTURES,
   PRODUCT_FIXTURES,
 } from '@/mocks';
-import type { DemoDataSnapshot } from '@/services/interfaces';
+import type { DataSnapshot } from '@/services/interfaces';
 
 export const cloneDemoData = <T>(value: T): T => structuredClone(value);
 
-export const createDemoSnapshot = (): DemoDataSnapshot =>
+export const createDemoSnapshot = (): DataSnapshot =>
   cloneDemoData({
     products: PRODUCT_FIXTURES,
     customers: CUSTOMER_FIXTURES,
@@ -29,19 +29,18 @@ export const createDemoSnapshot = (): DemoDataSnapshot =>
   });
 
 export class MockRepository {
-  private data: DemoDataSnapshot = createDemoSnapshot();
+  private data: DataSnapshot = createDemoSnapshot();
 
-  read(): DemoDataSnapshot {
+  read(): DataSnapshot {
     return this.data;
   }
 
-  snapshot(): DemoDataSnapshot {
+  snapshot(): DataSnapshot {
     return cloneDemoData(this.data);
   }
 
-  reset(): DemoDataSnapshot {
+  reset(): DataSnapshot {
     this.data = createDemoSnapshot();
     return this.snapshot();
   }
 }
-

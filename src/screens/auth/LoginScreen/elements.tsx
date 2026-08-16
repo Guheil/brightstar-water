@@ -66,87 +66,84 @@ export const TextLink = styled(AppLink)(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
-export const DemoSection = styled('section')(({ theme }) => ({
-  marginTop: theme.spacing(5),
-  paddingTop: theme.spacing(3),
+
+export const DemoAccess = styled('details')(({ theme }) => ({
+  marginTop: theme.spacing(2.5),
+  paddingTop: theme.spacing(1.5),
   borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
   borderTopColor: theme.vars.palette.divider,
+  color: theme.vars.palette.text.secondary,
+  opacity: 0.62,
+  transition: theme.transitions.create('opacity', {
+    duration: theme.transitions.duration.shorter,
+  }),
 
-  [theme.breakpoints.down('sm')]: {
-    marginTop: theme.spacing(4),
-    paddingTop: theme.spacing(2.5),
+  '&[open], &:hover, &:focus-within': {
+    opacity: 1,
+  },
+
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
   },
 }));
 
-export const DemoHeader = styled(Box)(({ theme }) => ({
-  display: 'grid',
-  gap: theme.spacing(0.5),
-}));
-
-export const DemoTitle = styled('h2')(({ theme }) => ({
-  ...theme.typography.h5,
-  margin: 0,
-  color: theme.vars.palette.text.primary,
-}));
-
-export const DemoIntro = styled(Typography)(({ theme }) => ({
+export const DemoAccessSummary = styled('summary')(({ theme }) => ({
   ...theme.typography.body2,
+  width: 'fit-content',
+  minHeight: theme.spacing(5.5),
+  display: 'flex',
+  alignItems: 'center',
+  color: theme.vars.palette.text.secondary,
+  fontWeight: theme.typography.fontWeightMedium,
+  cursor: 'pointer',
+  userSelect: 'none',
+}));
+
+export const DemoAccessHint = styled(Typography)(({ theme }) => ({
+  ...theme.typography.body2,
+  marginTop: theme.spacing(0.25),
   color: theme.vars.palette.text.secondary,
 }));
 
-export const DemoList = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(2),
+export const DemoAccessList = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  marginTop: theme.spacing(1.25),
   borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
   borderTopColor: theme.vars.palette.divider,
 }));
 
-export const DemoRow = styled(Box)(({ theme }) => ({
+export const DemoAccessRow = styled(Box)(({ theme }) => ({
+  minWidth: 0,
+  minHeight: theme.spacing(6.5),
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) auto',
   alignItems: 'center',
-  gap: theme.spacing(2),
-  paddingBlock: theme.spacing(1.5),
+  gap: theme.spacing(1.5),
   borderBottomWidth: theme.spacing(0.125),
   borderBottomStyle: 'solid',
   borderBottomColor: theme.vars.palette.divider,
-
-  [theme.breakpoints.down('sm')]: {
-    gap: theme.spacing(1),
-    paddingBlock: theme.spacing(1.25),
-  },
 }));
 
-export const DemoCopy = styled(Box)({
-  minWidth: 0,
-});
-
-export const DemoRole = styled(Typography)(({ theme }) => ({
-  ...theme.typography.subtitle2,
-  color: theme.vars.palette.text.primary,
-}));
-
-export const DemoEmail = styled(Typography)(({ theme }) => ({
+export const DemoAccountName = styled(Typography)(({ theme }) => ({
   ...theme.typography.body2,
-  marginTop: theme.spacing(0.25),
-  overflowWrap: 'anywhere',
+  color: theme.vars.palette.text.primary,
+  fontWeight: theme.typography.fontWeightSemiBold,
+}));
+
+export const DemoAccountEmail = styled(Typography)(({ theme }) => ({
+  ...theme.typography.body2,
+  overflow: 'hidden',
   color: theme.vars.palette.text.secondary,
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 }));
 
 export const DemoUseButton = styled(Button)(({ theme }) => ({
+  minWidth: theme.spacing(5.5),
   minHeight: theme.spacing(5.5),
-  color: theme.vars.palette.primary.main,
-  fontWeight: theme.typography.fontWeightSemiBold,
-
-  [theme.breakpoints.down('sm')]: {
-    minWidth: 'auto',
-    paddingInline: theme.spacing(1.5),
-  },
-}));
-
-export const PrototypeNotice = styled(Typography)(({ theme }) => ({
-  ...theme.typography.caption,
-  marginTop: theme.spacing(2),
+  paddingInline: theme.spacing(1.5),
   color: theme.vars.palette.text.secondary,
+  fontWeight: theme.typography.fontWeightSemiBold,
 }));

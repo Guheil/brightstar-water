@@ -9,14 +9,14 @@ export const Root = styled(Box)(({ theme }) => ({
 }));
 
 export const Section = styled('section')(({ theme }) => ({
-  borderTopWidth: theme.spacing(0.25),
+  paddingBlock: theme.spacing(2.5),
+  borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
-  borderTopColor: theme.vars.palette.primary.main,
-  paddingBlockStart: theme.spacing(2),
+  borderTopColor: theme.vars.palette.divider,
 }));
 
 export const SectionTitle = styled('h2')(({ theme }) => ({
-  ...theme.typography.h5,
+  ...theme.typography.h4,
   margin: 0,
   marginBlockEnd: theme.spacing(2),
   color: theme.vars.palette.text.primary,
@@ -25,7 +25,7 @@ export const SectionTitle = styled('h2')(({ theme }) => ({
 export const DetailList = styled('dl')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: `minmax(${theme.spacing(20)}, auto) minmax(0, 1fr)`,
-  gap: theme.spacing(1, 2),
+  gap: theme.spacing(1.25, 2),
   margin: 0,
 
   [theme.breakpoints.down('sm')]: {
@@ -50,7 +50,7 @@ export const DetailValue = styled('dd')(({ theme }) => ({
 export const AddressList = styled('ul')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: theme.spacing(3),
+  gap: theme.spacing(4),
   margin: 0,
   padding: 0,
   listStyle: 'none',
@@ -92,6 +92,7 @@ export const EmptyActionLink = styled(AppLink)(({ theme }) => ({
   display: 'inline-flex',
   alignItems: 'center',
   paddingInline: theme.spacing(2),
+  borderRadius: theme.radii.control,
   backgroundColor: theme.vars.palette.primary.main,
   color: theme.vars.palette.primary.contrastText,
   fontWeight: theme.typography.fontWeightSemiBold,

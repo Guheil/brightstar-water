@@ -16,8 +16,10 @@ export interface PaymentRecord {
   method: PaymentMethod;
   status: PaymentStatus;
   amountCentavos: MoneyCentavos;
-  /** Fictional presentation reference only; never a real GCash transaction ID. */
-  demoReference?: string;
+  /** Payment verification reference recorded with the order. */
+  reference?: string;
+  proofImageDataUrl?: string;
+  proofFileName?: string;
   verifiedAt?: ISODateString;
   paidAt?: ISODateString;
   updatedAt: ISODateString;

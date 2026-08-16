@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEMO_AUTH_ACCOUNTS } from '@/mocks';
+import { AUTH_ACCOUNTS } from '@/data';
 import { useAppStore } from '@/store';
 import {
-  deletePrototypeProduct,
-  quickUpdatePrototypeProduct,
-  savePrototypeProduct,
-} from './productPrototypeState';
-import { updatePrototypeCustomer } from './customerPrototypeState';
+  deleteProductState,
+  quickUpdateProduct,
+  saveProductState,
+} from './productState';
+import { updateCustomerState } from './customerState';
 
-describe('Admin CRUD-style prototype controls', () => {
+describe('Admin CRUD-style controls', () => {
   beforeEach(() => {
-    useAppStore.getState().commands.resetDemoState();
+    useAppStore.getState().commands.resetAppState();
   });
 
   it('applies a small product update without replacing unrelated catalog fields', () => {
     const before = useAppStore.getState().catalog.products[0];
-    const result = quickUpdatePrototypeProduct(before.id, {
+    const result = quickUpdateProduct(before.id, {
       priceCentavos: before.priceCentavos + 1000,
       isActive: false,
       isFeatured: !before.isFeatured,
@@ -30,7 +30,7 @@ describe('Admin CRUD-style prototype controls', () => {
   });
 
   it('blocks hard deletion when a product is referenced by operational history', () => {
-    const result = deletePrototypeProduct('product-gas-11kg');
+    const result = deleteProductState('product-gas-11kg');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('conflict');
     expect(useAppStore.getState().catalog.products.some((item) => item.id === 'product-gas-11kg'))
@@ -48,9 +48,9 @@ describe('Admin CRUD-style prototype controls', () => {
       createdAt: '2026-08-16T00:00:00.000Z',
       updatedAt: '2026-08-16T00:00:00.000Z',
     };
-    savePrototypeProduct(product, true);
+    saveProductState(product, true);
 
-    const result = deletePrototypeProduct(product.id);
+    const result = deleteProductState(product.id);
     expect(result.ok).toBe(true);
     expect(useAppStore.getState().catalog.products.some((item) => item.id === product.id)).toBe(false);
     expect(useAppStore.getState().inventory.items.some((item) => item.productId === product.id)).toBe(false);
@@ -58,7 +58,7 @@ describe('Admin CRUD-style prototype controls', () => {
 
   it('updates customer contact and account state while preserving addresses', () => {
     const before = useAppStore.getState().customers.records[0];
-    const result = updatePrototypeCustomer(before.id, {
+    const result = updateCustomerState(before.id, {
       displayName: 'Updated QA Customer',
       email: 'updated.qa@example.test',
       phonePlaceholder: '09XX-111-2222',
@@ -72,12 +72,12 @@ describe('Admin CRUD-style prototype controls', () => {
     expect(after.addresses).toEqual(before.addresses);
   });
 
-  it('prevents an inactive customer prototype account from signing in', () => {
-    const demo = DEMO_AUTH_ACCOUNTS.find((account) => account.role === 'customer')!;
+  it('prevents an inactive customer account from signing in', () => {
+    const account = AUTH_ACCOUNTS.find((account) => account.role === 'customer')!;
     const customer = useAppStore.getState().customers.records.find(
-      (item) => item.id === demo.customerId,
+      (item) => item.id === account.customerId,
     )!;
-    const update = updatePrototypeCustomer(customer.id, {
+    const update = updateCustomerState(customer.id, {
       displayName: customer.displayName,
       email: customer.email,
       phonePlaceholder: customer.phonePlaceholder,
@@ -86,16 +86,16 @@ describe('Admin CRUD-style prototype controls', () => {
     expect(update.ok).toBe(true);
 
     const signIn = useAppStore.getState().commands.signIn({
-      email: demo.email,
-      password: demo.demoPassword,
+      email: account.email,
+      password: account.password,
     });
     expect(signIn.ok).toBe(false);
     if (!signIn.ok) expect(signIn.error.code).toBe('not_allowed');
   });
 
-  it('rejects duplicate prototype customer emails', () => {
+  it('rejects duplicate customer emails', () => {
     const customers = useAppStore.getState().customers.records;
-    const result = updatePrototypeCustomer(customers[0].id, {
+    const result = updateCustomerState(customers[0].id, {
       displayName: customers[0].displayName,
       email: customers[1].email,
       phonePlaceholder: customers[0].phonePlaceholder,

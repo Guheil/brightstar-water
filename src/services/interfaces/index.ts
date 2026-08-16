@@ -36,7 +36,7 @@ export interface DeliveryQuery {
   statuses?: readonly DeliveryStatus[];
 }
 
-/** Expected authentication boundary. The current implementation is explicitly demo-only. */
+/** Authentication service boundary used by the application. */
 export interface AuthService {
   getSession(): Promise<AuthSession | null>;
   signIn(
@@ -54,7 +54,7 @@ export interface ProductService {
   setActive(productId: EntityId, isActive: boolean, at: ISODateString): Promise<Product | null>;
 }
 
-/** Customer directory contract. A real backend must scope customer reads by role. */
+/** Customer directory contract with role-aware access expectations. */
 export interface CustomerService {
   list(): Promise<Customer[]>;
   getById(customerId: EntityId): Promise<Customer | null>;
@@ -94,14 +94,14 @@ export interface LoyaltyService {
   appendActivity(activity: LoyaltyActivity): Promise<LoyaltyActivity>;
 }
 
-/** Payment state only. Real collection and GCash verification remain backend responsibilities. */
+/** Payment state and verification contract used by the ordering workflow. */
 export interface PaymentService {
   list(): Promise<PaymentRecord[]>;
   getForOrder(orderId: EntityId): Promise<PaymentRecord | null>;
   save(payment: PaymentRecord): Promise<PaymentRecord>;
 }
 
-export interface DemoDataSnapshot {
+export interface DataSnapshot {
   products: Product[];
   customers: Customer[];
   deliverers: DelivererProfile[];
@@ -114,10 +114,10 @@ export interface DemoDataSnapshot {
   payments: PaymentRecord[];
 }
 
-/** Single hydration/reset boundary used only by the deterministic frontend prototype. */
-export interface DemoDataService {
-  loadSnapshot(): Promise<DemoDataSnapshot>;
-  reset(): Promise<DemoDataSnapshot>;
+/** Single hydration and reset boundary for application data. */
+export interface DataService {
+  loadSnapshot(): Promise<DataSnapshot>;
+  reset(): Promise<DataSnapshot>;
 }
 
 export interface AppServices {
@@ -129,6 +129,6 @@ export interface AppServices {
   deliveries: DeliveryService;
   loyalty: LoyaltyService;
   payments: PaymentService;
-  demoData: DemoDataService;
+  dataService: DataService;
 }
 

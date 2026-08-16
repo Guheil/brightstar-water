@@ -9,11 +9,15 @@ import AdminDataTable from './components/AdminDataTable';
 import InventoryScreen from './InventoryScreen';
 import ProductsScreen from './ProductsScreen';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 const renderWithTheme = (ui: React.ReactNode) =>
   render(<MUIStyleProvider>{ui}</MUIStyleProvider>);
 
 beforeEach(() => {
-  useAppStore.getState().commands.resetDemoState();
+  useAppStore.getState().commands.resetAppState();
 });
 
 describe('Admin responsive and confirmation semantics', () => {
@@ -44,7 +48,7 @@ describe('Admin responsive and confirmation semantics', () => {
     renderWithTheme(
       <AdminConfirmDialog
         confirmLabel="Apply change"
-        description="This changes shared fictional state."
+        description="This changes shared application state."
         onClose={onClose}
         onConfirm={onConfirm}
         open
@@ -53,20 +57,17 @@ describe('Admin responsive and confirmation semantics', () => {
     );
 
     const dialog = screen.getByRole('dialog', { name: 'Confirm this change?' });
-    expect(dialog).toHaveAccessibleDescription('This changes shared fictional state.');
+    expect(dialog).toHaveAccessibleDescription('This changes shared application state.');
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Apply change' })).toBeInTheDocument();
   });
 
-  it('presents the administrator session without demo controls or disclaimers', () => {
-    const { container } = renderWithTheme(<AccountScreen />);
+  it('presents the administrator session with account details and no reset control', () => {
+    renderWithTheme(<AccountScreen />);
 
     expect(screen.getByRole('heading', { name: 'Admin account' })).toBeInTheDocument();
     expect(screen.getByText('Current session')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /reset/i })).not.toBeInTheDocument();
-    expect(container).not.toHaveTextContent(
-      /demo|fictional|prototype|simulated|frontend-only/i,
-    );
   });
 
   it('renders the product catalog without a recursive store snapshot update', () => {

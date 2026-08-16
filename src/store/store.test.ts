@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '@/store';
 
-const CUSTOMER_ID = 'customer-demo-01';
-const ADMIN_ID = 'user-admin-demo';
-const DELIVERER_ID = 'deliverer-demo-01';
+const CUSTOMER_ID = 'customer-01';
+const ADMIN_ID = 'user-admin-01';
+const DELIVERER_ID = 'deliverer-01';
 const PRODUCT_ID = 'product-gas-regulator';
 const AT = '2026-08-12T04:00:00.000Z';
 
@@ -11,7 +11,7 @@ const placeCodOrder = () =>
   useAppStore.getState().commands.placeOrder({
     customerId: CUSTOMER_ID,
     items: [{ productId: PRODUCT_ID, quantity: 2 }],
-    deliveryAddressId: 'address-demo-01-a',
+    deliveryAddressId: 'address-01-a',
     deliverySchedule: {
       date: '2026-08-14',
       windowLabel: '9:00 AM–12:00 PM',
@@ -21,7 +21,11 @@ const placeCodOrder = () =>
   });
 
 describe('frontend order workflow', () => {
-  beforeEach(() => useAppStore.getState().commands.resetDemoState());
+  beforeEach(() => {
+    const commands = useAppStore.getState().commands;
+    commands.resetAppState();
+    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' }, AT);
+  });
 
   it('reserves stock atomically when placing an order', () => {
     const before = useAppStore
@@ -40,12 +44,12 @@ describe('frontend order workflow', () => {
     }
   });
 
-  it('rejects an order without sufficient demo stock without partial writes', () => {
+  it('rejects an order without sufficient stock without partial writes', () => {
     const orderCount = useAppStore.getState().orders.records.length;
     const result = useAppStore.getState().commands.placeOrder({
       customerId: CUSTOMER_ID,
       items: [{ productId: PRODUCT_ID, quantity: 999 }],
-      deliveryAddressId: 'address-demo-01-a',
+      deliveryAddressId: 'address-01-a',
       deliverySchedule: { date: '2026-08-14', windowLabel: '1:00 PM–4:00 PM' },
       paymentMethod: 'cod',
       placedAt: AT,
@@ -110,13 +114,15 @@ describe('frontend order workflow', () => {
     expect(order.loyalty.pointsPending).toBe(0);
   });
 
-  it('gates completion for an unverified fictional GCash payment', () => {
+  it('gates completion for an unverified GCash payment', () => {
     const placed = useAppStore.getState().commands.placeOrder({
       customerId: CUSTOMER_ID,
       items: [{ productId: PRODUCT_ID, quantity: 1 }],
-      deliveryAddressId: 'address-demo-01-a',
+      deliveryAddressId: 'address-01-a',
       deliverySchedule: { date: '2026-08-14', windowLabel: '1:00 PM–4:00 PM' },
       paymentMethod: 'gcash',
+      paymentProofImageDataUrl: 'data:image/png;base64,aGVsbG8=',
+      paymentProofFileName: 'payment.png',
       placedAt: AT,
     });
     expect(placed.ok).toBe(true);
@@ -137,7 +143,7 @@ describe('frontend order workflow', () => {
     if (!blocked.ok) expect(blocked.error.code).toBe('not_allowed');
 
     expect(
-      useAppStore.getState().commands.verifyPayment(placed.value.id, ADMIN_ID, 'DEMO-OK', AT)
+      useAppStore.getState().commands.verifyPayment(placed.value.id, ADMIN_ID, 'GCASH-OK', AT)
         .ok,
     ).toBe(true);
     expect(

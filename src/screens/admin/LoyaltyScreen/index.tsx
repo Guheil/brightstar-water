@@ -10,6 +10,7 @@ import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminDataTable from '../components/AdminDataTable';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
+import AdminMetricStrip from '../components/AdminMetricStrip';
 import { ADMIN_ACTOR_ID, formatDateTime, humanize } from '../utils';
 import {
   ActivityItem,
@@ -40,6 +41,12 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
   const [reason, setReason] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const loyaltyMetrics = [
+    { label: 'Customers tracked', value: accounts.length },
+    { label: 'Points available', value: accounts.reduce((sum, account) => sum + account.pointsAvailable, 0), tone: 'water' as const },
+    { label: 'Activity records', value: activity.length, tone: 'gas' as const },
+    { label: 'Positive balances', value: accounts.filter((account) => account.pointsAvailable > 0).length, tone: 'success' as const },
+  ];
 
   const columns: readonly AdminDataColumn<Customer>[] = [
     {
@@ -111,9 +118,11 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Review balances and record controlled adjustments in customer loyalty history."
+        description="Review customer balances and record reasoned adjustments in the loyalty ledger."
         title="Loyalty"
       />
+
+      <AdminMetricStrip ariaLabel="Loyalty summary" items={loyaltyMetrics} />
 
       {feedback ? (
         <Notice title={feedback.title} tone={feedback.tone}>

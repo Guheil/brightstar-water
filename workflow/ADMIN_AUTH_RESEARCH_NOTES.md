@@ -2,7 +2,7 @@
 
 Research date: 2026-08-16
 
-This pass was based on 32 primary or authoritative sources. The project remains a frontend-only prototype, so security guidance below informs interaction design and the future backend contract rather than pretending the current Zustand demo session is production authentication.
+This pass was based on 32 primary or authoritative sources. The security guidance below informs interaction design, authorization boundaries, session handling, and the trusted service contract.
 
 ## Implementation conclusions
 
@@ -13,7 +13,7 @@ This pass was based on 32 primary or authoritative sources. The project remains 
 - Keep login compatible with password managers, autofill, paste, and show/hide password controls.
 - Use generic invalid-credential messaging. Do not expose whether a user exists through login feedback.
 - Production authorization must be enforced server-side, deny by default, and verify permissions for every privileged operation.
-- Validate and sanitize untrusted input on the future backend. Frontend validation is usability only, not a security boundary.
+- Validate and sanitize untrusted input at trusted server boundaries. Client validation improves usability but is not an authorization boundary.
 - Future state-changing authenticated endpoints will need CSRF protection appropriate to the chosen session architecture, rate limiting, secure session handling, and audit logging.
 
 ## Material UI
@@ -50,7 +50,7 @@ This pass was based on 32 primary or authoritative sources. The project remains 
 14. Accessible authentication: https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html
     - Authentication should support password managers and paste rather than relying on memory/transcription.
 15. Modal dialog example: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/dialog/
-    - Demonstrates focus placement, labels, descriptions, and close/cancel behavior.
+    - Shows focus placement, labels, descriptions, and close/cancel behavior.
 16. Menu and menubar pattern: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
     - Defines keyboard interaction expectations for action menus and their items.
 
@@ -96,7 +96,7 @@ This pass was based on 32 primary or authoritative sources. The project remains 
 
 - Product deletion is guarded. Products referenced by orders, cart state, reserved inventory, or inventory history must be deactivated instead of destroyed.
 - Inventory records are not directly deleted. Admin records reasoned stock adjustments that preserve history.
-- Customer records are not hard-deleted. Admin can update prototype contact details and activate/deactivate the account while preserving order/address/loyalty history.
+- Customer records are not hard-deleted. Admin can update application contact details and activate/deactivate the account while preserving order/address/loyalty history.
 - Orders and deliveries expose workflow actions rather than misleading CRUD deletion.
-- Login fields start empty. Fictional demo shortcuts populate the form without exposing a role selector.
-- Deactivating a prototype customer now prevents that fictional account from signing in.
+- Login fields start empty. Seeded workspace shortcuts populate the form without exposing a role selector.
+- Deactivating a customer now prevents that workspace account from signing in.

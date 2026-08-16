@@ -30,7 +30,7 @@ describe('responsive authentication layout contract', () => {
     expect(scaffoldElements).toContain("display: 'none'");
   });
 
-  it('keeps small-screen prototype controls compact without sacrificing the existing touch target', () => {
+  it('keeps small-screen workspace controls compact without sacrificing the existing touch target', () => {
     expect(loginElements).toContain("minHeight: theme.spacing(5.5)");
     expect(loginElements).toContain("[theme.breakpoints.down('sm')]");
     expect(loginElements).toContain("paddingInline: theme.spacing(1.5)");

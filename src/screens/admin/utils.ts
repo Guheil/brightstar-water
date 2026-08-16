@@ -1,6 +1,6 @@
 import type { StatusTone } from '@/components/ui';
 
-export const ADMIN_ACTOR_ID = 'user-admin-demo';
+export const ADMIN_ACTOR_ID = 'user-admin-01';
 
 const dateFormatter = new Intl.DateTimeFormat('en-PH', {
   dateStyle: 'medium',

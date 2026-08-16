@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { STOREFRONT_MEDIA } from '@/config';
-import { PRODUCT_FIXTURES } from '@/mocks';
+import { PRODUCT_DATA } from '@/data';
 import { formatPhp } from '@/utils';
 import type { MrjeProductPreview } from './interface';
 import {
@@ -85,7 +85,7 @@ import {
   ViewAllLink,
 } from './elements';
 
-const products: readonly MrjeProductPreview[] = PRODUCT_FIXTURES.filter(
+const products: readonly MrjeProductPreview[] = PRODUCT_DATA.filter(
   (product) => product.category === 'gas',
 ).map((product) => ({
   id: product.id,
@@ -365,7 +365,7 @@ export default function MrjeHomeScreen() {
             <InfoItem>
               <InfoItemTitle>GCash payment review</InfoItemTitle>
               <InfoItemText>
-                The thesis demo represents an awaiting-verification GCash state without requesting real GCash credentials.
+                GCash orders enter an awaiting-verification state before fulfillment proceeds.
               </InfoItemText>
             </InfoItem>
             <InfoItem>
@@ -424,8 +424,7 @@ export default function MrjeHomeScreen() {
             </InfoTitle>
             <InfoText>
               The loyalty area shows points, peso-equivalent value, recent activity,
-              and qualification progress. The final earning formula remains
-              configurable while the thesis and business rules are being confirmed.
+              and qualification progress. Earning and redemption details remain aligned with the configured loyalty policy.
             </InfoText>
           </div>
           <InfoGrid>
@@ -439,7 +438,7 @@ export default function MrjeHomeScreen() {
             </InfoItem>
             <InfoItem>
               <InfoItemTitle>Rules stay configurable</InfoItemTitle>
-              <InfoItemText>The frontend does not present unresolved thesis loyalty rules as permanent business policy.</InfoItemText>
+              <InfoItemText>Loyalty activity follows the configured earning and redemption rules.</InfoItemText>
             </InfoItem>
           </InfoGrid>
         </InfoContainer>

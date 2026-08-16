@@ -5,7 +5,7 @@ export interface ProductDeletionReferences {
   isInCart: boolean;
 }
 
-export function canHardDeletePrototypeProduct(references: ProductDeletionReferences): boolean {
+export function canHardDeleteProduct(references: ProductDeletionReferences): boolean {
   return !(
     references.hasInventoryHistory ||
     references.hasOrderHistory ||

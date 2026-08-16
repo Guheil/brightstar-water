@@ -1,9 +1,14 @@
 import type {
+  AuthAccount,
   AuthCredentials,
   AuthSession,
+  CustomerRegistrationInput,
+  PendingCustomerRegistration,
+  RegistrationChallenge,
   CartLine,
   CommandResult,
   Customer,
+  DeliveryAddress,
   DelivererProfile,
   Delivery,
   DeliveryFailureReason,
@@ -23,7 +28,9 @@ import type {
 
 export interface AuthSliceState {
   session: AuthSession | null;
-  prototypeNotice: string;
+  accessNotice: string;
+  accounts: AuthAccount[];
+  pendingRegistration: PendingCustomerRegistration | null;
 }
 
 export interface CatalogSliceState {
@@ -62,13 +69,16 @@ export interface PaymentSliceState {
   records: PaymentRecord[];
 }
 
-export interface DemoMetaState {
+export interface AppMetaState {
   nextOrderSequence: number;
   nextOrderEventSequence: number;
   nextInventoryEventSequence: number;
   nextLoyaltyEventSequence: number;
   nextCancellationSequence: number;
   nextRefundSequence: number;
+  nextCustomerSequence: number;
+  nextUserSequence: number;
+  nextAddressSequence: number;
 }
 
 export interface StockAdjustmentInput {
@@ -77,6 +87,35 @@ export interface StockAdjustmentInput {
   quantity: number;
   reason: string;
   actorId: EntityId;
+  at?: ISODateString;
+}
+
+
+export interface SaveDeliveryAddressInput {
+  customerId: EntityId;
+  label: string;
+  recipientName: string;
+  phone: string;
+  addressLine: string;
+  area: string;
+  municipality: string;
+  province: string;
+  distanceKm: number;
+  latitude: number;
+  longitude: number;
+  deliveryNote?: string;
+  makeDefault?: boolean;
+  at?: ISODateString;
+}
+
+
+export interface DeliveryCompletionInput {
+  deliveryId: EntityId;
+  delivererId: EntityId;
+  cashReceivedCentavos?: number;
+  proofImageDataUrl?: string;
+  proofFileName?: string;
+  note?: string;
   at?: ISODateString;
 }
 
@@ -91,6 +130,14 @@ export interface LoyaltyAdjustmentInput {
 export interface AppCommands {
   signIn(credentials: AuthCredentials, at?: ISODateString): CommandResult<AuthSession>;
   signOut(): void;
+  beginCustomerRegistration(
+    input: CustomerRegistrationInput,
+    at?: ISODateString,
+  ): CommandResult<RegistrationChallenge>;
+  resendCustomerVerification(at?: ISODateString): CommandResult<RegistrationChallenge>;
+  verifyCustomerRegistration(code: string, at?: ISODateString): CommandResult<AuthSession>;
+  cancelCustomerRegistration(): void;
+  saveDeliveryAddress(input: SaveDeliveryAddressInput): CommandResult<DeliveryAddress>;
   addCartItem(productId: EntityId, quantity?: number): CommandResult<CartLine>;
   updateCartItemQuantity(productId: EntityId, quantity: number): CommandResult<CartLine>;
   removeCartItem(productId: EntityId): void;
@@ -119,6 +166,7 @@ export interface AppCommands {
     delivererId: EntityId,
     at?: ISODateString,
   ): CommandResult<Delivery>;
+  recordDeliveryCompletion(input: DeliveryCompletionInput): CommandResult<Delivery>;
   completeDelivery(
     deliveryId: EntityId,
     delivererId: EntityId,
@@ -147,7 +195,7 @@ export interface AppCommands {
   verifyPayment(
     orderId: EntityId,
     actorId: EntityId,
-    demoReference?: string,
+    reference?: string,
     at?: ISODateString,
   ): CommandResult<PaymentRecord>;
   updateRefund(
@@ -159,7 +207,7 @@ export interface AppCommands {
   ): CommandResult<Order>;
   adjustStock(input: StockAdjustmentInput): CommandResult<InventoryItem>;
   adjustLoyalty(input: LoyaltyAdjustmentInput): CommandResult<LoyaltyAccount>;
-  resetDemoState(): void;
+  resetAppState(): void;
 }
 
 export interface AppStore {
@@ -172,7 +220,7 @@ export interface AppStore {
   deliveries: DeliverySliceState;
   loyalty: LoyaltySliceState;
   payments: PaymentSliceState;
-  meta: DemoMetaState;
+  meta: AppMetaState;
   commands: AppCommands;
 }
 

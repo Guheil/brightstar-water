@@ -8,10 +8,9 @@ import { styled } from '@mui/material/styles';
 import AppLink from '@/components/ui/AppLink';
 
 export const Root = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
+  display: 'grid',
   gap: theme.spacing(3),
-  maxWidth: theme.spacing(82),
+  maxWidth: theme.spacing(86),
 }));
 
 export const Intro = styled(Typography)(({ theme }) => ({
@@ -20,13 +19,15 @@ export const Intro = styled(Typography)(({ theme }) => ({
 }));
 
 export const FailureForm = styled('form')(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
+  display: 'grid',
   gap: theme.spacing(3),
-  padding: theme.spacing(3),
-  backgroundColor: theme.vars.palette.background.paper,
-  border: `${theme.spacing(0.125)} solid ${theme.vars.palette.divider}`,
-  borderRadius: theme.radii.surface,
+  paddingBlock: theme.spacing(2.5),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 }));
 
 export const Legend = styled('legend')(({ theme }) => ({
@@ -37,14 +38,22 @@ export const Legend = styled('legend')(({ theme }) => ({
 }));
 
 export const ReasonGroup = styled(RadioGroup)(({ theme }) => ({
-  gap: theme.spacing(0.5),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
 }));
 
 export const ReasonOption = styled(FormControlLabel)(({ theme }) => ({
-  minHeight: theme.spacing(6),
+  minHeight: theme.spacing(6.5),
   marginInline: 0,
-  paddingInline: theme.spacing(1),
-  borderBottom: `${theme.spacing(0.125)} solid ${theme.vars.palette.divider}`,
+  paddingInline: theme.spacing(0.5),
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
+
+  '&:hover': {
+    backgroundColor: theme.vars.palette.neutral.light,
+  },
 }));
 
 export const NoteField = styled(TextField)({
@@ -55,6 +64,11 @@ export const Actions = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexWrap: 'wrap',
   gap: theme.spacing(1.5),
+
+  [theme.breakpoints.down('sm')]: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+  },
 }));
 
 export const SubmitButton = styled(Button)(({ theme }) => ({
@@ -62,12 +76,14 @@ export const SubmitButton = styled(Button)(({ theme }) => ({
 }));
 
 export const CancelLink = styled(AppLink)(({ theme }) => ({
-  display: 'inline-flex',
   minHeight: theme.spacing(6),
+  display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   paddingInline: theme.spacing(2),
-  border: `${theme.spacing(0.125)} solid ${theme.vars.palette.divider}`,
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
   borderRadius: theme.radii.control,
   color: theme.vars.palette.text.primary,
   fontWeight: theme.typography.fontWeightSemiBold,

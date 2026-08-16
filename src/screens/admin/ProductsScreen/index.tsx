@@ -15,11 +15,12 @@ import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import AdminFormDialog from '../components/AdminFormDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
+import AdminMetricStrip from '../components/AdminMetricStrip';
 import {
-  deletePrototypeProduct,
-  quickUpdatePrototypeProduct,
-  setPrototypeProductActive,
-} from '../productPrototypeState';
+  deleteProductState,
+  quickUpdateProduct,
+  setProductActive,
+} from '../productState';
 import { humanize } from '../utils';
 import {
   EmptyResetButton,
@@ -49,6 +50,13 @@ export default function ProductsScreen({ className }: ProductsScreenProps) {
   const [quickFeatured, setQuickFeatured] = useState(false);
   const [quickActive, setQuickActive] = useState(true);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const productMetrics = [
+    { label: 'Catalog products', value: products.length },
+    { label: 'MRJE Gas', value: products.filter((product) => product.category === 'gas').length, tone: 'gas' as const },
+    { label: 'Bright Star Water', value: products.filter((product) => product.category === 'water').length, tone: 'water' as const },
+    { label: 'Featured', value: products.filter((product) => product.isFeatured).length, tone: 'success' as const },
+    { label: 'Inactive', value: products.filter((product) => !product.isActive).length, tone: 'warning' as const },
+  ];
 
   const filteredProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -154,7 +162,7 @@ export default function ProductsScreen({ className }: ProductsScreenProps) {
   const confirmToggle = () => {
     if (!pendingToggle) return;
     const nextActive = !pendingToggle.isActive;
-    setPrototypeProductActive(pendingToggle.id, nextActive);
+    setProductActive(pendingToggle.id, nextActive);
     setFeedback({
       tone: 'success',
       title: nextActive ? 'Product activated' : 'Product deactivated',
@@ -167,13 +175,13 @@ export default function ProductsScreen({ className }: ProductsScreenProps) {
 
   const confirmDelete = () => {
     if (!pendingDelete) return;
-    const result = deletePrototypeProduct(pendingDelete.id);
+    const result = deleteProductState(pendingDelete.id);
     setFeedback(
       result.ok
         ? {
             tone: 'success',
             title: 'Product deleted',
-            message: `${pendingDelete.name} and its unused inventory record were removed from this prototype.`,
+            message: `${pendingDelete.name} and its unused inventory record were removed.`,
           }
         : {
             tone: 'error',
@@ -188,7 +196,7 @@ export default function ProductsScreen({ className }: ProductsScreenProps) {
     event.preventDefault();
     if (!quickEditProduct) return;
     const pricePesos = Number(quickPrice);
-    const result = quickUpdatePrototypeProduct(quickEditProduct.id, {
+    const result = quickUpdateProduct(quickEditProduct.id, {
       priceCentavos: Math.round(pricePesos * 100),
       isFeatured: quickFeatured,
       isActive: quickActive,
@@ -209,9 +217,11 @@ export default function ProductsScreen({ className }: ProductsScreenProps) {
     <Root className={className}>
       <AdminPageHeader
         actions={<NewProductLink href="/admin/products/new">Add product</NewProductLink>}
-        description="Maintain product details, pricing, customer visibility, and catalog availability."
+        description="Maintain products, pricing, storefront visibility, and catalog availability across both brands."
         title="Products"
       />
+
+      <AdminMetricStrip ariaLabel="Product catalog summary" items={productMetrics} />
 
       {feedback ? (
         <Notice title={feedback.title} tone={feedback.tone}>

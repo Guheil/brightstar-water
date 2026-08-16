@@ -77,7 +77,7 @@ const paymentOptions: PaymentOptionView[] = [
   {
     title: 'GCash',
     description:
-      'Choose GCash at checkout to demonstrate the awaiting-verification flow without requesting real GCash credentials.',
+      'Choose GCash at checkout to continue through payment verification before fulfillment.',
   },
 ];
 
@@ -222,8 +222,7 @@ export default function DeliveryInfoScreen({
           <SectionHeader>
             <SectionTitle id="payment-title">Payment stays part of the review</SectionTitle>
             <SectionIntro>
-              Cash on delivery is supported in the flow. GCash is simulated for this
-              thesis demo, so the site does not request real GCash credentials.
+              Cash on delivery is supported in the flow. GCash orders enter payment verification before fulfillment proceeds.
             </SectionIntro>
           </SectionHeader>
           <PaymentGrid>

@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: 'Sign in to manage orders, deliveries, and account activity.',
 };
 
-export default function LoginPage() {
-  return <LoginScreen />;
+interface LoginPageProps {
+  searchParams: Promise<{ next?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { next } = await searchParams;
+  return <LoginScreen nextPath={next} />;
 }

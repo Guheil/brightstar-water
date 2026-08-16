@@ -9,15 +9,22 @@ import AppLink from '@/components/ui/AppLink';
 
 export const Root = styled(Box)(({ theme }) => ({
   display: 'flex',
-  maxWidth: theme.spacing(100),
+  maxWidth: theme.spacing(116),
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(4),
 }));
 
 export const ProductForm = styled('form')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: theme.spacing(2),
+  gap: theme.spacing(2.5),
+  paddingBlock: theme.spacing(3),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('md')]: {
     gridTemplateColumns: '1fr',
@@ -63,6 +70,7 @@ export const CancelLink = styled(AppLink)(({ theme }) => ({
   paddingInline: theme.spacing(2),
   color: theme.vars.palette.text.primary,
   fontWeight: theme.typography.fontWeightMedium,
+  textDecoration: 'none',
 }));
 
 export const EmptyActionLink = styled(AppLink)(({ theme }) => ({
@@ -70,7 +78,9 @@ export const EmptyActionLink = styled(AppLink)(({ theme }) => ({
   display: 'inline-flex',
   alignItems: 'center',
   paddingInline: theme.spacing(2),
+  borderRadius: theme.radii.control,
   backgroundColor: theme.vars.palette.primary.main,
   color: theme.vars.palette.primary.contrastText,
   fontWeight: theme.typography.fontWeightSemiBold,
+  textDecoration: 'none',
 }));

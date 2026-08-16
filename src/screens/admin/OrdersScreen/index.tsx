@@ -12,6 +12,7 @@ import AdminDataTable from '../components/AdminDataTable';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
+import AdminMetricStrip from '../components/AdminMetricStrip';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
   FilterBar,
@@ -69,6 +70,14 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
       }
     });
   }, [customers, date, orders, paymentMethod, query, sort, status]);
+
+  const orderMetrics = [
+    { label: 'All orders', value: orders.length },
+    { label: 'Needs review', value: orders.filter((order) => order.status === 'pending_review').length, tone: 'warning' as const },
+    { label: 'Preparing', value: orders.filter((order) => ['confirmed', 'preparing'].includes(order.status)).length, tone: 'gas' as const },
+    { label: 'Out for delivery', value: orders.filter((order) => order.status === 'out_for_delivery').length, tone: 'water' as const },
+    { label: 'Delivered', value: orders.filter((order) => order.status === 'delivered').length, tone: 'success' as const },
+  ];
 
   const pageCount = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
   const safePage = Math.min(page, pageCount);
@@ -169,9 +178,11 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Search, filter, and open orders without compressing operational details into decorative cards."
+        description="Review incoming orders, payment state, delivery schedules, and fulfillment progress from one queue."
         title="Orders"
       />
+
+      <AdminMetricStrip ariaLabel="Order status summary" items={orderMetrics} />
 
       <FilterBar aria-label="Order filters">
         <FilterField

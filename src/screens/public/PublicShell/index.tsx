@@ -104,6 +104,9 @@ export default function PublicShell({ children }: PublicShellProps) {
   const brand = getBrandFromPathname(pathname);
   const gateway = pathname === '/';
   const cartCount = useAppStore(selectCartItemCount);
+  const session = useAppStore((state) => state.auth.session);
+  const signOut = useAppStore((state) => state.commands.signOut);
+  const canLogout = session?.user.role === 'customer';
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -132,14 +135,17 @@ export default function PublicShell({ children }: PublicShellProps) {
   return (
     <>
       <CustomerHeader
-        accountHref="/customer/account"
+        accountHref={canLogout ? '/customer/account' : `/login?next=${encodeURIComponent(pathname)}`}
+        accountLabel={canLogout ? 'Account' : 'Sign In'}
         activeHref={activeHref}
         brandName="MRJE Gas and Bright Star Water"
         cartCount={cartCount}
         cartHref="/customer/cart"
         megaMenuGroups={gateway ? gatewayMenuGroups : customerMegaMenuGroups}
         navigation={gateway ? gatewayNavigation : customerPrimaryNavigation}
+        onLogout={canLogout ? signOut : undefined}
         searchHref={gateway ? undefined : '/shop'}
+        showOrderNavigation={canLogout}
         shopHref={gateway ? '/' : '/shop'}
         transparentAtTop={gateway}
         logoSources={SHARED_STOREFRONT_LOGO_SOURCES}

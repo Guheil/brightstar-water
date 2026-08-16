@@ -1,5 +1,11 @@
-import { History, Truck, UserRound } from 'lucide-react';
+'use client';
+
+import { History, House, LogOut, Truck, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog';
+import { useAppStore } from '@/store';
 import {
   BottomNavigation,
   BottomNavLink,
@@ -9,6 +15,9 @@ import {
   DesktopSidebar,
   Header,
   HeaderAction,
+  HeaderControls,
+  HeaderLogoutButton,
+  HeaderLogoutLabel,
   HeaderInner,
   HeaderMeta,
   HeaderText,
@@ -17,16 +26,16 @@ import {
   MainContainer,
   ShellRoot,
   SidebarBody,
+  SidebarFooter,
+  SidebarLogoutButton,
   SidebarUser,
   SkipLink,
   Workspace,
 } from './elements';
-import type {
-  DelivererNavigationIcon,
-  DelivererShellProps,
-} from './interface';
+import type { DelivererNavigationIcon, DelivererShellProps } from './interface';
 
 const navigationIcons: Record<DelivererNavigationIcon, LucideIcon> = {
+  home: House,
   active: Truck,
   history: History,
   profile: UserRound,
@@ -40,12 +49,23 @@ export default function DelivererShell({
   headerAction,
   headerMeta,
   headerTitle,
-  homeHref = '/deliverer/deliveries',
+  homeHref = '/deliverer',
   mainId = 'deliverer-main-content',
   navigation,
   userName,
 }: DelivererShellProps) {
+  const router = useRouter();
+  const signOut = useAppStore((state) => state.commands.signOut);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+
+  const confirmLogout = () => {
+    setLogoutOpen(false);
+    signOut();
+    router.push('/login');
+  };
+
   return (
+    <>
     <ShellRoot className={className}>
       <SkipLink href={`#${mainId}`}>Skip to main content</SkipLink>
 
@@ -70,7 +90,16 @@ export default function DelivererShell({
               );
             })}
           </DesktopNavigation>
-          {userName ? <SidebarUser>{userName}</SidebarUser> : null}
+          <SidebarFooter>
+            {userName ? <SidebarUser>{userName}</SidebarUser> : null}
+            <SidebarLogoutButton
+              onClick={() => setLogoutOpen(true)}
+              startIcon={<LogOut aria-hidden="true" />}
+              variant="outlined"
+            >
+              Log out
+            </SidebarLogoutButton>
+          </SidebarFooter>
         </SidebarBody>
       </DesktopSidebar>
 
@@ -79,37 +108,50 @@ export default function DelivererShell({
           <HeaderInner>
             <HeaderText>
               <HeaderTitle>{headerTitle}</HeaderTitle>
-              {headerMeta ? (
-                <HeaderMeta>{headerMeta}</HeaderMeta>
-              ) : null}
+              {headerMeta ? <HeaderMeta>{headerMeta}</HeaderMeta> : null}
             </HeaderText>
-            {headerAction ? <HeaderAction>{headerAction}</HeaderAction> : null}
+            <HeaderControls>
+              {headerAction ? <HeaderAction>{headerAction}</HeaderAction> : null}
+              <HeaderLogoutButton
+                aria-label="Log out"
+                onClick={() => setLogoutOpen(true)}
+                startIcon={<LogOut aria-hidden="true" />}
+              >
+                <HeaderLogoutLabel>Log out</HeaderLogoutLabel>
+              </HeaderLogoutButton>
+            </HeaderControls>
           </HeaderInner>
         </Header>
-
         <Main id={mainId} tabIndex={-1}>
           <MainContainer>{children}</MainContainer>
         </Main>
-
-        <BottomNavigation aria-label="Deliverer mobile navigation">
-          {navigation.map((item) => {
-            const active = activeHref === item.href;
-            const Icon = navigationIcons[item.icon];
-
-            return (
-              <BottomNavLink
-                aria-current={active ? 'page' : undefined}
-                href={item.href}
-                key={item.href}
-                $active={active}
-              >
-                <Icon aria-hidden="true" />
-                {item.label}
-              </BottomNavLink>
-            );
-          })}
-        </BottomNavigation>
       </Workspace>
+
+      <BottomNavigation aria-label="Deliverer navigation">
+        {navigation.map((item) => {
+          const active = activeHref === item.href;
+          const Icon = navigationIcons[item.icon];
+          return (
+            <BottomNavLink
+              aria-current={active ? 'page' : undefined}
+              href={item.href}
+              key={item.href}
+              $active={active}
+            >
+              <Icon aria-hidden="true" />
+              {item.label}
+            </BottomNavLink>
+          );
+        })}
+      </BottomNavigation>
     </ShellRoot>
+      <LogoutConfirmDialog
+        description="You’ll need to sign in again to view or update assigned deliveries."
+        onClose={() => setLogoutOpen(false)}
+        onConfirm={confirmLogout}
+        open={logoutOpen}
+        title="Log out of Deliverer?"
+      />
+    </>
   );
 }

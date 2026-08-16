@@ -9,12 +9,14 @@ import {
 } from 'react';
 import {
   ChevronDown,
+  LogOut,
   Menu,
   Search,
   ShoppingCart,
   UserRound,
   X,
 } from 'lucide-react';
+import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog';
 import {
   customerHeaderMotion,
   transitionDurations,
@@ -37,6 +39,7 @@ import {
   LogoFrame,
   LogoCluster,
   LogoImage,
+  LogoutActionButton,
   MegaMenu,
   MegaMenuGroup,
   MegaMenuInner,
@@ -49,6 +52,7 @@ import {
   MobileMenuTitle,
   MobileNavigation,
   MobileNavigationLink,
+  MobileUtilityButton,
   MobileUtilityLink,
   MobileUtilityLinks,
   SearchActionLink,
@@ -72,6 +76,7 @@ const getServerScrollSnapshot = () => false;
 
 export default function CustomerHeader({
   accountHref,
+  accountLabel = 'Account',
   activeHref,
   brandName,
   cartCount = 0,
@@ -84,12 +89,15 @@ export default function CustomerHeader({
   mainId = 'main-content',
   megaMenuGroups,
   navigation,
+  onLogout,
   searchHref,
+  showOrderNavigation = true,
   shopHref = '/shop',
   transparentAtTop = false,
   wordmark,
 }: CustomerHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const [shopMenuPhase, setShopMenuPhase] =
     useState<CustomerMegaMenuPhase>('closed');
   const headerRef = useRef<HTMLElement>(null);
@@ -111,6 +119,23 @@ export default function CustomerHeader({
     : 'Cart';
   const brandLogoSources = logoSources?.length ? logoSources : [logoSrc];
   const pairedLogos = brandLogoSources.length > 1;
+
+  const orderOnlyHrefs = new Set([
+    '/customer/cart',
+    '/customer/orders',
+    '/customer/checkout',
+  ]);
+  const visibleNavigation = showOrderNavigation
+    ? navigation
+    : navigation.filter((item) => !orderOnlyHrefs.has(item.href));
+  const visibleMegaMenuGroups = megaMenuGroups
+    .map((group) => ({
+      ...group,
+      links: showOrderNavigation
+        ? group.links
+        : group.links.filter((item) => !orderOnlyHrefs.has(item.href)),
+    }))
+    .filter((group) => group.links.length > 0);
 
   const renderBrandArtwork = (sizes: string, inverted: boolean) => (
     <LogoCluster aria-hidden="true">
@@ -202,8 +227,21 @@ export default function CustomerHeader({
     };
   }, [closeMegaMenu, shopMenuRequested]);
 
+  const requestLogout = () => {
+    clearMotionTimers();
+    setShopMenuPhase('closed');
+    setMenuOpen(false);
+    setLogoutOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutOpen(false);
+    onLogout?.();
+  };
+
   return (
-    <HeaderRoot
+    <>
+      <HeaderRoot
       className={className}
       data-surface={transparent ? 'transparent' : 'solid'}
       data-shop-menu-phase={shopMenuPhase}
@@ -236,7 +274,7 @@ export default function CustomerHeader({
             Shop
             <ChevronDown aria-hidden="true" />
           </ShopMenuButton>
-          {navigation.map((item) => (
+          {visibleNavigation.map((item) => (
             <HeaderLink
               aria-current={activeHref === item.href ? 'page' : undefined}
               href={item.href}
@@ -255,15 +293,23 @@ export default function CustomerHeader({
               <ActionText>Search</ActionText>
             </SearchActionLink>
           ) : null}
-          <ActionLink aria-label={cartLabel} href={cartHref}>
-            <ShoppingCart aria-hidden="true" />
-            <ActionText>Cart</ActionText>
-            {cartCount > 0 ? <CartCount>· {cartCount}</CartCount> : null}
-          </ActionLink>
-          <AccountActionLink aria-label="Customer account" href={accountHref}>
+          {showOrderNavigation ? (
+            <ActionLink aria-label={cartLabel} href={cartHref}>
+              <ShoppingCart aria-hidden="true" />
+              <ActionText>Cart</ActionText>
+              {cartCount > 0 ? <CartCount>· {cartCount}</CartCount> : null}
+            </ActionLink>
+          ) : null}
+          <AccountActionLink aria-label={accountLabel} href={accountHref}>
             <UserRound aria-hidden="true" />
-            <ActionText>Account</ActionText>
+            <ActionText>{accountLabel}</ActionText>
           </AccountActionLink>
+          {onLogout ? (
+            <LogoutActionButton aria-label="Log out" onClick={requestLogout} type="button">
+              <LogOut aria-hidden="true" />
+              <ActionText>Log out</ActionText>
+            </LogoutActionButton>
+          ) : null}
           <MenuButton
             aria-controls={mobileNavigationId}
             aria-expanded={menuOpen}
@@ -287,7 +333,7 @@ export default function CustomerHeader({
         $open={shopMenuVisible}
       >
         <MegaMenuInner $open={shopMenuVisible}>
-          {megaMenuGroups.map((group) => (
+          {visibleMegaMenuGroups.map((group) => (
             <MegaMenuGroup key={group.title}>
               <MegaMenuTitle>{group.title}</MegaMenuTitle>
               {group.links.map((item) => (
@@ -338,7 +384,7 @@ export default function CustomerHeader({
           </DrawerHeader>
 
           <MobileNavigation aria-label="Customer mobile navigation">
-            {megaMenuGroups.map((group) => (
+            {visibleMegaMenuGroups.map((group) => (
               <MobileMenuGroup key={group.title}>
                 <MobileMenuTitle>{group.title}</MobileMenuTitle>
                 {group.links.map((item) => (
@@ -364,11 +410,30 @@ export default function CustomerHeader({
             ) : null}
             <MobileUtilityLink href={accountHref} onClick={() => setMenuOpen(false)}>
               <UserRound aria-hidden="true" />
-              Account
+              {accountLabel}
             </MobileUtilityLink>
+            {onLogout ? (
+              <MobileUtilityButton
+                onClick={requestLogout}
+                type="button"
+              >
+                <LogOut aria-hidden="true" />
+                Log out
+              </MobileUtilityButton>
+            ) : null}
           </MobileUtilityLinks>
         </DrawerBody>
       </CustomerDrawer>
     </HeaderRoot>
+      {onLogout ? (
+        <LogoutConfirmDialog
+          description="You’ll need to sign in again before placing or managing orders."
+          onClose={() => setLogoutOpen(false)}
+          onConfirm={confirmLogout}
+          open={logoutOpen}
+          title="Log out?"
+        />
+      ) : null}
+    </>
   );
 }

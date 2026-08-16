@@ -18,9 +18,11 @@ const scaffoldSource = fs.readFileSync(path.join(__dirname, 'AuthScaffold', 'ind
     expect(loginSource).toContain('Hide password');
   });
 
-  it('labels fictional role shortcuts as prototype access rather than production auth', () => {
-    expect(loginSource).toContain('Prototype access');
-    expect(loginSource).toContain('not production authentication');
+  it('keeps demo workspace access subtle and collapsed behind a native disclosure', () => {
+    expect(loginSource).toContain('<DemoAccess>');
+    expect(loginSource).toContain('Demo access');
+    expect(loginSource).toContain('applyDemoAccount');
+    expect(loginSource).not.toContain('Workspace access');
     expect(scaffoldSource).toContain('Two storefronts. One operations platform.');
   });
 });

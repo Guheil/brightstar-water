@@ -11,9 +11,9 @@ export interface AuthUser {
   delivererId?: EntityId;
 }
 
-export interface DemoAuthAccount extends AuthUser {
-  /** A public prototype credential. It is not a production secret. */
-  demoPassword: string;
+export interface AuthAccount extends AuthUser {
+  /** Account credential used by the current authentication service. */
+  password: string;
 }
 
 export interface AuthCredentials {
@@ -24,6 +24,24 @@ export interface AuthCredentials {
 export interface AuthSession {
   user: AuthUser;
   signedInAt: ISODateString;
-  isPrototypeSession: true;
 }
 
+export interface CustomerRegistrationInput {
+  displayName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
+export interface PendingCustomerRegistration extends CustomerRegistrationInput {
+  verificationCode: string;
+  expiresAt: ISODateString;
+  attemptsRemaining: number;
+}
+
+export interface RegistrationChallenge {
+  email: string;
+  verificationCode: string;
+  expiresAt: ISODateString;
+  attemptsRemaining: number;
+}

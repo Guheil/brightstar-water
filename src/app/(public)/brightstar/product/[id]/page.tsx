@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { PRODUCT_FIXTURES } from '@/mocks';
+import { PRODUCT_DATA } from '@/data';
 import ProductDetailScreen from '@/screens/public/ProductDetailScreen';
 
 interface BrightStarProductPageProps {
@@ -11,7 +11,7 @@ export async function generateMetadata({
   params,
 }: BrightStarProductPageProps): Promise<Metadata> {
   const { id } = await params;
-  const product = PRODUCT_FIXTURES.find(
+  const product = PRODUCT_DATA.find(
     (item) => item.id === id || item.slug === id,
   );
 
@@ -31,7 +31,7 @@ export default async function BrightStarProductPage({
   params,
 }: BrightStarProductPageProps) {
   const { id } = await params;
-  const product = PRODUCT_FIXTURES.find(
+  const product = PRODUCT_DATA.find(
     (item) => item.id === id || item.slug === id,
   );
 

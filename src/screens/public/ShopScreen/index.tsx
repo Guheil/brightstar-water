@@ -2,8 +2,10 @@
 
 import { useDeferredValue, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { STOREFRONT_MEDIA } from '@/config';
 import EmptyState from '@/components/ui/EmptyState';
+import AuthRequiredDialog from '@/screens/public/AuthRequiredDialog';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
 import type { ProductUnit } from '@/types';
@@ -79,6 +81,9 @@ export default function ShopScreen({
   productHrefPrefix = '/product',
   title = 'Shop household essentials',
 }: ShopScreenProps) {
+  const pathname = usePathname();
+  const session = useAppStore((state) => state.auth.session);
+  const isCustomer = session?.user.role === 'customer' && Boolean(session.user.customerId);
   const products = useAppStore((state) => state.catalog.products);
   const inventory = useAppStore((state) => state.inventory.items);
   const addCartItem = useAppStore((state) => state.commands.addCartItem);
@@ -89,6 +94,7 @@ export default function ShopScreen({
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
   const [sort, setSort] = useState<ShopSort>('featured');
   const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const storefrontImage =
     lockedCategory === 'water'
       ? STOREFRONT_MEDIA.water.refillStation
@@ -296,6 +302,10 @@ export default function ShopScreen({
                   <AddButton
                     disabled={!product.isAvailable}
                     onClick={() => {
+                      if (!isCustomer) {
+                        setAuthPromptOpen(true);
+                        return;
+                      }
                       const result = addCartItem(product.id);
                       setRecentlyAdded(result.ok ? product.id : null);
                     }}
@@ -326,6 +336,11 @@ export default function ShopScreen({
           </EmptyPanel>
         )}
       </Container>
+      <AuthRequiredDialog
+        nextPath={pathname}
+        onClose={() => setAuthPromptOpen(false)}
+        open={authPromptOpen}
+      />
     </Root>
   );
 }

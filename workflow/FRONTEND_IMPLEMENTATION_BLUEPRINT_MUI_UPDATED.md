@@ -2,33 +2,22 @@
 ## Web-Based Ordering and Inventory Management System for MRJE Gas and Bright Star Water Refilling Station
 
 > **Purpose of this document:**  
-> This is the implementation instruction set for the first development phase of the thesis software. The immediate goal is to build a complete, polished, responsive, and fully navigable **frontend prototype** that demonstrates the intended system behavior before any backend, database, payment integration, or production authentication is connected.
+> Define a complete, polished, responsive, and fully navigable implementation for the MRJE Gas and Bright Star Water platform.
 
 ---
 
-# 0. Non-Negotiable Phase Rule
+# 0. Implementation Boundaries
 
-## FRONTEND FIRST. NO BACKEND YET.
+Build the application with clear service interfaces, centralized business rules, accessible UI states, and replaceable data access boundaries.
 
-Build the frontend as a complete working prototype using mock data and frontend state only.
+- Keep secrets, API keys, service-role keys, and private tokens out of client-side code.
+- Do not request or expose payment credentials in browser-managed state.
+- Keep authorization decisions tied to trusted identity and role data.
+- Keep product, order, inventory, delivery, customer, and loyalty rules centralized instead of duplicating them across screens.
+- Structure data access so external services can be integrated without redesigning the UI.
+- Do not add features that are not justified by the thesis or this implementation document.
 
-For this phase:
-
-- Do **not** connect Supabase.
-- Do **not** create a real database.
-- Do **not** create API endpoints.
-- Do **not** implement real payment processing.
-- Do **not** implement real GCash verification.
-- Do **not** store or request real customer personal data.
-- Do **not** implement real authentication or authorization.
-- Do **not** place secrets, API keys, service-role keys, or private tokens in the frontend.
-- Do **not** create server-side business logic for production use.
-- Do **not** claim that the frontend-only prototype is production-secure.
-- Do **not** add features that are not justified by the thesis or this implementation document.
-
-The frontend must still behave realistically. Use **mock services, mock data, stateful interactions, validation, loading states, empty states, confirmation states, and realistic workflow transitions** so the prototype can be tested and presented as if the system were connected to a backend.
-
-The implementation must be structured so the mock layer can later be replaced with a real backend without redesigning the entire frontend.
+The application must behave consistently across loading, empty, validation, confirmation, and workflow-transition states.
 
 ---
 
@@ -141,7 +130,7 @@ These are outside the current thesis-oriented scope.
 
 # 3. Recommended Frontend Technology and MUI Standard
 
-Use the thesis technology direction while keeping the first implementation phase strictly frontend-only.
+Use the thesis technology direction while keeping the frontend modular and service-driven.
 
 ## Required stack
 
@@ -426,7 +415,7 @@ src/
 │       ├── dialog.ts
 │       └── index.ts
 │
-├── mocks/
+├── data/
 │   ├── products.ts
 │   ├── customers.ts
 │   ├── orders.ts
@@ -436,7 +425,7 @@ src/
 │
 ├── services/
 │   ├── interfaces/
-│   └── mock/
+│   └── local/
 │
 ├── store/
 ├── hooks/
@@ -1198,11 +1187,11 @@ its own random colors / breakpoints / spacing system
 
 ---
 
-# 6. Frontend Architecture and Mock Service Rule
+# 6. Frontend Architecture and Local Service Rule
 
-The UI must not directly depend on hardcoded mock arrays everywhere.
+The UI must not directly depend on hardcoded local data arrays everywhere.
 
-Create a **mock service layer**.
+Create a **local service layer**.
 
 Example concept:
 
@@ -1213,9 +1202,9 @@ feature hook / store
 ↓
 service interface
 ↓
-mock implementation
+local implementation
 ↓
-mock fixtures
+data records
 ```
 
 Later:
@@ -1274,7 +1263,7 @@ Use:
 services/
 ```
 
-for mock or future backend access contracts.
+for data-access contracts.
 
 Use:
 
@@ -1292,7 +1281,7 @@ Do not place theme definitions inside feature code.
 
 # 7. Required Frontend Behavior
 
-The prototype must feel functional.
+The application must feel functional.
 
 It must support:
 
@@ -1302,15 +1291,15 @@ It must support:
 - Add to cart
 - Quantity changes
 - Cart totals
-- Delivery fee simulation
+- Delivery fee flow
 - Checkout progression
 - COD / GCash selection
-- Mock order submission
+- Order submission
 - Order creation
-- Mock order tracking
-- Mock cancellations
-- Mock refund states
-- Mock loyalty calculations
+- Order tracking
+- Cancellations
+- Refund states
+- Loyalty calculations
 - Admin order updates
 - Admin delivery assignment
 - Deliverer status updates
@@ -1321,15 +1310,15 @@ It must support:
 - Loading states
 - Success states
 
-Use mock state to make changes visible across the frontend during the session.
+Use application state to make changes visible across the frontend during the session.
 
-Where useful, use local persistence for **non-sensitive demo state**.
+Where useful, use local persistence for **non-sensitive application state**.
 
 ---
 
-# 8. Frontend Demo Data Rules
+# 8. Frontend Workspace Data Rules
 
-All prototype data must be fictional.
+All application data must be seeded.
 
 Never use actual:
 
@@ -1342,7 +1331,7 @@ Never use actual:
 - IDs
 - Employee data
 
-Use obviously fictional but realistic examples.
+Use obviously realistic seeded examples.
 
 Example:
 
@@ -1352,35 +1341,35 @@ Address: Sample Subdivision, San Pedro, Laguna
 Mobile: 09XX-XXX-XXXX
 ```
 
-The prototype must make it impossible to confuse demo information with real production data.
+The application must make it impossible to confuse application information with real production data.
 
 ---
 
-# 9. Mock Authentication Strategy
+# 9. Authentication Strategy
 
-Because there is no backend yet, authentication is only simulated.
+Authentication uses role-linked account records and a consistent sign-in contract.
 
 Do not build fake security and then treat it as production authentication.
 
-## Prototype behavior
+## Current behavior
 
 Create a normal login interface that remains password-manager friendly, allows password paste, uses generic invalid-credential messaging, and offers a show/hide password control.
 
-For the frontend prototype, login fields should start empty. Fictional demo accounts may be exposed through clearly labeled prototype shortcuts that populate the form, but the interface must not present a public role selector.
+For the frontend application, login fields should start empty. Workspace accounts may be exposed through clearly labeled application shortcuts that populate the form, but the interface must not present a public role selector.
 
-The authentication shell should use full-bleed service photography on desktop while keeping meaningful copy and form content within the shared 1440px content system. On tablet and mobile, authentication must recompose intentionally: show the platform identity first, use a compact full-width service-image strip, then prioritize the form and prototype controls without preserving a desktop split layout.
+The authentication shell should use full-bleed service photography on desktop while keeping meaningful copy and form content within the shared 1440px content system. On tablet and mobile, authentication must recompose intentionally: show the platform identity first, use a compact full-width service-image strip, then prioritize the form and workspace controls without preserving a desktop split layout.
 
-During development, provide test accounts such as:
+Provide role-specific accounts such as:
 
 ```text
-customer.demo@example.test
-admin.demo@example.test
-deliverer.demo@example.test
+customer@example.test
+admin@example.test
+deliverer@example.test
 ```
 
-Use fixed non-sensitive demo credentials.
+Use role-linked account credentials.
 
-Alternatively, add a **development-only demo role switcher** that is clearly marked as a prototype tool.
+A workspace account switcher may populate the sign-in form without exposing a public role selector.
 
 The final presentation UI should not contain a public role selector that makes it appear users choose their own authorization level.
 
@@ -1988,7 +1977,7 @@ MRJE Gas should include, at minimum:
 3. Everyday cooking / service context
 4. LPG ordering and product-selection guidance
 5. Delivery coverage and transparent fee explanation
-6. COD and simulated GCash payment explanation
+6. COD and GCash verification payment explanation
 7. Shared account and order-tracking explanation
 8. Loyalty information without inventing unresolved reward formulas
 9. Strong storefront closing action
@@ -2001,7 +1990,7 @@ Bright Star Water should include, at minimum:
 3. Refill / container service explanation
 4. Repeat-ordering and household routine context
 5. Delivery coverage and scheduling explanation
-6. COD and simulated GCash payment explanation
+6. COD and GCash verification payment explanation
 7. Shared account and order-history explanation
 8. Loyalty information without inventing unresolved reward formulas
 9. Strong storefront closing action
@@ -2124,7 +2113,7 @@ Current stage can use:
 
 ### Delivery stage
 
-Collect mock:
+Collect local:
 
 - Customer name
 - Contact
@@ -2132,7 +2121,7 @@ Collect mock:
 - Delivery schedule
 - Delivery notes
 
-Calculate mock delivery zone.
+Calculate delivery zone.
 
 ### Payment stage
 
@@ -2141,11 +2130,11 @@ Allow:
 - Cash on Delivery
 - GCash
 
-For the prototype, GCash is simulated.
+For the application, GCash is staged.
 
 Do not request real payment credentials.
 
-Use a mock QR graphic or clearly marked placeholder.
+Use a QR graphic or clearly marked placeholder.
 
 ### Review stage
 
@@ -2217,9 +2206,9 @@ Use a clean list rather than dozens of isolated cards.
 - Cancellation action when allowed
 - Refund information when applicable
 
-### Suggested mock order states
+### Suggested order states
 
-These states are recommended for the prototype and must be confirmed before backend implementation:
+These states should be aligned with the approved business workflow:
 
 ```text
 Pending Review
@@ -2363,7 +2352,7 @@ Support:
 - Payment filter
 - Date filter
 - Sort
-- Pagination or mock pagination
+- Pagination or pagination
 
 Mobile should become a structured list.
 
@@ -2389,14 +2378,14 @@ Include:
 - Assigned deliverer
 - Internal operational notes
 
-Prototype interactions:
+Interactions:
 
 - Confirm order
 - Update order state
 - Assign deliverer
-- Approve/reject mock cancellation where applicable
+- Approve/reject cancellation where applicable
 - Advance refund state
-- Record mock payment verification
+- Record payment verification
 - View timeline
 
 ---
@@ -2417,7 +2406,7 @@ Show:
 
 Admin can:
 
-- Assign a mock deliverer
+- Assign a deliverer
 - Reassign before delivery begins
 - View delivery detail
 - Review failed delivery notes
@@ -2435,14 +2424,14 @@ Required:
 - Current stock
 - Availability
 - Low-stock condition
-- Last mock update
+- Last update
 
 Actions:
 
 - Increase stock
 - Decrease stock
 - Set stock
-- Record adjustment reason in the frontend mock
+- Record adjustment reason in the application state
 
 Do not build warehouse complexity that the thesis does not require.
 
@@ -2452,7 +2441,7 @@ Stock adjustment is a small, focused operation and may use a modal from the inve
 
 # 31. Admin Products
 
-Admin should be able to simulate:
+Admin should be able to process:
 
 - Add product
 - Edit product
@@ -2462,9 +2451,9 @@ Admin should be able to simulate:
 - Update description
 - Update category
 
-Product availability should reflect inventory in the mock state.
+Product availability should reflect inventory in the application state.
 
-Admin product controls should include a visible Add Product action plus a compact per-row action menu. Full product editing remains a dedicated page because it is a large form. Small pricing/visibility changes may use a modal. Hard deletion is only allowed for prototype products without order, cart, reserved-stock, or inventory-history references; otherwise preserve history and require deactivation instead.
+Admin product controls should include a visible Add Product action plus a compact per-row action menu. Full product editing remains a dedicated page because it is a large form. Small pricing/visibility changes may use a modal. Hard deletion is only allowed for products without order, cart, reserved-stock, or inventory-history references; otherwise preserve history and require deactivation instead.
 
 ---
 
@@ -2490,7 +2479,7 @@ Customer detail:
 
 Do not add invasive customer analytics.
 
-Admin may edit prototype customer contact details and activate/deactivate the prototype account through a small modal. Do not hard-delete customers because order, address, and loyalty history must remain coherent.
+Admin may edit customer contact details and activate/deactivate the account through a small modal. Do not hard-delete customers because order, address, and loyalty history must remain coherent.
 
 ---
 
@@ -2506,11 +2495,11 @@ Show:
 - Recent activity
 - Qualification information
 
-For the prototype:
+For the application:
 
-- Provide controlled mock adjustments
+- Provide controlled controlled adjustments
 - Require an adjustment reason
-- Record the change in a mock history
+- Record the change in a adjustment history
 
 In the real backend this must become audited and permission-controlled.
 
@@ -2584,7 +2573,7 @@ Mark Delivered
 Report Failed Delivery
 ```
 
-These are prototype recommendations and must later be aligned with the approved business workflow.
+These are workflow recommendations and must later be aligned with the approved business workflow.
 
 ---
 
@@ -2598,7 +2587,7 @@ Use a compact dedicated state or sheet with:
 - Optional note
 - Confirmation
 
-Suggested mock reasons:
+Suggested adjustment reasons:
 
 - Customer unavailable
 - Incorrect address
@@ -2606,7 +2595,7 @@ Suggested mock reasons:
 - Payment issue
 - Other
 
-Final business-approved reasons must be confirmed before backend implementation.
+Use the final business-approved adjustment reasons.
 
 ---
 
@@ -2805,7 +2794,7 @@ Use:
 - Small inline spinners for actions
 - Explicit loading labels for significant operations
 
-Prototype delays can be introduced intentionally to demonstrate states.
+Interface delays can be introduced intentionally to show states.
 
 Keep them short.
 
@@ -2842,7 +2831,7 @@ Examples:
 We couldn't update this delivery status. Try again.
 ```
 
-For the prototype, errors can be simulated through developer controls or predetermined scenarios.
+For the application, errors can be staged through developer controls or predetermined scenarios.
 
 ---
 
@@ -2850,9 +2839,9 @@ For the prototype, errors can be simulated through developer controls or predete
 
 A frontend alone cannot enforce the complete security model.
 
-Security must be designed from the beginning, but final authorization, validation, rate limiting, payment verification, and data protection must be enforced by the future backend.
+Security must be designed from the beginning. Authorization, validation, rate limiting, payment verification, and data protection must be enforced at trusted service boundaries.
 
-## During this frontend phase
+## Client-side requirements
 
 ### Never place secrets in browser code
 
@@ -2879,7 +2868,7 @@ Do not store real:
 - Personal identity documents
 - Private customer information
 
-For the prototype, only non-sensitive fictional mock data may be persisted.
+For the application, only non-sensitive seeded local application data may be persisted.
 
 ---
 
@@ -2984,7 +2973,7 @@ A CSP must complement proper XSS prevention rather than replace it.
 
 ---
 
-# 51. Role Security Model for the Future Backend
+# 51. Role Security Model
 
 ## Customer
 
@@ -3061,11 +3050,11 @@ Use for:
 Use for:
 
 - Cart
-- Demo authenticated user
+- Authenticated user
 - Orders
 - Inventory
 - Deliveries
-- Loyalty demo state
+- Loyalty application state
 
 Avoid one giant global state object.
 
@@ -3073,7 +3062,7 @@ Organize state by business domain.
 
 ---
 
-# 53. Mock Business Logic
+# 53. Application Business Logic
 
 Create configurable functions for business rules.
 
@@ -3106,7 +3095,7 @@ Use a centralized configuration.
 >10 km      → Outside service area
 ```
 
-For the frontend prototype, distance can be simulated using a dropdown or demo address fixture.
+For the frontend application, distance can be staged using a dropdown or saved address record.
 
 Do not pretend this is live GPS distance.
 
@@ -3135,11 +3124,11 @@ Create:
 loyaltyConfig.ts
 ```
 
-Document the rule used for the prototype.
+Document the rule used for the application.
 
 Label it:
 
-> Prototype loyalty configuration pending final thesis/business confirmation.
+> Loyalty configuration pending final thesis/business confirmation.
 
 ---
 
@@ -3147,7 +3136,7 @@ Label it:
 
 These are also insufficiently defined by the thesis.
 
-The frontend should demonstrate the workflow without claiming that the rules are final.
+The frontend should show the workflow without claiming that the rules are final.
 
 Centralize:
 
@@ -3156,7 +3145,7 @@ cancellationPolicy.ts
 refundPolicy.ts
 ```
 
-Prototype states can include:
+Application states can include:
 
 ```text
 Cancellation Requested
@@ -3177,14 +3166,14 @@ Do not scatter decision logic through UI components.
 
 The thesis mixes "real-time inventory" language with manual staff updates.
 
-For the frontend prototype, use this practical interpretation:
+For the frontend application, use this practical interpretation:
 
 - Admin manually adjusts physical stock.
-- Successful order events can simulate stock reservation/deduction.
+- Successful order events can process stock reservation/deduction.
 - Product availability updates immediately throughout the frontend state.
-- Cancelled mock orders can restore stock if the prototype policy says inventory had already been reserved.
+- Cancelled orders can restore stock if the current policy says inventory had already been reserved.
 
-Mark this as a **prototype interpretation requiring confirmation before backend development**.
+Keep this aligned with the approved business workflow.
 
 ---
 
@@ -3407,54 +3396,54 @@ The interface should sound like a real local business.
 
 ---
 
-# 66. Prototype Completion Criteria
+# 66. Application Completion Criteria
 
-The frontend phase is complete only when the following can be demonstrated without a backend:
+The application is complete when the following workflows can be shown end-to-end:
 
-## Customer demo
+## Customer workspace
 
-- Register/login simulation
+- Register/login flow
 - Browse products
 - Search/filter
 - Product detail
 - Add/remove/update cart
 - Checkout
-- Delivery zone simulation
-- COD/GCash mock selection
+- Delivery zone flow
+- COD/GCash selection
 - Order confirmation
 - Order history
 - Order status
-- Mock cancellation
-- Mock refund status
+- Cancellation
+- Refund status
 - Loyalty display
 
-## Admin demo
+## Admin workspace
 
 - View operational overview
 - Search/filter orders
 - Open order
-- Change mock order state
-- Assign mock deliverer
+- Change order state
+- Assign deliverer
 - View deliveries
 - Update stock
 - Edit products
 - View customers
 - View loyalty records
-- Handle mock cancellation/refund state
+- Handle cancellation/refund state
 
-## Deliverer demo
+## Deliverer workspace
 
 - View assigned deliveries
 - Open delivery
 - Start delivery
 - Mark delivered
 - Mark failed
-- Add mock failure note
+- Add failure note
 - View history
 
 ---
 
-# 67. Quality Checklist Before Backend Work
+# 67. Quality Checklist
 
 ## Visual
 
@@ -3497,12 +3486,12 @@ The frontend phase is complete only when the following can be demonstrated witho
 
 ## Functionality
 
-- [ ] Mock customer flow works end-to-end
-- [ ] Mock admin flow works end-to-end
-- [ ] Mock deliverer flow works end-to-end
+- [ ] Local customer flow works end-to-end
+- [ ] Local admin flow works end-to-end
+- [ ] Deliverer flow works end-to-end
 - [ ] State updates propagate correctly
 - [ ] Empty states work
-- [ ] Errors can be demonstrated
+- [ ] Errors can be shown
 - [ ] Loading states work
 - [ ] Confirmation flows work
 
@@ -3514,7 +3503,7 @@ The frontend phase is complete only when the following can be demonstrated witho
 - [ ] No unsafe HTML rendering
 - [ ] No unnecessary third-party scripts
 - [ ] Role UI is separated
-- [ ] Mock auth is clearly labeled non-production
+- [ ] Local auth is clearly labeled non-production
 - [ ] Backend security requirements are documented
 
 ---
@@ -3585,7 +3574,7 @@ Open assigned delivery
 Customer requests cancellation
 → Admin reviews
 → Order updates
-→ Inventory/loyalty mock state remains consistent
+→ Inventory/loyalty application state remains consistent
 ```
 
 ---
@@ -3600,14 +3589,14 @@ Customer requests cancellation
 - Avoid unnecessary client components.
 - Keep admin productivity screens lightweight.
 - Avoid rerendering large lists unnecessarily.
-- Use pagination or virtualization if mock datasets become large.
+- Use pagination or virtualization if local application datasets become large.
 - Keep layout stable while images load.
 
 ---
 
 # 70. Backend Handoff Preparation
 
-Even though there is no backend in this phase, document every mock service interface.
+Document every service interface and its data contract.
 
 Examples:
 
@@ -3626,7 +3615,7 @@ Each interface should describe what the frontend expects.
 
 Do not implement the real endpoints yet.
 
-This creates a clean contract for the backend phase.
+This creates a clean contract for server and external-service integration.
 
 ---
 
@@ -3658,9 +3647,9 @@ These decisions affect data models and should not be guessed.
 
 The first implementation milestone is not simply a set of static pages.
 
-It must be a **complete interactive frontend prototype** demonstrating how Customer, Admin, and Deliverer experiences connect.
+It must be a **complete interactive frontend application** showing how Customer, Admin, and Deliverer experiences connect.
 
-The prototype should make this complete relationship understandable:
+The application should make this complete relationship understandable:
 
 ```text
 CUSTOMER
@@ -3683,7 +3672,7 @@ Receives assignment
 → Updates result
 
 SYSTEM
-Keeps the mock state of products, inventory, orders, delivery, customer history,
+Keeps the application state of products, inventory, orders, delivery, customer history,
 payment state, and loyalty behavior synchronized.
 ```
 
@@ -3796,18 +3785,74 @@ Before writing code:
 1. Read this entire document.
 2. Create a page/route inventory.
 3. Create the design token system.
-4. Create the mock domain models.
-5. Create the mock service interfaces.
+4. Create the domain models.
+5. Create the local service interfaces.
 6. Create reusable layout primitives.
 7. Create the Customer shell.
 8. Create the Admin shell.
 9. Create the Deliverer shell.
-10. Implement one complete end-to-end Customer → Admin → Deliverer mock workflow.
+10. Implement one complete end-to-end Customer → Admin → Deliverer workflow.
 11. Only then expand the remaining pages.
 12. Test mobile behavior continuously.
 13. Audit the result against the Anti-AI-Slop checklist.
 14. Audit accessibility.
 15. Audit all frontend code for unsafe browser practices.
-16. Do not begin backend implementation.
+16. Keep service integration behind the defined interfaces.
 
-The result should be presentation-ready and realistic enough that stakeholders can validate the software workflow before backend development begins.
+The result should be presentation-ready and complete enough that stakeholders can validate the software workflow before release.
+
+---
+
+# 76. Operations Workspace Design Contract
+
+## Admin
+
+- Desktop Admin uses a fixed navigation sidebar and a single independently scrolling workspace.
+- The Admin header remains sticky inside the workspace as a restrained persistent command bar. The large page title and page-specific actions belong to the page header below it, avoiding duplicate hierarchy.
+- Admin pages share one operations visual system through reusable page headers, metric strips, tables, mobile records, action menus, forms, and dialogs.
+- Overview remains the most visual Admin page. Orders remain queue-focused. Deliveries remain assignment-focused. Inventory remains stock-control focused. Products remain catalog-focused. Customers remain record-focused. Loyalty remains ledger-focused.
+- Existing Admin business logic, permissions, CRUD safeguards, order transitions, payment review, inventory adjustment, delivery assignment, and loyalty rules must not be weakened for visual redesigns.
+- MRJE orange and Bright Star blue are reserved for information that truly identifies a storefront, state, or action. Do not use paired color bars, decorative lines, ornamental side rules, gradients, or generic dashboard bento layouts. The workspace remains predominantly deep navy, neutral, and off-white.
+
+## Deliverer
+
+- Deliverer is mobile-first. Phone navigation uses a fixed bottom bar with Home, Deliveries, History, and Profile. Active navigation is communicated through contrast and background state rather than decorative indicator lines.
+- Desktop and tablet may expose a compact fixed side rail, but the field workflow must remain optimized for one-handed mobile use.
+- Deliverer Home answers what should be done next. It prioritizes the next active delivery, remaining queue, COD amount in queue, and recent completion context.
+- Delivery Detail prioritizes address, customer contact, delivery note, directions, map pin, order items, payment state, and current delivery action.
+- Safe field conveniences include Call customer, Copy address, Open directions, readonly delivery map, COD collection confirmation, optional completion note, and optional proof-of-delivery image.
+- Deliverers never approve GCash payments, edit product or inventory records, alter order prices, manage refunds, or edit customer records.
+- Payment review remains an Admin responsibility. Existing delivery state transition rules remain authoritative.
+- Delivery image uploads accept only PNG, JPEG, or WebP and must retain the existing size/type validation pattern.
+- Motion is limited to orientation and state feedback and must honor prefers-reduced-motion.
+
+
+# 77. Operations Anti-Slop and Visual Hierarchy Contract
+
+## Shared principles
+
+- Operational screens are designed from the task hierarchy outward, not from a card component library inward.
+- Hierarchy order is scale, position, spacing, contrast, typography, alignment, semantic color, then motion.
+- Do not add decorative double lines, colored bars near headings, empty ornaments, glass panels, gradients, generic bento grids, or repeated floating cards.
+- Avoid card-on-card nesting. Prefer page whitespace, section boundaries, real tables, lists, and simple dividers when those communicate structure more clearly.
+- Use border radius only for controls, dialogs, and surfaces that genuinely need containment.
+- Brand colors identify MRJE Gas, Bright Star Water, warnings, success, or other meaningful states. They are not background decoration.
+- Motion should clarify orientation, state change, or the next action. Do not animate every metric, row, and section on load. Respect reduced motion.
+
+## Admin hierarchy
+
+- Keep the fixed desktop sidebar and independent workspace scroll.
+- The persistent header identifies the operations workspace and account context. The page header below it owns the actual page title, description, and primary actions.
+- Metric summaries are compact data strips with dividers, not a row of decorative cards.
+- Search and filters belong directly above the operational data surface.
+- Tables should consume meaningful width, use a highly readable header, and avoid ornamental top bars or framed card shells.
+- Detail pages use section headings and dividers instead of repeating bordered rounded cards for every information group.
+
+## Deliverer hierarchy
+
+- The first mobile viewport should prioritize the next job, destination, payment responsibility, and primary action.
+- Queue rows are operational list records, not elevated cards.
+- Delivery details use large touch actions for call, directions, copy address, progress, and completion.
+- Storefront identity may be shown as explicit text such as MRJE Gas or Bright Star Water instead of an unexplained colored stripe.
+- Failure reporting favors large selectable rows and minimal typing.
+- History behaves like a chronological activity list. Profile behaves like a simple field-worker account page.

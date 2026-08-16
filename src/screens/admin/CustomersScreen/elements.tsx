@@ -8,7 +8,7 @@ import AppLink from '@/components/ui/AppLink';
 export const Root = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(3.5),
 }));
 
 export const Toolbar = styled(Box)(({ theme }) => ({
@@ -16,6 +16,13 @@ export const Toolbar = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: theme.spacing(2),
+  paddingBlock: theme.spacing(2),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('sm')]: {
     alignItems: 'stretch',

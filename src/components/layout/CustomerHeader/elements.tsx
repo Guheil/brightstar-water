@@ -260,6 +260,36 @@ export const AccountActionLink = styled(ActionLink)(({ theme }) => ({
   },
 }));
 
+export const LogoutActionButton = styled('button')(({ theme }) => ({
+  ...theme.typography.body2,
+  minWidth: theme.spacing(5.5),
+  minHeight: theme.spacing(5.5),
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: theme.spacing(0.75),
+  paddingInline: theme.spacing(1),
+  border: 0,
+  backgroundColor: 'transparent',
+  color: 'inherit',
+  cursor: 'pointer',
+  fontWeight: theme.typography.fontWeightMedium,
+
+  [theme.breakpoints.down('lg')]: {
+    display: 'none',
+  },
+
+  '&:focus-visible': {
+    outline: `${theme.spacing(0.375)} solid ${theme.vars.palette.water.main}`,
+    outlineOffset: theme.spacing(0.25),
+  },
+
+  '& svg': {
+    width: theme.spacing(2.5),
+    height: theme.spacing(2.5),
+  },
+}));
+
 export const MenuButton = styled(IconButton)(({ theme }) => ({
   minWidth: theme.spacing(5.5),
   minHeight: theme.spacing(5.5),
@@ -447,6 +477,32 @@ export const MobileUtilityLink = styled(AppLink)(({ theme }) => ({
   gap: theme.spacing(1),
   color: theme.vars.palette.text.primary,
   fontWeight: theme.typography.fontWeightMedium,
+
+  '& svg': {
+    width: theme.spacing(2.25),
+    height: theme.spacing(2.25),
+  },
+}));
+
+export const MobileUtilityButton = styled('button')(({ theme }) => ({
+  ...theme.typography.body2,
+  minHeight: theme.spacing(5.5),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: theme.spacing(1),
+  padding: 0,
+  border: `${theme.spacing(0.125)} solid ${theme.vars.palette.divider}`,
+  borderRadius: theme.radii.control,
+  backgroundColor: 'transparent',
+  color: theme.vars.palette.text.primary,
+  cursor: 'pointer',
+  fontWeight: theme.typography.fontWeightMedium,
+
+  '&:focus-visible': {
+    outline: `${theme.spacing(0.375)} solid ${theme.vars.palette.water.main}`,
+    outlineOffset: theme.spacing(0.25),
+  },
 
   '& svg': {
     width: theme.spacing(2.25),

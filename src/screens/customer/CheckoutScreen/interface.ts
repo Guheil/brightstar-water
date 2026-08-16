@@ -1,13 +1,18 @@
 import type { DeliverySchedule, PaymentMethod } from '@/types';
 
-export type CheckoutStage = 'delivery' | 'payment' | 'review';
+export type CheckoutStage =
+  | 'location'
+  | 'schedule'
+  | 'payment'
+  | 'payment_details'
+  | 'review';
 
 export interface CheckoutStageDefinition {
   id: CheckoutStage;
   label: string;
 }
 
-export interface DemoScheduleOption extends DeliverySchedule {
+export interface ScheduleOption extends DeliverySchedule {
   id: string;
 }
 
@@ -26,3 +31,12 @@ export interface PaymentChoice {
   description: string;
 }
 
+export interface DeliveryFormState {
+  recipientName: string;
+  phone: string;
+  addressLine: string;
+  area: string;
+  municipality: string;
+  province: string;
+  deliveryNote: string;
+}

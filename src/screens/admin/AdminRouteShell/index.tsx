@@ -17,15 +17,15 @@ const navigation = [
   { label: 'Loyalty', href: '/admin/loyalty', icon: 'loyalty' as const },
 ];
 
-const sectionLabels: Readonly<Record<string, string>> = {
-  overview: 'Operational overview',
-  orders: 'Order operations',
-  deliveries: 'Delivery coordination',
-  inventory: 'Inventory control',
-  products: 'Product catalog',
-  customers: 'Customer records',
-  loyalty: 'Loyalty records',
-  account: 'Admin account',
+const sectionDescriptions: Readonly<Record<string, string>> = {
+  overview: 'Route the work that needs attention across both storefronts.',
+  orders: 'Review incoming orders and move them through fulfillment.',
+  deliveries: 'Assign drivers, monitor progress, and resolve delivery issues.',
+  inventory: 'Monitor available, reserved, and low-stock quantities.',
+  products: 'Control the MRJE Gas and Bright Star Water product catalog.',
+  customers: 'Review customer profiles, order history, and account state.',
+  loyalty: 'Track balances, activity, and administrative adjustments.',
+  account: 'Review the current administrator session and account details.',
 };
 
 export default function AdminRouteShell({ children }: AdminRouteShellProps) {
@@ -55,7 +55,8 @@ export default function AdminRouteShell({ children }: AdminRouteShellProps) {
           Account
         </AccountLink>
       }
-      headerLabel={sectionLabels[section] ?? 'Admin workspace'}
+      headerDescription={sectionDescriptions[section] ?? 'Manage day-to-day store operations.'}
+      headerLabel="Operations workspace"
       navigation={navigation}
       onSignOut={handleSignOut}
       userName={session?.user.displayName ?? 'Administrator'}

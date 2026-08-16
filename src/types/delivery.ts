@@ -25,12 +25,23 @@ export interface DeliveryAddressSnapshot {
   municipality: string;
   province: string;
   distanceKm: number;
+  latitude?: number;
+  longitude?: number;
   deliveryNote?: string;
 }
 
 export interface DeliverySchedule {
   date: string;
   windowLabel: string;
+}
+
+export interface DeliveryCompletionEvidence {
+  cashReceivedCentavos?: MoneyCentavos;
+  proofFileName?: string;
+  proofImageDataUrl?: string;
+  note?: string;
+  recordedAt: ISODateString;
+  recordedBy: EntityId;
 }
 
 export interface DeliveryFailure {
@@ -63,6 +74,7 @@ export interface Delivery {
   startedAt?: ISODateString;
   completedAt?: ISODateString;
   failure?: DeliveryFailure;
+  completionEvidence?: DeliveryCompletionEvidence;
   updatedAt: ISODateString;
 }
 

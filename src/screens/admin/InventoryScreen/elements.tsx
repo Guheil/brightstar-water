@@ -11,13 +11,14 @@ export const Root = styled(Box)(({ theme }) => ({
 }));
 
 export const SectionTitle = styled('h2')(({ theme }) => ({
-  ...theme.typography.h5,
+  ...theme.typography.h4,
   margin: 0,
   color: theme.vars.palette.text.primary,
 }));
 
 export const SectionCopy = styled('p')(({ theme }) => ({
   ...theme.typography.body2,
+  maxWidth: theme.spacing(72),
   margin: 0,
   marginBlockStart: theme.spacing(0.5),
   color: theme.vars.palette.text.secondary,
@@ -43,10 +44,10 @@ export const FormField = styled(TextField)(() => ({}));
 export const FormOption = styled(MenuItem)(() => ({}));
 
 export const HistorySection = styled('section')(({ theme }) => ({
-  borderTopWidth: theme.spacing(0.25),
+  paddingBlock: theme.spacing(2.5),
+  borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
-  borderTopColor: theme.vars.palette.primary.main,
-  paddingBlockStart: theme.spacing(2),
+  borderTopColor: theme.vars.palette.divider,
 }));
 
 export const HistoryList = styled('ol')(({ theme }) => ({

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import EmptyState from '@/components/ui/EmptyState';
 import QuantityControl from '@/components/ui/QuantityControl';
+import AuthRequiredDialog from '@/screens/public/AuthRequiredDialog';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
 import type { ProductDetailScreenProps } from './interface';
@@ -37,6 +39,9 @@ export default function ProductDetailScreen({
   productId,
   shopHref = '/shop',
 }: ProductDetailScreenProps) {
+  const pathname = usePathname();
+  const session = useAppStore((state) => state.auth.session);
+  const isCustomer = session?.user.role === 'customer' && Boolean(session.user.customerId);
   const product = useAppStore((state) =>
     state.catalog.products.find(
       (item) => item.id === productId || item.slug === productId,
@@ -52,6 +57,7 @@ export default function ProductDetailScreen({
   );
   const [quantity, setQuantity] = useState(1);
   const [addedQuantity, setAddedQuantity] = useState(0);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
   if (!product || (expectedCategory && product.category !== expectedCategory)) {
     return (
@@ -110,6 +116,10 @@ export default function ProductDetailScreen({
               <AddButton
                 disabled={!isAvailable}
                 onClick={() => {
+                  if (!isCustomer) {
+                    setAuthPromptOpen(true);
+                    return;
+                  }
                   const result = addCartItem(product.id, quantity);
                   setAddedQuantity(result.ok ? quantity : 0);
                 }}
@@ -136,6 +146,11 @@ export default function ProductDetailScreen({
           </ProductCopy>
         </DetailGrid>
       </Container>
+      <AuthRequiredDialog
+        nextPath={pathname}
+        onClose={() => setAuthPromptOpen(false)}
+        open={authPromptOpen}
+      />
     </Root>
   );
 }

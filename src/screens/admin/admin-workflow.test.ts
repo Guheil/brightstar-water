@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { selectDelivererQueue, useAppStore } from '@/store';
 import type { CommandResult, Product } from '@/types';
 import {
-  savePrototypeProduct,
-  setPrototypeProductActive,
-} from './productPrototypeState';
+  saveProductState,
+  setProductActive,
+} from './productState';
 import { ADMIN_ACTOR_ID } from './utils';
 
 function expectSuccess<Value>(result: CommandResult<Value>): Value {
@@ -13,9 +13,11 @@ function expectSuccess<Value>(result: CommandResult<Value>): Value {
   return result.value;
 }
 
-describe('Admin high-impact prototype workflows', () => {
+describe('Admin high-impact workflows', () => {
   beforeEach(() => {
-    useAppStore.getState().commands.resetDemoState();
+    const commands = useAppStore.getState().commands;
+    commands.resetAppState();
+    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
   });
 
   it('confirms, prepares, and assigns one order across role queues', () => {
@@ -32,7 +34,7 @@ describe('Admin high-impact prototype workflows', () => {
     expectSuccess(
       commands.assignDelivery(
         'order-0001',
-        'deliverer-demo-02',
+        'deliverer-02',
         ADMIN_ACTOR_ID,
       ),
     );
@@ -41,23 +43,25 @@ describe('Admin high-impact prototype workflows', () => {
     expect(state.orders.records.find((item) => item.id === 'order-0001')?.status)
       .toBe('assigned_for_delivery');
     expect(state.deliveries.records.find((item) => item.id === 'delivery-0001'))
-      .toMatchObject({ status: 'assigned', delivererId: 'deliverer-demo-02' });
-    expect(selectDelivererQueue('deliverer-demo-02')(state).map((item) => item.id))
+      .toMatchObject({ status: 'assigned', delivererId: 'deliverer-02' });
+    expect(selectDelivererQueue('deliverer-02')(state).map((item) => item.id))
       .toContain('delivery-0001');
   });
 
-  it('places and verifies a fictional GCash order without external payment state', () => {
+  it('places and verifies a GCash order through the current payment state', () => {
     const commands = useAppStore.getState().commands;
     const order = expectSuccess(
       commands.placeOrder({
-        customerId: 'customer-demo-01',
+        customerId: 'customer-01',
         items: [{ productId: 'product-water-pump', quantity: 1 }],
-        deliveryAddressId: 'address-demo-01-a',
+        deliveryAddressId: 'address-01-a',
         deliverySchedule: {
           date: '2026-08-14',
           windowLabel: '9:00 AM to 12:00 PM',
         },
         paymentMethod: 'gcash',
+        paymentProofImageDataUrl: 'data:image/png;base64,aGVsbG8=',
+        paymentProofFileName: 'payment.png',
       }),
     );
 
@@ -68,11 +72,11 @@ describe('Admin high-impact prototype workflows', () => {
       commands.verifyPayment(
         order.id,
         ADMIN_ACTOR_ID,
-        'DEMO-QA-GCASH',
+        'GCASH-QA',
       ),
     );
     expect(useAppStore.getState().payments.records.find((item) => item.orderId === order.id))
-      .toMatchObject({ status: 'verified', demoReference: 'DEMO-QA-GCASH' });
+      .toMatchObject({ status: 'verified', reference: 'GCASH-QA' });
   });
 
   it('approves cancellation and synchronizes inventory, delivery, and payment', () => {
@@ -85,7 +89,7 @@ describe('Admin high-impact prototype workflows', () => {
     expectSuccess(
       commands.requestCancellation(
         'order-0001',
-        'customer-demo-01',
+        'customer-01',
         'QA cancellation request',
       ),
     );
@@ -120,7 +124,7 @@ describe('Admin high-impact prototype workflows', () => {
     expectSuccess(
       commands.requestCancellation(
         'order-0001',
-        'customer-demo-01',
+        'customer-01',
         'QA rejection request',
       ),
     );
@@ -180,7 +184,7 @@ describe('Admin high-impact prototype workflows', () => {
       ?.stockOnHand;
     const pointsBefore = useAppStore
       .getState()
-      .loyalty.accounts.find((item) => item.customerId === 'customer-demo-01')
+      .loyalty.accounts.find((item) => item.customerId === 'customer-01')
       ?.pointsAvailable;
 
     expectSuccess(
@@ -194,7 +198,7 @@ describe('Admin high-impact prototype workflows', () => {
     );
     expectSuccess(
       commands.adjustLoyalty({
-        customerId: 'customer-demo-01',
+        customerId: 'customer-01',
         pointsDelta: 5,
         reason: 'QA loyalty adjustment.',
         actorId: ADMIN_ACTOR_ID,
@@ -211,11 +215,11 @@ describe('Admin high-impact prototype workflows', () => {
       reason: 'QA physical count adjustment.',
     });
     expect(
-      state.loyalty.accounts.find((item) => item.customerId === 'customer-demo-01')
+      state.loyalty.accounts.find((item) => item.customerId === 'customer-01')
         ?.pointsAvailable,
     ).toBe((pointsBefore ?? 0) + 5);
     expect(state.loyalty.activity[0]).toMatchObject({
-      customerId: 'customer-demo-01',
+      customerId: 'customer-01',
       reason: 'QA loyalty adjustment.',
     });
   });
@@ -225,11 +229,11 @@ describe('Admin high-impact prototype workflows', () => {
       .getState()
       .catalog.products.find((item) => item.id === 'product-gas-regulator')!;
 
-    setPrototypeProductActive(original.id, false, '2026-08-12T00:00:00.000Z');
+    setProductActive(original.id, false, '2026-08-12T00:00:00.000Z');
     expect(useAppStore.getState().catalog.products.find((item) => item.id === original.id)?.isActive)
       .toBe(false);
 
-    savePrototypeProduct(
+    saveProductState(
       { ...original, name: 'QA regulator edit', updatedAt: '2026-08-12T01:00:00.000Z' },
       false,
     );
@@ -245,7 +249,7 @@ describe('Admin high-impact prototype workflows', () => {
       createdAt: '2026-08-12T02:00:00.000Z',
       updatedAt: '2026-08-12T02:00:00.000Z',
     };
-    savePrototypeProduct(newProduct, true);
+    saveProductState(newProduct, true);
     expect(useAppStore.getState().catalog.products[0]).toEqual(newProduct);
     expect(useAppStore.getState().inventory.items[0]).toMatchObject({
       productId: newProduct.id,
@@ -253,7 +257,9 @@ describe('Admin high-impact prototype workflows', () => {
       stockReserved: 0,
     });
 
-    useAppStore.getState().commands.resetDemoState();
+    const commands = useAppStore.getState().commands;
+    commands.resetAppState();
+    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
     expect(useAppStore.getState().catalog.products.some((item) => item.id === newProduct.id))
       .toBe(false);
     expect(useAppStore.getState().catalog.products.find((item) => item.id === original.id))

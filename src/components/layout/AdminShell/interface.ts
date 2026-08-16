@@ -22,6 +22,7 @@ export interface AdminShellProps {
   children: ReactNode;
   className?: string;
   headerActions?: ReactNode;
+  headerDescription?: string;
   headerLabel?: string;
   homeHref?: string;
   mainId?: string;

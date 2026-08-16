@@ -4,7 +4,7 @@ import {
   getProductStorefrontPath,
   STOREFRONT_BRANDS,
 } from '@/config';
-import { PRODUCT_FIXTURES } from '@/mocks';
+import { PRODUCT_DATA } from '@/data';
 
 describe('public storefront routing', () => {
   it('resolves only explicit MRJE and Bright Star route segments', () => {
@@ -19,7 +19,7 @@ describe('public storefront routing', () => {
   });
 
   it('keeps every catalog product in the correct storefront', () => {
-    for (const product of PRODUCT_FIXTURES) {
+    for (const product of PRODUCT_DATA) {
       const path = getProductStorefrontPath(product.category, product.id);
       const expectedPrefix =
         product.category === 'gas'

@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { STOREFRONT_MEDIA } from '@/config';
-import { PRODUCT_FIXTURES } from '@/mocks';
+import { PRODUCT_DATA } from '@/data';
 import { formatPhp } from '@/utils';
 import type { BrightStarProductPreview } from './interface';
 import {
@@ -109,7 +109,7 @@ import {
   ShopLink,
 } from './elements';
 
-const products: readonly BrightStarProductPreview[] = PRODUCT_FIXTURES.filter(
+const products: readonly BrightStarProductPreview[] = PRODUCT_DATA.filter(
   (product) => product.category === 'water',
 ).map((product) => ({
   id: product.id,
@@ -385,9 +385,7 @@ export default function BrightStarHomeScreen() {
               Payment is shown beside the information that affects the total.
             </InfoTitle>
             <InfoText>
-              Customers choose between cash on delivery and the simulated GCash
-              flow after delivery details are available. For this thesis demo, no real GCash credentials
-              are collected.
+              Customers choose between cash on delivery and GCash after delivery details are available. GCash orders enter payment verification before fulfillment proceeds.
             </InfoText>
           </div>
           <InfoGrid>
@@ -397,7 +395,7 @@ export default function BrightStarHomeScreen() {
             </InfoItem>
             <InfoItem>
               <InfoItemTitle>GCash payment review</InfoItemTitle>
-              <InfoItemText>The order can enter an awaiting-verification state without presenting the simulated payment as a completed real transaction.</InfoItemText>
+              <InfoItemText>The order can enter an awaiting-verification state until payment verification is completed.</InfoItemText>
             </InfoItem>
             <InfoItem>
               <InfoItemTitle>One review screen</InfoItemTitle>
@@ -454,7 +452,7 @@ export default function BrightStarHomeScreen() {
             </LoyaltyItem>
             <LoyaltyItem>
               <LoyaltyItemTitle>Configurable rules</LoyaltyItemTitle>
-              <LoyaltyItemText>Unresolved thesis reward formulas are not presented as permanent policy.</LoyaltyItemText>
+              <LoyaltyItemText>Reward earning and qualification details remain aligned with the configured loyalty policy.</LoyaltyItemText>
             </LoyaltyItem>
           </LoyaltyGrid>
         </LoyaltyContainer>

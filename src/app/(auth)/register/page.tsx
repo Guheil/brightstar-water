@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: 'Create a customer account for ordering and delivery management.',
 };
 
-export default function RegisterPage() {
-  return <RegisterScreen />;
+interface RegisterPageProps {
+  searchParams: Promise<{ next?: string }>;
+}
+
+export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const { next } = await searchParams;
+  return <RegisterScreen nextPath={next} />;
 }

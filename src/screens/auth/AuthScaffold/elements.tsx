@@ -6,21 +6,21 @@ import AppLink from '@/components/ui/AppLink';
 
 export const Root = styled(Box)(({ theme }) => ({
   width: '100%',
-  minHeight: '100dvh',
-  overflowX: 'hidden',
+  height: '100dvh',
+  overflow: 'hidden',
   backgroundColor: theme.vars.palette.background.paper,
 }));
 
 export const ContentFrame = styled(Box)(({ theme }) => ({
   width: '100%',
-  minHeight: '100dvh',
+  height: '100dvh',
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
   backgroundColor: theme.vars.palette.background.paper,
 
   [theme.breakpoints.down('md')]: {
-    minHeight: 'auto',
     gridTemplateColumns: '1fr',
+    gridTemplateRows: 'auto minmax(0, 22vh) minmax(0, 1fr)',
   },
 }));
 
@@ -73,16 +73,17 @@ export const MobileHeaderInner = styled(Box)(({ theme }) => ({
 export const MediaPane = styled('aside')(({ theme }) => ({
   position: 'relative',
   minWidth: 0,
-  minHeight: '100dvh',
+  height: '100%',
+  minHeight: 0,
   overflow: 'hidden',
   backgroundColor: theme.vars.palette.primary.main,
 
   [theme.breakpoints.down('md')]: {
-    minHeight: theme.spacing(32),
+    minHeight: 0,
   },
 
   [theme.breakpoints.down('sm')]: {
-    minHeight: theme.spacing(22),
+    minHeight: 0,
   },
 }));
 
@@ -151,14 +152,15 @@ export const MediaBrandText = styled(Typography)(({ theme }) => ({
 
 export const FormPane = styled('main')(({ theme }) => ({
   minWidth: 0,
-  minHeight: '100dvh',
+  height: '100%',
+  minHeight: 0,
+  overflow: 'hidden',
   backgroundColor: theme.vars.palette.background.paper,
   borderInlineStartWidth: theme.spacing(0.125),
   borderInlineStartStyle: 'solid',
   borderInlineStartColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('md')]: {
-    minHeight: 'auto',
     borderInlineStartWidth: 0,
   },
 }));
@@ -167,7 +169,8 @@ export const FormPaneInner = styled(Box)(({ theme }) => ({
   boxSizing: 'border-box',
   width: '100%',
   maxWidth: theme.layout.maxContentWidth / 2,
-  minHeight: '100dvh',
+  height: '100%',
+  minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
   marginInlineEnd: 'auto',
@@ -179,7 +182,8 @@ export const FormPaneInner = styled(Box)(({ theme }) => ({
 
   [theme.breakpoints.down('md')]: {
     maxWidth: theme.layout.maxContentWidth,
-    minHeight: 'auto',
+    height: '100%',
+    minHeight: 0,
     marginInline: 'auto',
     padding: theme.spacing(1, 0, 5),
     paddingInline: theme.layout.tabletGutter,
@@ -248,11 +252,14 @@ export const FormRegion = styled(Box)(({ theme }) => ({
   marginBlock: 'auto',
   marginInline: 'auto',
   paddingBlock: theme.spacing(6),
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
 
   [theme.breakpoints.down('md')]: {
     maxWidth: theme.spacing(64),
+    height: '100%',
     marginBlock: 0,
-    paddingBlock: theme.spacing(5, 1),
+    paddingBlock: theme.spacing(4, 1),
   },
 
   [theme.breakpoints.down('sm')]: {

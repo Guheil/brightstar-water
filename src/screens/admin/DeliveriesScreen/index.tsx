@@ -12,6 +12,7 @@ import AdminDataTable from '../components/AdminDataTable';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
+import AdminMetricStrip from '../components/AdminMetricStrip';
 import { getStatusTone, humanize } from '../utils';
 import {
   FilterBar,
@@ -34,6 +35,14 @@ export default function DeliveriesScreen({ className }: DeliveriesScreenProps) {
   const [status, setStatus] = useState('all');
   const [delivererId, setDelivererId] = useState('all');
   const [date, setDate] = useState('');
+
+  const deliveryMetrics = [
+    { label: 'Unassigned', value: deliveries.filter((delivery) => delivery.status === 'unassigned').length, tone: 'warning' as const },
+    { label: 'Assigned', value: deliveries.filter((delivery) => ['assigned', 'accepted'].includes(delivery.status)).length, tone: 'gas' as const },
+    { label: 'In progress', value: deliveries.filter((delivery) => delivery.status === 'out_for_delivery').length, tone: 'water' as const },
+    { label: 'Needs attention', value: deliveries.filter((delivery) => delivery.status === 'failed').length, tone: 'error' as const },
+    { label: 'Delivered', value: deliveries.filter((delivery) => delivery.status === 'delivered').length, tone: 'success' as const },
+  ];
 
   const filteredDeliveries = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -143,9 +152,11 @@ export default function DeliveriesScreen({ className }: DeliveriesScreenProps) {
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Coordinate assignments, delivery schedules, and fulfillment exceptions."
+        description="Assign drivers, monitor delivery progress, and resolve fulfillment exceptions."
         title="Deliveries"
       />
+
+      <AdminMetricStrip ariaLabel="Delivery status summary" items={deliveryMetrics} />
 
       <FilterBar aria-label="Delivery filters">
         <FilterField

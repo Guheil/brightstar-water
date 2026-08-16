@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getProductStorefrontPath } from '@/config';
-import { PRODUCT_FIXTURES } from '@/mocks';
+import { PRODUCT_DATA } from '@/data';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -8,7 +8,7 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
-  const product = PRODUCT_FIXTURES.find(
+  const product = PRODUCT_DATA.find(
     (item) => item.id === id || item.slug === id,
   );
 

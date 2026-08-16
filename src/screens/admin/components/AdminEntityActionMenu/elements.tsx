@@ -11,14 +11,27 @@ export const ActionTrigger = styled(IconButton)(({ theme }) => ({
   borderWidth: theme.spacing(0.125),
   borderStyle: 'solid',
   borderColor: theme.vars.palette.divider,
+  borderRadius: theme.radii.control,
   color: theme.vars.palette.text.primary,
+  backgroundColor: theme.vars.palette.background.paper,
+  transition: theme.transitions.create(['border-color', 'background-color']),
 
-  '&:hover': {
+  '&:hover, &:focus-visible': {
+    borderColor: theme.vars.palette.primary.main,
     backgroundColor: theme.vars.palette.neutral.light,
   },
 }));
 
-export const ActionMenu = styled(Menu)(() => ({}));
+export const ActionMenu = styled(Menu)(({ theme }) => ({
+  '& .MuiPaper-root': {
+    minWidth: theme.spacing(26),
+    borderWidth: theme.spacing(0.125),
+    borderStyle: 'solid',
+    borderColor: theme.vars.palette.divider,
+    borderRadius: theme.radii.surface,
+    boxShadow: theme.shadows[5],
+  },
+}));
 
 export const ActionMenuItem = styled(MenuItem, {
   shouldForwardProp: (prop) => prop !== '$danger',
@@ -31,11 +44,7 @@ export const ActionMenuItem = styled(MenuItem, {
 export const ActionIcon = styled(ListItemIcon)(({ theme }) => ({
   minWidth: `${theme.spacing(4)} !important`,
   color: 'inherit',
-
-  '& svg': {
-    width: theme.spacing(2.25),
-    height: theme.spacing(2.25),
-  },
+  '& svg': { width: theme.spacing(2.25), height: theme.spacing(2.25) },
 }));
 
 export const ActionText = styled(ListItemText)(() => ({}));

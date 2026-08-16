@@ -13,6 +13,7 @@ import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import AdminFormDialog from '../components/AdminFormDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
+import AdminMetricStrip from '../components/AdminMetricStrip';
 import { ADMIN_ACTOR_ID, formatDateTime, humanize } from '../utils';
 import {
   AdjustButton,
@@ -44,6 +45,12 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const inventoryMetrics = [
+    { label: 'Products monitored', value: inventory.length },
+    { label: 'Available units', value: inventory.reduce((sum, item) => sum + getAvailableStock(item), 0), tone: 'water' as const },
+    { label: 'Reserved units', value: inventory.reduce((sum, item) => sum + item.stockReserved, 0), tone: 'gas' as const },
+    { label: 'Low stock', value: inventory.filter(isLowStock).length, tone: 'warning' as const },
+  ];
 
   const openAdjustment = (nextProductId?: string) => {
     if (nextProductId) setProductId(nextProductId);
@@ -148,9 +155,11 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
     <Root className={className}>
       <AdminPageHeader
         actions={<AdjustButton onClick={() => openAdjustment()}>Record adjustment</AdjustButton>}
-        description="Review stock, reservations, reorder thresholds, and reasoned inventory adjustments."
+        description="Monitor available and reserved stock, low-stock thresholds, and reasoned inventory adjustments."
         title="Inventory"
       />
+
+      <AdminMetricStrip ariaLabel="Inventory summary" items={inventoryMetrics} />
 
       {feedback ? (
         <Notice title={feedback.title} tone={feedback.tone}>
@@ -173,7 +182,7 @@ export default function InventoryScreen({ className }: InventoryScreenProps) {
 
       <HistorySection>
         <SectionTitle>Recent inventory history</SectionTitle>
-        <SectionCopy>Every prototype stock correction keeps its reason and timestamp.</SectionCopy>
+        <SectionCopy>Every stock correction keeps its reason and timestamp.</SectionCopy>
         <HistoryList>
           {adjustments.slice(0, 8).map((adjustment) => {
             const product = products.find((item) => item.id === adjustment.productId);

@@ -110,7 +110,7 @@ export const createMockServices = (
             (candidate) => candidate.email.toLocaleLowerCase() === normalizedEmail,
           );
 
-          if (!account || account.demoPassword !== credentials.password) {
+          if (!account || account.password !== credentials.password) {
             return commandFailure('invalid_input', 'Use one of the documented demo accounts.');
           }
 
@@ -122,8 +122,9 @@ export const createMockServices = (
             ...(account.customerId ? { customerId: account.customerId } : {}),
             ...(account.delivererId ? { delivererId: account.delivererId } : {}),
           };
-          session = { user, signedInAt: at, isPrototypeSession: true };
-          return commandSuccess(session);
+          const nextSession: AuthSession = { user, signedInAt: at };
+          session = nextSession;
+          return commandSuccess(nextSession);
         }),
       signOut: async () => {
         await respond(() => undefined);
@@ -229,7 +230,7 @@ export const createMockServices = (
       save: (payment: PaymentRecord) =>
         respond(() => upsertById(repository.read().payments, payment)),
     },
-    demoData: {
+    dataService: {
       loadSnapshot: () => respond(() => repository.snapshot()),
       reset: () => respond(() => repository.reset()),
     },

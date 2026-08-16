@@ -7,20 +7,19 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Notice from '@/components/ui/Notice';
-import { DEMO_AUTH_ACCOUNTS } from '@/mocks';
+import { AUTH_ACCOUNTS } from '@/data';
 import { useAppStore } from '@/store';
+import { resolveSafeNextPath } from '@/utils';
 import AuthScaffold from '../AuthScaffold';
-import type { DemoCredentialView, LoginFormValues } from './interface';
+import type { DemoAccessAccount, LoginFormValues, LoginScreenProps } from './interface';
 import {
-  DemoCopy,
-  DemoEmail,
-  DemoHeader,
-  DemoIntro,
-  DemoList,
-  DemoRole,
-  DemoRow,
-  DemoSection,
-  DemoTitle,
+  DemoAccess,
+  DemoAccessHint,
+  DemoAccessList,
+  DemoAccessRow,
+  DemoAccessSummary,
+  DemoAccountEmail,
+  DemoAccountName,
   DemoUseButton,
   ErrorRegion,
   Field,
@@ -28,7 +27,6 @@ import {
   FormLinks,
   PasswordAdornment,
   PasswordToggle,
-  PrototypeNotice,
   SubmitButton,
   TextLink,
 } from './elements';
@@ -41,17 +39,23 @@ const loginSchema = z.object({
 const roleDestinations = {
   customer: '/customer/account',
   admin: '/admin/overview',
-  deliverer: '/deliverer/deliveries',
+  deliverer: '/deliverer',
 } as const;
 
-const demoCredentials: DemoCredentialView[] = DEMO_AUTH_ACCOUNTS.map((account) => ({
+const roleLabels = {
+  customer: 'Customer',
+  admin: 'Administrator',
+  deliverer: 'Deliverer',
+} as const;
+
+const demoAccounts: readonly DemoAccessAccount[] = AUTH_ACCOUNTS.map((account) => ({
   email: account.email,
-  password: account.demoPassword,
-  roleLabel:
-    account.role === 'customer' ? 'Customer' : account.role === 'admin' ? 'Admin' : 'Deliverer',
+  label: roleLabels[account.role],
+  password: account.password,
+  role: account.role,
 }));
 
-export default function LoginScreen() {
+export default function LoginScreen({ nextPath }: LoginScreenProps) {
   const router = useRouter();
   const signIn = useAppStore((state) => state.commands.signIn);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -60,7 +64,6 @@ export default function LoginScreen() {
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
-    setFocus,
     setValue,
   } = useForm<LoginFormValues>({
     defaultValues: { email: '', password: '' },
@@ -77,14 +80,16 @@ export default function LoginScreen() {
       return;
     }
 
-    router.push(roleDestinations[result.value.user.role]);
+    const destination = result.value.user.role === 'customer'
+      ? resolveSafeNextPath(nextPath, roleDestinations.customer)
+      : roleDestinations[result.value.user.role];
+    router.push(destination);
   });
 
-  const useDemoAccount = (credential: DemoCredentialView) => {
+  const applyDemoAccount = (account: DemoAccessAccount) => {
     setSubmissionError(null);
-    setValue('email', credential.email, { shouldDirty: true, shouldValidate: true });
-    setValue('password', credential.password, { shouldDirty: true, shouldValidate: true });
-    setFocus('password');
+    setValue('email', account.email, { shouldDirty: true, shouldValidate: true });
+    setValue('password', account.password, { shouldDirty: true, shouldValidate: true });
   };
 
   return (
@@ -143,34 +148,27 @@ export default function LoginScreen() {
         </SubmitButton>
         <FormLinks>
           <TextLink href="/forgot-password">Forgot password?</TextLink>
-          <TextLink href="/register">Create a customer account</TextLink>
+          <TextLink href={`/register?next=${encodeURIComponent(resolveSafeNextPath(nextPath, '/customer/account'))}`}>Create a customer account</TextLink>
         </FormLinks>
-      </Form>
 
-      <DemoSection aria-labelledby="prototype-access-title">
-        <DemoHeader>
-          <DemoTitle id="prototype-access-title">Prototype access</DemoTitle>
-          <DemoIntro>
-            Use a fictional account to review each workspace during the frontend-only phase.
-          </DemoIntro>
-        </DemoHeader>
-        <DemoList>
-          {demoCredentials.map((credential) => (
-            <DemoRow key={credential.email}>
-              <DemoCopy>
-                <DemoRole>{credential.roleLabel}</DemoRole>
-                <DemoEmail>{credential.email}</DemoEmail>
-              </DemoCopy>
-              <DemoUseButton onClick={() => useDemoAccount(credential)}>
-                Use demo
-              </DemoUseButton>
-            </DemoRow>
-          ))}
-        </DemoList>
-        <PrototypeNotice>
-          Demo credentials are fictional and are not production authentication or security controls.
-        </PrototypeNotice>
-      </DemoSection>
+        <DemoAccess>
+          <DemoAccessSummary>Demo access</DemoAccessSummary>
+          <DemoAccessHint>Use an account shortcut when reviewing each workspace.</DemoAccessHint>
+          <DemoAccessList>
+            {demoAccounts.map((account) => (
+              <DemoAccessRow key={account.role}>
+                <div>
+                  <DemoAccountName>{account.label}</DemoAccountName>
+                  <DemoAccountEmail>{account.email}</DemoAccountEmail>
+                </div>
+                <DemoUseButton onClick={() => applyDemoAccount(account)} type="button">
+                  Use
+                </DemoUseButton>
+              </DemoAccessRow>
+            ))}
+          </DemoAccessList>
+        </DemoAccess>
+      </Form>
     </AuthScaffold>
   );
 }

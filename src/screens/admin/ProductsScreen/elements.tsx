@@ -9,13 +9,20 @@ import AppLink from '@/components/ui/AppLink';
 export const Root = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(3.5),
 }));
 
 export const Toolbar = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(1.5),
+  paddingBlock: theme.spacing(2),
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('sm')]: {
     flexDirection: 'column',
@@ -29,14 +36,15 @@ export const SearchField = styled(TextField)(({ theme }) => ({
 }));
 
 export const NewProductLink = styled(AppLink)(({ theme }) => ({
+  ...theme.typography.button,
   minHeight: theme.spacing(5.5),
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   paddingInline: theme.spacing(2),
+  borderRadius: theme.radii.control,
   backgroundColor: theme.vars.palette.primary.main,
   color: theme.vars.palette.primary.contrastText,
-  fontWeight: theme.typography.fontWeightSemiBold,
   textDecoration: 'none',
 
   '&:hover': {

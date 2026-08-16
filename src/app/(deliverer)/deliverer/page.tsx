@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import DelivererHomeScreen from '@/screens/deliverer/DelivererHomeScreen';
 
 export default function DelivererIndexPage() {
-  redirect('/deliverer/deliveries');
+  return <DelivererHomeScreen />;
 }

@@ -12,6 +12,8 @@ export interface DeliveryAddress {
   municipality: string;
   province: string;
   distanceKm: number;
+  latitude?: number;
+  longitude?: number;
   deliveryNote?: string;
   isDefault: boolean;
 }

@@ -1,6 +1,18 @@
+export interface RegisterScreenProps {
+  nextPath?: string;
+}
+
+export type RegistrationStage = 'details' | 'security' | 'verify';
+
 export interface RegisterFormValues {
-  confirmPassword: string;
   displayName: string;
   email: string;
+  phone: string;
   password: string;
+  confirmPassword: string;
+}
+
+export interface RegistrationStepProps {
+  $active: boolean;
+  $complete: boolean;
 }

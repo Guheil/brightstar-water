@@ -29,6 +29,7 @@ import {
   ItemName,
   ItemRow,
   MainColumn,
+  PaymentProofImage,
   Root,
   SecondaryButton,
   Section,
@@ -76,7 +77,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const deliverers = useAppStore((state) => state.deliveries.deliverers);
   const commands = useAppStore((state) => state.commands);
   const [selectedDeliverer, setSelectedDeliverer] = useState('');
-  const [demoReference, setDemoReference] = useState('');
+  const [reference, setReference] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
@@ -133,7 +134,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
       }
       case 'verify_payment':
         reportResult(
-          commands.verifyPayment(order.id, ADMIN_ACTOR_ID, demoReference),
+          commands.verifyPayment(order.id, ADMIN_ACTOR_ID, reference),
           'Payment verified',
         );
         break;
@@ -278,7 +279,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
                 )}
               </DetailValue>
               <DetailTerm>Payment reference</DetailTerm>
-              <DetailValue>{payment?.demoReference ?? 'Not recorded'}</DetailValue>
+              <DetailValue>{payment?.reference ?? 'Not recorded'}</DetailValue>
               <DetailTerm>Delivery state</DetailTerm>
               <DetailValue>
                 {delivery ? (
@@ -427,11 +428,22 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           {payment?.method === 'gcash' && payment.status === 'awaiting_verification' ? (
             <ActionPanel>
               <ActionTitle>GCash verification</ActionTitle>
-              <ActionCopy>Enter the payment reference supplied with the transaction.</ActionCopy>
+              <ActionCopy>Review the customer’s payment screenshot, then record the payment reference if it is visible.</ActionCopy>
+              {payment.proofImageDataUrl ? (
+                <>
+                  <PaymentProofImage
+                    alt="Customer GCash payment screenshot"
+                    src={payment.proofImageDataUrl}
+                  />
+                  <ActionCopy>{payment.proofFileName ?? 'Payment screenshot'}</ActionCopy>
+                </>
+              ) : (
+                <ActionCopy>No payment screenshot was attached to this order.</ActionCopy>
+              )}
               <ActionField
                 label="Payment reference (optional)"
-                onChange={(event) => setDemoReference(event.target.value)}
-                value={demoReference}
+                onChange={(event) => setReference(event.target.value)}
+                value={reference}
               />
               <ActionButton
                 onClick={() =>
