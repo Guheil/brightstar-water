@@ -1,5 +1,4 @@
 import {
-  AUTH_ACCOUNTS,
   CUSTOMER_DATA,
   DELIVERER_DATA,
   DELIVERY_DATA,
@@ -16,9 +15,8 @@ import type { AppDataState } from './interface';
 export const createInitialAppData = (): AppDataState => ({
   auth: {
     session: null,
-    accessNotice: 'Use your assigned email and password to sign in.',
-    accounts: structuredClone(AUTH_ACCOUNTS),
-    pendingRegistration: null,
+    accessNotice: 'Sign in with your verified account to continue.',
+    initialized: false,
   },
   catalog: { products: structuredClone(PRODUCT_DATA) },
   cart: {

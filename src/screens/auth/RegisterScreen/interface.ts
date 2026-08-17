@@ -2,7 +2,7 @@ export interface RegisterScreenProps {
   nextPath?: string;
 }
 
-export type RegistrationStage = 'details' | 'security' | 'verify';
+export type RegistrationStage = 'details' | 'security' | 'agreement' | 'verify';
 
 export interface RegisterFormValues {
   displayName: string;

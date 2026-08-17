@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     ".tmp-typecheck/**",
     "next-env.d.ts",
+    ".agents/**",
   ]),
 ]);
 

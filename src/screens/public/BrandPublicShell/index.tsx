@@ -2,6 +2,7 @@
 
 import CustomerFooter from '@/components/layout/CustomerFooter';
 import CustomerHeader from '@/components/layout/CustomerHeader';
+import { signOutCurrentUser } from '@/lib/auth/client';
 import { selectCartItemCount, useAppStore } from '@/store';
 import { Main } from './elements';
 import type { BrandPublicShellProps } from './interface';
@@ -13,13 +14,18 @@ export default function BrandPublicShell({
 }: BrandPublicShellProps) {
   const cartCount = useAppStore(selectCartItemCount);
   const session = useAppStore((state) => state.auth.session);
-  const signOut = useAppStore((state) => state.commands.signOut);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const canLogout = session?.user.role === 'customer';
   const homeHero = pathname === brand.homeHref;
   const activeHref =
     pathname === brand.shopHref || pathname.startsWith(`${brand.productHrefPrefix}/`)
       ? brand.shopHref
       : brand.navigation.find((item) => pathname === item.href)?.href;
+
+  const handleLogout = async () => {
+    await signOutCurrentUser();
+    clearAuthSession();
+  };
 
   const footerGroups = [
     {
@@ -59,7 +65,7 @@ export default function BrandPublicShell({
         homeHref={brand.homeHref}
         megaMenuGroups={brand.megaMenuGroups}
         navigation={brand.navigation}
-        onLogout={canLogout ? signOut : undefined}
+        onLogout={canLogout ? handleLogout : undefined}
         logoSrc={brand.logoSrc}
         searchHref={brand.searchHref}
         showOrderNavigation={canLogout}

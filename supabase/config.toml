@@ -1,0 +1,6 @@
+# Authentication settings mirrored from the hosted Supabase project.
+# For the hosted project, also set Email OTP length to 6 in the Supabase Dashboard.
+
+[auth.email]
+otp_length = 6
+otp_expiry = 3600

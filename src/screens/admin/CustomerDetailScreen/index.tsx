@@ -1,21 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
-
 import EmptyState from '@/components/ui/EmptyState';
 import StatusText from '@/components/ui/StatusText';
-import { useAppStore } from '@/store';
-import type { Order } from '@/types';
-import { formatPhp } from '@/utils';
-import AdminDataTable from '../components/AdminDataTable';
-import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
-import { formatDate, getStatusTone, humanize } from '../utils';
+import { formatDateTime, getStatusTone, humanize } from '../utils';
 import {
-  AddressItem,
-  AddressList,
-  AddressText,
-  AddressTitle,
   DetailList,
   DetailTerm,
   DetailValue,
@@ -23,33 +12,10 @@ import {
   Root,
   Section,
   SectionTitle,
-  TableLink,
 } from './elements';
 import type { CustomerDetailScreenProps } from './interface';
 
-export default function CustomerDetailScreen({
-  customerId,
-}: CustomerDetailScreenProps) {
-  const customer = useAppStore((state) =>
-    state.customers.records.find((item) => item.id === customerId),
-  );
-  const allOrders = useAppStore((state) => state.orders.records);
-  const loyalty = useAppStore((state) =>
-    state.loyalty.accounts.find((account) => account.customerId === customerId),
-  );
-  const allActivity = useAppStore((state) => state.loyalty.activity);
-  const orders = useMemo(
-    () =>
-      allOrders
-        .filter((order) => order.customerId === customerId)
-        .sort((a, b) => b.placedAt.localeCompare(a.placedAt)),
-    [allOrders, customerId],
-  );
-  const activity = useMemo(
-    () => allActivity.filter((item) => item.customerId === customerId),
-    [allActivity, customerId],
-  );
-
+export default function CustomerDetailScreen({ customer }: CustomerDetailScreenProps) {
   if (!customer) {
     return (
       <EmptyState
@@ -60,88 +26,41 @@ export default function CustomerDetailScreen({
     );
   }
 
-  const columns: readonly AdminDataColumn<Order>[] = [
-    {
-      key: 'order',
-      label: 'Order',
-      render: (order) => (
-        <TableLink href={`/admin/orders/${order.id}`}>{order.reference}</TableLink>
-      ),
-    },
-    { key: 'date', label: 'Placed', render: (order) => formatDate(order.placedAt) },
-    {
-      key: 'total',
-      label: 'Total',
-      align: 'right',
-      render: (order) => formatPhp(order.totals.totalCentavos),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (order) => (
-        <StatusText tone={getStatusTone(order.status)}>{humanize(order.status)}</StatusText>
-      ),
-    },
-  ];
-
   return (
     <Root>
       <AdminPageHeader
         backHref="/admin/customers"
         backLabel="Back to customers"
-        description="Review the customer's profile, delivery addresses, orders, and loyalty activity."
-        title={customer.displayName}
+        description="Review the customer's account and contact information."
+        title={customer.full_name}
       />
 
       <Section>
-        <SectionTitle>Profile</SectionTitle>
+        <SectionTitle>Account details</SectionTitle>
         <DetailList>
           <DetailTerm>Email</DetailTerm>
           <DetailValue>{customer.email}</DetailValue>
-          <DetailTerm>Contact</DetailTerm>
-          <DetailValue>{customer.phonePlaceholder}</DetailValue>
+          <DetailTerm>Contact number</DetailTerm>
+          <DetailValue>{customer.phone}</DetailValue>
+          <DetailTerm>Role</DetailTerm>
+          <DetailValue>{humanize(customer.role)}</DetailValue>
           <DetailTerm>Account state</DetailTerm>
-          <DetailValue>{humanize(customer.status)}</DetailValue>
-          <DetailTerm>Order count</DetailTerm>
-          <DetailValue>{orders.length}</DetailValue>
-          <DetailTerm>Loyalty balance</DetailTerm>
-          <DetailValue>{loyalty?.pointsAvailable ?? 0} points</DetailValue>
-          <DetailTerm>Loyalty activity</DetailTerm>
-          <DetailValue>{activity.length} recorded events</DetailValue>
+          <DetailValue>
+            <StatusText tone={getStatusTone(customer.status)}>{humanize(customer.status)}</StatusText>
+          </DetailValue>
         </DetailList>
       </Section>
 
       <Section>
-        <SectionTitle>Saved delivery information</SectionTitle>
-        <AddressList>
-          {customer.addresses.map((address) => (
-            <AddressItem key={address.id}>
-              <AddressTitle>{address.label}</AddressTitle>
-              <AddressText>
-                {address.addressLine}, {address.area}, {address.municipality},{' '}
-                {address.province}
-              </AddressText>
-              <AddressText>
-                {address.distanceKm} km distance ·{' '}
-                {address.isDefault ? 'Default address' : 'Additional address'}
-              </AddressText>
-            </AddressItem>
-          ))}
-        </AddressList>
-      </Section>
-
-      <Section>
-        <SectionTitle>Purchase history</SectionTitle>
-        {orders.length ? (
-          <AdminDataTable
-            ariaLabel={`${customer.displayName} purchase history`}
-            columns={columns}
-            getRowKey={(order) => order.id}
-            rows={orders}
-          />
-        ) : (
-          <DetailValue>No orders recorded.</DetailValue>
-        )}
+        <SectionTitle>Account record</SectionTitle>
+        <DetailList>
+          <DetailTerm>Created</DetailTerm>
+          <DetailValue>{formatDateTime(customer.created_at)}</DetailValue>
+          <DetailTerm>Last updated</DetailTerm>
+          <DetailValue>{formatDateTime(customer.updated_at)}</DetailValue>
+          <DetailTerm>Customer ID</DetailTerm>
+          <DetailValue>{customer.id}</DetailValue>
+        </DetailList>
       </Section>
     </Root>
   );

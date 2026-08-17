@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Lenis from 'lenis';
 import { usePathname } from 'next/navigation';
+import { signOutCurrentUser } from '@/lib/auth/client';
 import CustomerFooter from '@/components/layout/CustomerFooter';
 import CustomerHeader from '@/components/layout/CustomerHeader';
 import {
@@ -105,8 +106,13 @@ export default function PublicShell({ children }: PublicShellProps) {
   const gateway = pathname === '/';
   const cartCount = useAppStore(selectCartItemCount);
   const session = useAppStore((state) => state.auth.session);
-  const signOut = useAppStore((state) => state.commands.signOut);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const canLogout = session?.user.role === 'customer';
+
+  const handleLogout = async () => {
+    await signOutCurrentUser();
+    clearAuthSession();
+  };
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -143,7 +149,7 @@ export default function PublicShell({ children }: PublicShellProps) {
         cartHref="/customer/cart"
         megaMenuGroups={gateway ? gatewayMenuGroups : customerMegaMenuGroups}
         navigation={gateway ? gatewayNavigation : customerPrimaryNavigation}
-        onLogout={canLogout ? signOut : undefined}
+        onLogout={canLogout ? handleLogout : undefined}
         searchHref={gateway ? undefined : '/shop'}
         showOrderNavigation={canLogout}
         shopHref={gateway ? '/' : '/shop'}

@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import AppLink from '@/components/ui/AppLink';
 
@@ -11,11 +12,11 @@ export const Root = styled(Box)(({ theme }) => ({
   gap: theme.spacing(3.5),
 }));
 
-export const Toolbar = styled(Box)(({ theme }) => ({
-  display: 'flex',
+export const ToolbarForm = styled('form')(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(160px, 210px) auto',
   alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: theme.spacing(2),
+  gap: theme.spacing(1.5),
   paddingBlock: theme.spacing(2),
   borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
@@ -25,14 +26,16 @@ export const Toolbar = styled(Box)(({ theme }) => ({
   borderBottomColor: theme.vars.palette.divider,
 
   [theme.breakpoints.down('sm')]: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
+    gridTemplateColumns: '1fr',
   },
 }));
 
-export const SearchField = styled(TextField)(({ theme }) => ({
-  width: '100%',
-  maxWidth: theme.spacing(55),
+export const SearchField = styled(TextField)(() => ({}));
+export const FilterField = styled(TextField)(() => ({}));
+export const FilterOption = styled(MenuItem)(() => ({}));
+
+export const SearchButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
 }));
 
 export const TableLink = styled(AppLink)(({ theme }) => ({
@@ -40,11 +43,6 @@ export const TableLink = styled(AppLink)(({ theme }) => ({
   fontWeight: theme.typography.fontWeightSemiBold,
   textDecoration: 'underline',
   textUnderlineOffset: theme.spacing(0.5),
-}));
-
-export const ResetButton = styled(Button)(({ theme }) => ({
-  minHeight: theme.spacing(5.5),
-  color: theme.vars.palette.text.primary,
 }));
 
 export const EditForm = styled('form')(({ theme }) => ({
@@ -55,3 +53,31 @@ export const EditForm = styled('form')(({ theme }) => ({
 
 export const EditField = styled(TextField)(() => ({}));
 export const EditOption = styled(MenuItem)(() => ({}));
+
+export const Pagination = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: theme.spacing(2),
+  paddingTop: theme.spacing(1),
+
+  [theme.breakpoints.down('sm')]: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+  },
+}));
+
+export const PaginationText = styled(Typography)(({ theme }) => ({
+  ...theme.typography.body2,
+  margin: 0,
+  color: theme.vars.palette.text.secondary,
+}));
+
+export const PaginationActions = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: theme.spacing(1),
+}));
+
+export const PaginationButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+}));

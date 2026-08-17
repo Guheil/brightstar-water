@@ -1,4 +1,3 @@
-import { DEMO_AUTH_ACCOUNTS } from '@/mocks';
 import type {
   AppServices,
   DeliveryQuery,
@@ -6,7 +5,6 @@ import type {
   ProductQuery,
 } from '@/services/interfaces';
 import type {
-  AuthSession,
   Customer,
   Delivery,
   EntityId,
@@ -16,12 +14,10 @@ import type {
   PaymentRecord,
   Product,
 } from '@/types';
-import { commandFailure, commandSuccess } from '@/utils';
 import { cloneDemoData, MockRepository } from './repository';
 
 export interface MockServiceOptions {
   delayMs?: number;
-  clock?: () => string;
 }
 
 const upsertById = <T extends { id: EntityId }>(items: T[], next: T): T => {
@@ -57,8 +53,6 @@ export const createMockServices = (
 ): AppServices => {
   const repository = new MockRepository();
   const delayMs = Math.max(0, options.delayMs ?? 180);
-  const clock = options.clock ?? (() => new Date().toISOString());
-  let session: AuthSession | null = null;
 
   const respond = async <T>(produce: () => T): Promise<T> => {
     if (delayMs > 0) {
@@ -101,36 +95,6 @@ export const createMockServices = (
   };
 
   return {
-    auth: {
-      getSession: () => respond(() => session),
-      signIn: (credentials, at = clock()) =>
-        respond(() => {
-          const normalizedEmail = credentials.email.trim().toLocaleLowerCase();
-          const account = DEMO_AUTH_ACCOUNTS.find(
-            (candidate) => candidate.email.toLocaleLowerCase() === normalizedEmail,
-          );
-
-          if (!account || account.password !== credentials.password) {
-            return commandFailure('invalid_input', 'Use one of the documented demo accounts.');
-          }
-
-          const user = {
-            id: account.id,
-            role: account.role,
-            displayName: account.displayName,
-            email: account.email,
-            ...(account.customerId ? { customerId: account.customerId } : {}),
-            ...(account.delivererId ? { delivererId: account.delivererId } : {}),
-          };
-          const nextSession: AuthSession = { user, signedInAt: at };
-          session = nextSession;
-          return commandSuccess(nextSession);
-        }),
-      signOut: async () => {
-        await respond(() => undefined);
-        session = null;
-      },
-    },
     products: {
       list: (query) =>
         respond(() => repository.read().products.filter((item) => matchesProductQuery(item, query))),
@@ -237,6 +201,4 @@ export const createMockServices = (
   };
 };
 
-export const createImmediateMockServices = (
-  snapshotClock?: () => string,
-): AppServices => createMockServices({ delayMs: 0, clock: snapshotClock });
+export const createImmediateMockServices = (): AppServices => createMockServices({ delayMs: 0 });

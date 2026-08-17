@@ -17,6 +17,7 @@ const pageSources = [
   'InventoryScreen',
   'ProductsScreen',
   'CustomersScreen',
+  'AccountsScreen',
   'LoyaltyScreen',
 ].map((name) => read(`src/screens/admin/${name}/index.tsx`));
 
@@ -25,6 +26,13 @@ describe('calm operations workspace redesign', () => {
     expect(shell).toContain("position: 'fixed'");
     expect(shell).toContain('marginInlineStart: theme.spacing(34)');
     expect(shell).toContain("overflowY: 'auto'");
+  });
+
+  it('renders every admin navigation item with a valid icon mapping', () => {
+    expect(routeShell).toContain("icon: 'accounts'");
+    expect(shellIndex).toContain('accounts: UserPlus');
+    expect(shellIndex).toContain('navigationIcons[item.icon] ?? Users');
+    expect(shellIndex).not.toContain('UserCog');
   });
 
   it('uses a restrained persistent workspace header instead of decorative brand marks', () => {

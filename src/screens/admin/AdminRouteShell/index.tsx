@@ -3,6 +3,7 @@
 import { UserRound } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import AdminShell from '@/components/layout/AdminShell';
+import { signOutCurrentUser } from '@/lib/auth/client';
 import { useAppStore } from '@/store';
 import { AccountLink } from './elements';
 import type { AdminRouteShellProps } from './interface';
@@ -14,6 +15,7 @@ const navigation = [
   { label: 'Inventory', href: '/admin/inventory', icon: 'inventory' as const },
   { label: 'Products', href: '/admin/products', icon: 'products' as const },
   { label: 'Customers', href: '/admin/customers', icon: 'customers' as const },
+  { label: 'Accounts', href: '/admin/accounts', icon: 'accounts' as const },
   { label: 'Loyalty', href: '/admin/loyalty', icon: 'loyalty' as const },
 ];
 
@@ -23,7 +25,8 @@ const sectionDescriptions: Readonly<Record<string, string>> = {
   deliveries: 'Assign drivers, monitor progress, and resolve delivery issues.',
   inventory: 'Monitor available, reserved, and low-stock quantities.',
   products: 'Control the MRJE Gas and Bright Star Water product catalog.',
-  customers: 'Review customer profiles, order history, and account state.',
+  customers: 'Review live customer profiles and account state.',
+  accounts: 'Create and review Customer, Deliverer, and Admin accounts.',
   loyalty: 'Track balances, activity, and administrative adjustments.',
   account: 'Review the current administrator session and account details.',
 };
@@ -32,13 +35,15 @@ export default function AdminRouteShell({ children }: AdminRouteShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const session = useAppStore((state) => state.auth.session);
-  const signOut = useAppStore((state) => state.commands.signOut);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const section = pathname.split('/')[2] || 'overview';
   const activeHref = navigation.find((item) => pathname.startsWith(item.href))?.href;
 
-  const handleSignOut = () => {
-    signOut();
-    router.push('/login');
+  const handleSignOut = async () => {
+    await signOutCurrentUser();
+    clearAuthSession();
+    router.replace('/login');
+    router.refresh();
   };
 
   return (

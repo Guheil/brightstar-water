@@ -1,3 +1,5 @@
+'use client';
+
 import { PackageOpen } from 'lucide-react';
 import { ActionSlot, Description, IconSlot, Root, Title } from './elements';
 import type { EmptyStateProps } from './interface';

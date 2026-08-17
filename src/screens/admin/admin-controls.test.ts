@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AUTH_ACCOUNTS } from '@/data';
 import { useAppStore } from '@/store';
 import {
   deleteProductState,
   quickUpdateProduct,
   saveProductState,
 } from './productState';
-import { updateCustomerState } from './customerState';
 
 describe('Admin CRUD-style controls', () => {
   beforeEach(() => {
@@ -56,52 +54,11 @@ describe('Admin CRUD-style controls', () => {
     expect(useAppStore.getState().inventory.items.some((item) => item.productId === product.id)).toBe(false);
   });
 
-  it('updates customer contact and account state while preserving addresses', () => {
-    const before = useAppStore.getState().customers.records[0];
-    const result = updateCustomerState(before.id, {
-      displayName: 'Updated QA Customer',
-      email: 'updated.qa@example.test',
-      phonePlaceholder: '09XX-111-2222',
-      status: 'inactive',
-    }, '2026-08-16T00:00:00.000Z');
-
-    expect(result.ok).toBe(true);
-    const after = useAppStore.getState().customers.records.find((item) => item.id === before.id)!;
-    expect(after.displayName).toBe('Updated QA Customer');
-    expect(after.status).toBe('inactive');
-    expect(after.addresses).toEqual(before.addresses);
+  it('does not contain a local password authentication command', () => {
+    const commands = useAppStore.getState().commands;
+    expect('signIn' in commands).toBe(false);
+    expect('beginCustomerRegistration' in commands).toBe(false);
   });
 
-  it('prevents an inactive customer account from signing in', () => {
-    const account = AUTH_ACCOUNTS.find((account) => account.role === 'customer')!;
-    const customer = useAppStore.getState().customers.records.find(
-      (item) => item.id === account.customerId,
-    )!;
-    const update = updateCustomerState(customer.id, {
-      displayName: customer.displayName,
-      email: customer.email,
-      phonePlaceholder: customer.phonePlaceholder,
-      status: 'inactive',
-    });
-    expect(update.ok).toBe(true);
 
-    const signIn = useAppStore.getState().commands.signIn({
-      email: account.email,
-      password: account.password,
-    });
-    expect(signIn.ok).toBe(false);
-    if (!signIn.ok) expect(signIn.error.code).toBe('not_allowed');
-  });
-
-  it('rejects duplicate customer emails', () => {
-    const customers = useAppStore.getState().customers.records;
-    const result = updateCustomerState(customers[0].id, {
-      displayName: customers[0].displayName,
-      email: customers[1].email,
-      phonePlaceholder: customers[0].phonePlaceholder,
-      status: customers[0].status,
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe('conflict');
-  });
 });

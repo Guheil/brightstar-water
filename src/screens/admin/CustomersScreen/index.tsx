@@ -2,106 +2,127 @@
 
 import { Eye, Pencil, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
-import { useAppStore } from '@/store';
-import type { Customer, CustomerAccountStatus } from '@/types';
+import { updateCustomerProfileSchema } from '@/lib/admin/validation';
+import type { ProfileStatus, SupabaseProfile } from '@/lib/auth/types';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminDataTable from '../components/AdminDataTable';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import AdminFormDialog from '../components/AdminFormDialog';
-import AdminPageHeader from '../components/AdminPageHeader';
 import AdminMetricStrip from '../components/AdminMetricStrip';
-import { updateCustomerState } from '../customerState';
+import AdminPageHeader from '../components/AdminPageHeader';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
   EditField,
   EditForm,
   EditOption,
-  ResetButton,
+  FilterField,
+  FilterOption,
+  Pagination,
+  PaginationActions,
+  PaginationButton,
+  PaginationText,
   Root,
+  SearchButton,
   SearchField,
   TableLink,
-  Toolbar,
+  ToolbarForm,
 } from './elements';
-import type { CustomersScreenProps } from './interface';
+import type { CustomerStatusFilter, CustomersScreenProps } from './interface';
 
 type Feedback = { tone: 'success' | 'error'; title: string; message: string };
 
-export default function CustomersScreen({ className }: CustomersScreenProps) {
+export default function CustomersScreen({ className, filters, initialData }: CustomersScreenProps) {
   const router = useRouter();
-  const customers = useAppStore((state) => state.customers.records);
-  const orders = useAppStore((state) => state.orders.records);
-  const loyalty = useAppStore((state) => state.loyalty.accounts);
-  const [query, setQuery] = useState('');
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [pendingStatusCustomer, setPendingStatusCustomer] = useState<Customer | null>(null);
+  const [query, setQuery] = useState(filters.query);
+  const [statusFilter, setStatusFilter] = useState<CustomerStatusFilter>(filters.status ?? 'all');
+  const [editingCustomer, setEditingCustomer] = useState<SupabaseProfile | null>(null);
+  const [pendingStatusCustomer, setPendingStatusCustomer] = useState<SupabaseProfile | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [status, setStatus] = useState<CustomerAccountStatus>('active');
+  const [status, setStatus] = useState<ProfileStatus>('active');
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const customerMetrics = [
-    { label: 'Customers', value: customers.length },
-    { label: 'Active accounts', value: customers.filter((customer) => customer.status === 'active').length, tone: 'success' as const },
-    { label: 'With orders', value: customers.filter((customer) => orders.some((order) => order.customerId === customer.id)).length, tone: 'water' as const },
-    { label: 'Inactive accounts', value: customers.filter((customer) => customer.status === 'inactive').length, tone: 'warning' as const },
+
+  const metrics = [
+    { label: 'Customers', value: initialData.customerCount },
+    { label: 'Active accounts', value: initialData.activeCount, tone: 'success' as const },
+    { label: 'Inactive accounts', value: initialData.inactiveCount, tone: 'warning' as const },
   ];
 
-  const filteredCustomers = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return customers.filter(
-      (customer) =>
-        !normalized ||
-        customer.displayName.toLowerCase().includes(normalized) ||
-        customer.email.toLowerCase().includes(normalized) ||
-        customer.phonePlaceholder.toLowerCase().includes(normalized),
-    );
-  }, [customers, query]);
-
-  const openEdit = (customer: Customer) => {
-    setEditingCustomer(customer);
-    setDisplayName(customer.displayName);
-    setEmail(customer.email);
-    setPhone(customer.phonePlaceholder);
-    setStatus(customer.status);
+  const navigateWithFilters = (nextPage = 1) => {
+    const params = new URLSearchParams();
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) params.set('q', normalizedQuery);
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (nextPage > 1) params.set('page', String(nextPage));
+    const suffix = params.toString();
+    router.push(suffix ? `/admin/customers?${suffix}` : '/admin/customers');
   };
 
-  const columns: readonly AdminDataColumn<Customer>[] = [
+  const openEdit = (customer: SupabaseProfile) => {
+    setEditingCustomer(customer);
+    setDisplayName(customer.full_name);
+    setPhone(customer.phone);
+    setStatus(customer.status);
+    setFormError('');
+  };
+
+  const saveCustomer = async (
+    customer: SupabaseProfile,
+    nextValues: { fullName: string; phone: string; status: ProfileStatus },
+  ) => {
+    const parsed = updateCustomerProfileSchema.safeParse(nextValues);
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? 'Check the customer details and try again.');
+      return false;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/customers/${encodeURIComponent(customer.id)}`, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed.data),
+      });
+      const result = (await response.json()) as { error?: string; customer?: SupabaseProfile };
+      if (!response.ok || !result.customer) {
+        setFormError(result.error ?? 'The customer could not be updated.');
+        return false;
+      }
+
+      setFeedback({
+        tone: 'success',
+        title: 'Customer updated',
+        message: `${result.customer.full_name}'s account details are up to date.`,
+      });
+      router.refresh();
+      return true;
+    } catch {
+      setFormError('The customer could not be updated. Check your connection and try again.');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const columns: readonly AdminDataColumn<SupabaseProfile>[] = [
     {
       key: 'customer',
       label: 'Customer',
       render: (customer) => (
-        <TableLink href={`/admin/customers/${customer.id}`}>{customer.displayName}</TableLink>
+        <TableLink href={`/admin/customers/${customer.id}`}>{customer.full_name}</TableLink>
       ),
     },
-    { key: 'contact', label: 'Contact', render: (customer) => customer.phonePlaceholder },
-    {
-      key: 'orders',
-      label: 'Orders',
-      align: 'right',
-      render: (customer) => orders.filter((order) => order.customerId === customer.id).length,
-    },
-    {
-      key: 'last_order',
-      label: 'Last order',
-      render: (customer) => {
-        const lastOrder = orders
-          .filter((order) => order.customerId === customer.id)
-          .sort((a, b) => b.placedAt.localeCompare(a.placedAt))[0];
-        return lastOrder ? formatDate(lastOrder.placedAt) : 'No orders';
-      },
-    },
-    {
-      key: 'loyalty',
-      label: 'Loyalty balance',
-      align: 'right',
-      render: (customer) =>
-        loyalty.find((account) => account.customerId === customer.id)?.pointsAvailable ?? 0,
-    },
+    { key: 'email', label: 'Email', render: (customer) => customer.email },
+    { key: 'contact', label: 'Contact', render: (customer) => customer.phone },
+    { key: 'created', label: 'Registered', render: (customer) => formatDate(customer.created_at) },
     {
       key: 'status',
       label: 'Account state',
@@ -128,69 +149,44 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
             {
               label: customer.status === 'active' ? 'Deactivate account' : 'Activate account',
               icon: Power,
-              onSelect: () => setPendingStatusCustomer(customer),
+              onSelect: () => {
+                setFormError('');
+                setPendingStatusCustomer(customer);
+              },
             },
           ]}
-          ariaLabel={`Actions for ${customer.displayName}`}
+          ariaLabel={`Actions for ${customer.full_name}`}
         />
       ),
     },
   ];
 
-  const submitEdit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submitEdit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingCustomer) return;
-    const result = updateCustomerState(editingCustomer.id, {
-      displayName,
-      email,
-      phonePlaceholder: phone,
-      status,
-    });
-    if (!result.ok) {
-      setFeedback({ tone: 'error', title: 'Customer not updated', message: result.error.message });
-      return;
-    }
-    setFeedback({
-      tone: 'success',
-      title: 'Customer updated',
-      message: `${result.value.displayName}'s account details were updated.`,
-    });
-    setEditingCustomer(null);
+    const ok = await saveCustomer(editingCustomer, { fullName: displayName, phone, status });
+    if (ok) setEditingCustomer(null);
   };
 
-  const confirmStatus = () => {
+  const confirmStatus = async () => {
     if (!pendingStatusCustomer) return;
-    const nextStatus: CustomerAccountStatus =
-      pendingStatusCustomer.status === 'active' ? 'inactive' : 'active';
-    const result = updateCustomerState(pendingStatusCustomer.id, {
-      displayName: pendingStatusCustomer.displayName,
-      email: pendingStatusCustomer.email,
-      phonePlaceholder: pendingStatusCustomer.phonePlaceholder,
+    const nextStatus: ProfileStatus = pendingStatusCustomer.status === 'active' ? 'inactive' : 'active';
+    const ok = await saveCustomer(pendingStatusCustomer, {
+      fullName: pendingStatusCustomer.full_name,
+      phone: pendingStatusCustomer.phone,
       status: nextStatus,
     });
-    setFeedback(
-      result.ok
-        ? {
-            tone: 'success',
-            title: nextStatus === 'active' ? 'Customer activated' : 'Customer deactivated',
-            message:
-              nextStatus === 'active'
-                ? 'The customer account is active again.'
-                : 'The account is inactive while order and loyalty history remain preserved.',
-          }
-        : { tone: 'error', title: 'Account state not changed', message: result.error.message },
-    );
-    setPendingStatusCustomer(null);
+    if (ok) setPendingStatusCustomer(null);
   };
 
   return (
     <Root className={className}>
       <AdminPageHeader
-        description="Review customer profiles, order history, saved delivery information, and account state."
+        description="Review live customer profiles and manage their account state."
         title="Customers"
       />
 
-      <AdminMetricStrip ariaLabel="Customer summary" items={customerMetrics} />
+      <AdminMetricStrip ariaLabel="Customer summary" items={metrics} />
 
       {feedback ? (
         <Notice title={feedback.title} tone={feedback.tone}>
@@ -198,38 +194,81 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
         </Notice>
       ) : null}
 
-      <Toolbar>
+      <ToolbarForm
+        onSubmit={(event) => {
+          event.preventDefault();
+          navigateWithFilters(1);
+        }}
+      >
         <SearchField
           label="Search name, email, or contact"
           onChange={(event) => setQuery(event.target.value)}
           value={query}
         />
-      </Toolbar>
+        <FilterField
+          label="Account state"
+          onChange={(event) => setStatusFilter(event.target.value as CustomerStatusFilter)}
+          select
+          value={statusFilter}
+        >
+          <FilterOption value="all">All states</FilterOption>
+          <FilterOption value="active">Active</FilterOption>
+          <FilterOption value="inactive">Inactive</FilterOption>
+        </FilterField>
+        <SearchButton type="submit" variant="outlined">Apply</SearchButton>
+      </ToolbarForm>
 
-      {filteredCustomers.length ? (
+      {initialData.profiles.length ? (
         <AdminDataTable
           ariaLabel="Customer records"
           columns={columns}
           getRowKey={(customer) => customer.id}
-          rows={filteredCustomers}
+          rows={initialData.profiles}
         />
       ) : (
         <EmptyState
-          action={<ResetButton onClick={() => setQuery('')}>Clear search</ResetButton>}
-          description="Try another customer name, email, or contact number."
-          title="No customers match this search"
+          description="Try another customer name, email, contact number, or account state."
+          title="No customers match these filters"
         />
       )}
 
+      <Pagination>
+        <PaginationText>
+          Page {initialData.page} of {initialData.pageCount}. {initialData.totalCount} matching customers.
+        </PaginationText>
+        <PaginationActions>
+          <PaginationButton
+            disabled={initialData.page <= 1}
+            onClick={() => navigateWithFilters(initialData.page - 1)}
+            variant="outlined"
+          >
+            Previous
+          </PaginationButton>
+          <PaginationButton
+            disabled={initialData.page >= initialData.pageCount}
+            onClick={() => navigateWithFilters(initialData.page + 1)}
+            variant="outlined"
+          >
+            Next
+          </PaginationButton>
+        </PaginationActions>
+      </Pagination>
+
       <AdminFormDialog
-        description="Update contact details or account state. Purchase, address, and loyalty history are managed separately and are not deleted here."
+        description="Update the customer's name, contact number, or account state. The login email stays unchanged here."
         formId="customer-edit-form"
-        onClose={() => setEditingCustomer(null)}
+        onClose={() => {
+          if (saving) return;
+          setEditingCustomer(null);
+          setFormError('');
+        }}
         open={Boolean(editingCustomer)}
-        submitLabel="Save customer"
-        title={editingCustomer ? `Edit ${editingCustomer.displayName}` : 'Edit customer'}
+        submitDisabled={saving}
+        submitLabel={saving ? 'Saving...' : 'Save customer'}
+        title={editingCustomer ? `Edit ${editingCustomer.full_name}` : 'Edit customer'}
       >
         <EditForm id="customer-edit-form" onSubmit={submitEdit}>
+          {formError ? <Notice title="Customer not updated" tone="error">{formError}</Notice> : null}
           <EditField
             label="Customer name"
             onChange={(event) => setDisplayName(event.target.value)}
@@ -237,22 +276,19 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
             value={displayName}
           />
           <EditField
-            autoComplete="email"
-            label="Email"
-            onChange={(event) => setEmail(event.target.value)}
-            required
-            type="email"
-            value={email}
+            disabled
+            label="Login email"
+            value={editingCustomer?.email ?? ''}
           />
           <EditField
             label="Contact number"
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 11))}
             required
             value={phone}
           />
           <EditField
             label="Account state"
-            onChange={(event) => setStatus(event.target.value as CustomerAccountStatus)}
+            onChange={(event) => setStatus(event.target.value as ProfileStatus)}
             select
             value={status}
           >
@@ -263,23 +299,21 @@ export default function CustomersScreen({ className }: CustomersScreenProps) {
       </AdminFormDialog>
 
       <AdminConfirmDialog
-        confirmLabel={
-          pendingStatusCustomer?.status === 'active' ? 'Deactivate account' : 'Activate account'
-        }
+        confirmLabel={pendingStatusCustomer?.status === 'active' ? 'Deactivate account' : 'Activate account'}
         confirmTone="primary"
         description={
           pendingStatusCustomer?.status === 'active'
-            ? 'The customer account will become inactive, but its order, address, and loyalty history will remain available to Admin.'
-            : 'The customer account will return to active status.'
+            ? 'This customer will no longer be able to use the Customer workspace until the account is activated again.'
+            : 'This customer will be able to use the Customer workspace again.'
         }
-        onClose={() => setPendingStatusCustomer(null)}
+        onClose={() => {
+          if (saving) return;
+          setPendingStatusCustomer(null);
+          setFormError('');
+        }}
         onConfirm={confirmStatus}
         open={Boolean(pendingStatusCustomer)}
-        title={
-          pendingStatusCustomer?.status === 'active'
-            ? 'Deactivate this customer account?'
-            : 'Activate this customer account?'
-        }
+        title={pendingStatusCustomer?.status === 'active' ? 'Deactivate this customer account?' : 'Activate this customer account?'}
       />
     </Root>
   );

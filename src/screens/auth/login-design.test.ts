@@ -18,11 +18,11 @@ const scaffoldSource = fs.readFileSync(path.join(__dirname, 'AuthScaffold', 'ind
     expect(loginSource).toContain('Hide password');
   });
 
-  it('keeps demo workspace access subtle and collapsed behind a native disclosure', () => {
-    expect(loginSource).toContain('<DemoAccess>');
-    expect(loginSource).toContain('Demo access');
-    expect(loginSource).toContain('applyDemoAccount');
-    expect(loginSource).not.toContain('Workspace access');
+  it('uses Supabase authentication without exposing local demo passwords', () => {
+    expect(loginSource).toContain('signInWithPassword');
+    expect(loginSource).toContain('loadCurrentAppSession');
+    expect(loginSource).not.toContain('AUTH_ACCOUNTS');
+    expect(loginSource).not.toContain('applyDemoAccount');
     expect(scaffoldSource).toContain('Two storefronts. One operations platform.');
   });
 });

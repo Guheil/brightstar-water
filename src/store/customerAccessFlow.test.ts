@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '@/store';
+import { authenticateCustomerFixture } from '@/test-utils/auth';
 import { calculateMapDistanceKm, DELIVERY_MAP_CONFIG } from '@/config';
 import { resolveSafeNextPath } from '@/utils';
 
@@ -17,44 +18,17 @@ describe('customer access and registration flow', () => {
     if (!result.ok) expect(result.error.code).toBe('not_allowed');
   });
 
-  it('creates a customer only after the email verification code succeeds', () => {
-    const commands = useAppStore.getState().commands;
-    const started = commands.beginCustomerRegistration(
-      {
-        displayName: 'Alex Reyes',
-        email: 'alex.reyes@example.com',
-        phone: '09171234567',
-        password: 'SecurePass123!',
-      },
-      AT,
-    );
-    expect(started.ok).toBe(true);
-    if (!started.ok) return;
-
-    const wrongCode = started.value.verificationCode === '000000' ? '111111' : '000000';
-    const wrong = commands.verifyCustomerRegistration(wrongCode, AT);
-    expect(wrong.ok).toBe(false);
-
-    const pending = useAppStore.getState().auth.pendingRegistration;
-    expect(pending).not.toBeNull();
-    if (!pending) return;
-    const verified = commands.verifyCustomerRegistration(pending.verificationCode, AT);
-    expect(verified.ok).toBe(true);
-    if (!verified.ok) return;
-
+  it('hydrates a verified Supabase customer session into prototype state', () => {
+    authenticateCustomerFixture(AT);
     const state = useAppStore.getState();
-    expect(state.auth.pendingRegistration).toBeNull();
     expect(state.auth.session?.user.role).toBe('customer');
-    expect(state.customers.records[0]).toMatchObject({
-      email: 'alex.reyes@example.com',
-      displayName: 'Alex Reyes',
-      addresses: [],
-    });
+    expect(state.auth.initialized).toBe(true);
+    expect(state.auth.session?.user.customerId).toBe('customer-01');
   });
 
   it('saves a pinned delivery location only for the signed-in customer', () => {
     const commands = useAppStore.getState().commands;
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' }, AT);
+    authenticateCustomerFixture(AT);
     const result = commands.saveDeliveryAddress({
       customerId: 'customer-01',
       label: 'Pinned location',
@@ -75,7 +49,7 @@ describe('customer access and registration flow', () => {
 
   it('requires a screenshot for GCash order placement', () => {
     const commands = useAppStore.getState().commands;
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' }, AT);
+    authenticateCustomerFixture(AT);
     const withoutProof = commands.placeOrder({
       customerId: 'customer-01',
       items: [{ productId: 'product-water-pump', quantity: 1 }],

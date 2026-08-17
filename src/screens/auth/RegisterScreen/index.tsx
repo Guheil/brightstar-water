@@ -11,7 +11,11 @@ import {
 } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import RegistrationAgreementDialog from '@/components/legal/RegistrationAgreementDialog';
 import Notice from '@/components/ui/Notice';
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/config';
+import { loadCurrentAppSession } from '@/lib/auth/client';
+import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { resolveSafeNextPath } from '@/utils';
 import AuthScaffold from '../AuthScaffold';
@@ -25,9 +29,6 @@ import {
 } from './utils';
 import {
   ActionRow,
-  CodeLabel,
-  CodePanel,
-  CodeValue,
   Field,
   FooterText,
   Form,
@@ -40,14 +41,29 @@ import {
   SecondaryButton,
   StepText,
   StepTitle,
+  LegalReviewList,
+  LegalReviewRow,
+  LegalReviewText,
+  LegalVersion,
   TextLink,
 } from './elements';
 
+const safeName = /^[^<>\u0000-\u001F\u007F]+$/;
+const normalizePhone = (value: string) => value.replace(/[\s-]/g, '');
+
 const registerSchema = z
   .object({
-    displayName: z.string().trim().min(2, 'Enter your name.').max(60, 'Keep your name under 60 characters.'),
-    email: z.string().trim().email('Enter a valid email address.'),
-    phone: z.string().trim().regex(/^09[0-9\s-]{9,13}$/, 'Enter a valid Philippine mobile number.'),
+    displayName: z
+      .string()
+      .trim()
+      .min(2, 'Enter your name.')
+      .max(60, 'Keep your name under 60 characters.')
+      .regex(safeName, 'Remove unsupported characters from your name.'),
+    email: z.string().trim().email('Enter a valid email address.').max(254),
+    phone: z.string().trim().refine(
+      (value) => /^09[0-9]{9}$/.test(normalizePhone(value)),
+      'Enter a valid Philippine mobile number.',
+    ),
     password: z.string().min(8, 'Use at least 8 characters.').max(72, 'Keep your password under 72 characters.'),
     confirmPassword: z.string(),
   })
@@ -59,19 +75,18 @@ const registerSchema = z
 const stages: readonly { id: RegistrationStage; label: string }[] = [
   { id: 'details', label: 'Your details' },
   { id: 'security', label: 'Password' },
+  { id: 'agreement', label: 'Agreement' },
   { id: 'verify', label: 'Verify email' },
 ];
 
 export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
   const router = useRouter();
-  const beginRegistration = useAppStore((state) => state.commands.beginCustomerRegistration);
-  const resendVerification = useAppStore((state) => state.commands.resendCustomerVerification);
-  const verifyRegistration = useAppStore((state) => state.commands.verifyCustomerRegistration);
-  const cancelRegistration = useAppStore((state) => state.commands.cancelCustomerRegistration);
-  const pendingRegistration = useAppStore((state) => state.auth.pendingRegistration);
+  const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
   const [stage, setStage] = useState<RegistrationStage>('details');
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [verificationDigits, setVerificationDigits] = useState<string[]>(createEmptyOtpDigits);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [agreementOpen, setAgreementOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
   const {
@@ -153,54 +168,111 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
   const continueFromSecurity = async () => {
     setFeedback(null);
     const valid = await trigger(['password', 'confirmPassword']);
-    if (!valid) return;
+    if (valid) setStage('agreement');
+  };
+
+  const createAccount = async () => {
+    setAgreementOpen(false);
+    setFeedback(null);
     setWorking(true);
+
     const values = getValues();
-    const result = beginRegistration({
-      displayName: values.displayName,
-      email: values.email,
-      phone: values.phone,
+    const email = values.email.trim().toLowerCase();
+    const supabase = createClient();
+    const { error } = await supabase.auth.signUp({
+      email,
       password: values.password,
+      options: {
+        data: {
+          full_name: values.displayName.trim(),
+          phone: normalizePhone(values.phone),
+          terms_accepted: true,
+          privacy_acknowledged: true,
+          terms_version: TERMS_VERSION,
+          privacy_version: PRIVACY_VERSION,
+        },
+      },
     });
     setWorking(false);
-    if (!result.ok) {
-      setFeedback(result.error.message);
+
+    if (error) {
+      setFeedback(
+        error.status === 429
+          ? 'A verification message was requested recently. Please wait before trying again.'
+          : 'We could not create the account. Check your details and try again.',
+      );
       return;
     }
+
+    setPendingEmail(email);
     clearVerificationCode();
     setStage('verify');
     requestAnimationFrame(() => otpRefs.current[0]?.focus());
   };
 
-  const verifyEmail = () => {
-    setFeedback(null);
-    setWorking(true);
-    const result = verifyRegistration(verificationCode);
-    setWorking(false);
-    if (!result.ok) {
-      setFeedback(result.error.message);
+  const verifyEmail = async () => {
+    if (!pendingEmail) return;
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setFeedback('Enter the complete 6-digit verification code.');
+      clearVerificationCode(true);
       return;
     }
-    router.push(resolveSafeNextPath(nextPath, '/customer/account'));
+
+    setFeedback(null);
+    setWorking(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email: pendingEmail,
+      token: verificationCode,
+      type: 'email',
+    });
+
+    if (error) {
+      setWorking(false);
+      setFeedback(
+        error.status === 429
+          ? 'Too many verification attempts. Please wait and try again.'
+          : 'That verification code is invalid or has expired.',
+      );
+      clearVerificationCode(true);
+      return;
+    }
+
+    const current = await loadCurrentAppSession(supabase);
+    setWorking(false);
+    if (!current.session) {
+      setFeedback('Your email was verified, but the account profile could not be loaded. Please sign in again.');
+      return;
+    }
+
+    syncAuthSession({ session: current.session, phone: current.profile?.phone });
+    router.replace(resolveSafeNextPath(nextPath, '/customer/account'));
+    router.refresh();
   };
 
-  const resendCode = () => {
+  const resendCode = async () => {
+    if (!pendingEmail) return;
     setFeedback(null);
-    const result = resendVerification();
-    if (!result.ok) setFeedback(result.error.message);
-    else clearVerificationCode(true);
-  };
+    setWorking(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({ type: 'signup', email: pendingEmail });
+    setWorking(false);
 
-  const backFromVerification = () => {
-    cancelRegistration();
-    clearVerificationCode();
-    setFeedback(null);
-    setStage('security');
+    if (error) {
+      setFeedback(
+        error.status === 429
+          ? 'Please wait before requesting another verification code.'
+          : 'We could not send another verification code. Please try again.',
+      );
+      return;
+    }
+
+    clearVerificationCode(true);
   };
 
   return (
     <AuthScaffold
-      description="Create your customer account, verify your email, then continue to ordering and delivery."
+      description="Create your customer account, review the terms and privacy policy, then verify your email."
       title="Create a customer account"
     >
       <ProgressList aria-label="Registration progress">
@@ -221,12 +293,13 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
       {stage === 'details' ? (
         <Form aria-label="Customer account details" noValidate onSubmit={(event) => event.preventDefault()}>
           <StepTitle>Tell us where we can reach you</StepTitle>
-          <StepText>Your email will be verified before the account is created.</StepText>
+          <StepText>Your email will be verified before you can use the account.</StepText>
           <Field
             autoComplete="name"
             error={Boolean(errors.displayName)}
             helperText={errors.displayName?.message}
             label="Full name"
+            slotProps={{ htmlInput: { maxLength: 60 } }}
             {...register('displayName')}
           />
           <Field
@@ -234,6 +307,7 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
             error={Boolean(errors.email)}
             helperText={errors.email?.message}
             label="Email address"
+            slotProps={{ htmlInput: { autoCapitalize: 'none', maxLength: 254, spellCheck: false } }}
             type="email"
             {...register('email')}
           />
@@ -243,6 +317,7 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
             helperText={errors.phone?.message}
             label="Mobile number"
             inputMode="tel"
+            slotProps={{ htmlInput: { maxLength: 15 } }}
             {...register('phone')}
           />
           <ActionRow>
@@ -255,12 +330,13 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
       {stage === 'security' ? (
         <Form aria-label="Create account password" noValidate onSubmit={(event) => event.preventDefault()}>
           <StepTitle>Create your password</StepTitle>
-          <StepText>Use a password you do not reuse on other accounts.</StepText>
+          <StepText>Use at least 8 characters and avoid reusing a password from another account.</StepText>
           <Field
             autoComplete="new-password"
             error={Boolean(errors.password)}
             helperText={errors.password?.message}
             label="Password"
+            slotProps={{ htmlInput: { maxLength: 72 } }}
             type="password"
             {...register('password')}
           />
@@ -269,26 +345,49 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
             error={Boolean(errors.confirmPassword)}
             helperText={errors.confirmPassword?.message}
             label="Confirm password"
+            slotProps={{ htmlInput: { maxLength: 72 } }}
             type="password"
             {...register('confirmPassword')}
           />
           <ActionRow>
             <SecondaryButton onClick={() => setStage('details')} type="button">Back</SecondaryButton>
             <PrimaryButton disabled={working} onClick={continueFromSecurity} type="button" variant="contained">
-              {working ? 'Preparing verification…' : 'Continue to verification'}
+              Continue to review
             </PrimaryButton>
           </ActionRow>
         </Form>
       ) : null}
 
-      {stage === 'verify' && pendingRegistration ? (
+
+      {stage === 'agreement' ? (
+        <Form aria-label="Review registration agreement" noValidate onSubmit={(event) => event.preventDefault()}>
+          <StepTitle>Review before creating your account</StepTitle>
+          <StepText>
+            Your account is not created until you review both documents and explicitly record your agreement.
+          </StepText>
+          <LegalReviewList aria-label="Documents to review">
+            <LegalReviewRow>
+              <LegalReviewText>Terms of Use</LegalReviewText>
+              <LegalVersion>Version {TERMS_VERSION}</LegalVersion>
+            </LegalReviewRow>
+            <LegalReviewRow>
+              <LegalReviewText>Privacy Policy</LegalReviewText>
+              <LegalVersion>Version {PRIVACY_VERSION}</LegalVersion>
+            </LegalReviewRow>
+          </LegalReviewList>
+          <ActionRow>
+            <SecondaryButton disabled={working} onClick={() => setStage('security')} type="button">Back</SecondaryButton>
+            <PrimaryButton disabled={working} onClick={() => setAgreementOpen(true)} type="button" variant="contained">
+              {working ? 'Creating account…' : 'Review terms & privacy'}
+            </PrimaryButton>
+          </ActionRow>
+        </Form>
+      ) : null}
+
+      {stage === 'verify' && pendingEmail ? (
         <Form aria-label="Verify email address" noValidate onSubmit={(event) => event.preventDefault()}>
-          <StepTitle>Check the verification code</StepTitle>
-          <StepText>Enter the 6-digit code for {pendingRegistration.email}.</StepText>
-          <CodePanel aria-live="polite">
-            <CodeLabel>Verification code</CodeLabel>
-            <CodeValue>{pendingRegistration.verificationCode}</CodeValue>
-          </CodePanel>
+          <StepTitle>Check your email</StepTitle>
+          <StepText>Enter the 6-digit verification code sent to {pendingEmail}.</StepText>
           <OtpCells aria-label="6-digit verification code" role="group">
             {verificationDigits.map((digit, index) => (
               <OtpCell
@@ -311,16 +410,23 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
             ))}
           </OtpCells>
           <InlineActions>
-            <SecondaryButton onClick={resendCode} type="button">Send a new code</SecondaryButton>
+            <SecondaryButton disabled={working} onClick={resendCode} type="button">Send a new code</SecondaryButton>
           </InlineActions>
           <ActionRow>
-            <SecondaryButton onClick={backFromVerification} type="button">Back</SecondaryButton>
+            <span />
             <PrimaryButton disabled={working || verificationCode.length !== REGISTRATION_OTP_LENGTH} onClick={verifyEmail} type="button" variant="contained">
-              {working ? 'Verifying…' : 'Verify and create account'}
+              {working ? 'Verifying…' : 'Verify email and continue'}
             </PrimaryButton>
           </ActionRow>
         </Form>
       ) : null}
+
+      <RegistrationAgreementDialog
+        onAccept={createAccount}
+        onClose={() => setAgreementOpen(false)}
+        open={agreementOpen}
+        working={working}
+      />
 
       <FooterText>
         Already have an account?{' '}

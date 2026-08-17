@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { selectCartItemCount, selectCartItems, useAppStore } from '../../../store';
+import { authenticateCustomerFixture } from '@/test-utils/auth';
 
 describe('cross-route cart state', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
+    authenticateCustomerFixture();
   });
 
   it('makes a public product addition visible to customer cart and checkout selectors', () => {
@@ -49,4 +50,3 @@ describe('cross-route cart state', () => {
     expect(useAppStore.getState().cart.lastPlacedOrderId).toBe(placed.value.id);
   });
 });
-

@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog';
+import { signOutCurrentUser } from '@/lib/auth/client';
 import { useAppStore } from '@/store';
 import {
   BottomNavigation,
@@ -55,13 +56,15 @@ export default function DelivererShell({
   userName,
 }: DelivererShellProps) {
   const router = useRouter();
-  const signOut = useAppStore((state) => state.commands.signOut);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     setLogoutOpen(false);
-    signOut();
-    router.push('/login');
+    await signOutCurrentUser();
+    clearAuthSession();
+    router.replace('/login');
+    router.refresh();
   };
 
   return (

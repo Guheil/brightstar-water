@@ -8,7 +8,7 @@ import type { RegistrationStepProps } from './interface';
 
 export const ProgressList = styled('ol')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
   gap: theme.spacing(1),
   margin: theme.spacing(0, 0, 3),
   padding: 0,
@@ -31,6 +31,11 @@ export const ProgressItem = styled('li', {
   fontWeight: $active
     ? theme.typography.fontWeightBold
     : theme.typography.fontWeightMedium,
+
+  [theme.breakpoints.down('sm')]: {
+    ...theme.typography.caption,
+    paddingInline: theme.spacing(0.25),
+  },
 }));
 
 export const Form = styled('form')(({ theme }) => ({
@@ -72,29 +77,6 @@ export const SecondaryButton = styled(Button)(({ theme }) => ({
   minHeight: theme.spacing(5.5),
   paddingInline: theme.spacing(2),
   color: theme.vars.palette.text.primary,
-}));
-
-export const CodePanel = styled(Box)(({ theme }) => ({
-  display: 'grid',
-  gap: theme.spacing(0.5),
-  padding: theme.spacing(2),
-  borderWidth: theme.spacing(0.125),
-  borderStyle: 'solid',
-  borderColor: theme.vars.palette.water.main,
-  borderRadius: theme.radii.surface,
-  backgroundColor: theme.vars.palette.water.light,
-}));
-
-export const CodeLabel = styled(Typography)(({ theme }) => ({
-  ...theme.typography.body2,
-  color: theme.vars.palette.text.secondary,
-}));
-
-export const CodeValue = styled('strong')(({ theme }) => ({
-  ...theme.typography.h4,
-  color: theme.vars.palette.primary.main,
-  fontVariantNumeric: 'tabular-nums',
-  letterSpacing: theme.spacing(0.25),
 }));
 
 
@@ -159,4 +141,44 @@ export const TextLink = styled(AppLink)(({ theme }) => ({
   minHeight: theme.spacing(5.5),
   color: theme.vars.palette.primary.main,
   fontWeight: theme.typography.fontWeightSemiBold,
+}));
+
+export const LegalReviewList = styled('ul')(({ theme }) => ({
+  display: 'grid',
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+  borderTopWidth: theme.spacing(0.125),
+  borderTopStyle: 'solid',
+  borderTopColor: theme.vars.palette.divider,
+  borderBottomWidth: theme.spacing(0.125),
+  borderBottomStyle: 'solid',
+  borderBottomColor: theme.vars.palette.divider,
+}));
+
+export const LegalReviewRow = styled('li')(({ theme }) => ({
+  minHeight: theme.spacing(6.5),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: theme.spacing(2),
+  paddingBlock: theme.spacing(1.25),
+
+  '& + &': {
+    borderTopWidth: theme.spacing(0.125),
+    borderTopStyle: 'solid',
+    borderTopColor: theme.vars.palette.divider,
+  },
+}));
+
+export const LegalReviewText = styled(Typography)(({ theme }) => ({
+  ...theme.typography.body1,
+  color: theme.vars.palette.text.primary,
+  fontWeight: theme.typography.fontWeightSemiBold,
+}));
+
+export const LegalVersion = styled(Typography)(({ theme }) => ({
+  ...theme.typography.caption,
+  color: theme.vars.palette.text.secondary,
+  whiteSpace: 'nowrap',
 }));

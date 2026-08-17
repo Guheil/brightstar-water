@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { CustomerFooter, CustomerHeader } from '@/components';
+import { signOutCurrentUser } from '@/lib/auth/client';
 import {
   customerMegaMenuGroups,
   customerPrimaryNavigation,
   SHARED_STOREFRONT_LOGO_SOURCES,
 } from '@/config';
 import { selectCartItemCount, useAppStore } from '@/store';
-import AuthRequiredDialog from '@/screens/public/AuthRequiredDialog';
 import { Main, ShellRoot } from './elements';
 import type { CustomerAreaShellProps, CustomerCartContextValue } from './interface';
 
@@ -60,23 +59,18 @@ export default function CustomerAreaShell({ children }: CustomerAreaShellProps) 
   const router = useRouter();
   const session = useAppStore((state) => state.auth.session);
   const isCustomer = session?.user.role === 'customer' && Boolean(session.user.customerId);
-  const accountRoute = pathname === '/customer/account';
   const itemCount = useAppStore(selectCartItemCount);
-  const signOut = useAppStore((state) => state.commands.signOut);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const activeHref = customerPrimaryNavigation.find((item) =>
     pathname.startsWith(item.href),
   )?.href;
 
-  const handleLogout = () => {
-    signOut();
-    router.push('/');
+  const handleLogout = async () => {
+    await signOutCurrentUser();
+    clearAuthSession();
+    router.replace('/');
+    router.refresh();
   };
-
-  useEffect(() => {
-    if (!isCustomer && accountRoute) {
-      router.replace(`/login?next=${encodeURIComponent('/customer/account')}`);
-    }
-  }, [accountRoute, isCustomer, router]);
 
   return (
     <ShellRoot>
@@ -93,13 +87,7 @@ export default function CustomerAreaShell({ children }: CustomerAreaShellProps) 
         shopHref="/"
         logoSources={SHARED_STOREFRONT_LOGO_SOURCES}
       />
-      <Main id="main-content">{isCustomer ? children : null}</Main>
-      <AuthRequiredDialog
-        nextPath={pathname}
-        onClose={() => router.push('/')}
-        open={!isCustomer && !accountRoute}
-        purpose="protected"
-      />
+      <Main id="main-content">{children}</Main>
       <CustomerFooter
         brandName="MRJE Gas + Bright Star Water"
         contactLines={[

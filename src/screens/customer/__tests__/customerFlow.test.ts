@@ -5,6 +5,7 @@ import {
   selectOrderById,
   selectPaymentForOrder,
 } from '../../../store/selectors';
+import { authenticateCustomerFixture } from '@/test-utils/auth';
 import { getAvailableStock } from '../../../utils';
 
 const ORDER_INPUT = {
@@ -26,7 +27,7 @@ describe('customer order continuity', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
+    authenticateCustomerFixture();
   });
 
   it('keeps one placed order synchronized for confirmation and detail selectors', () => {
@@ -140,4 +141,3 @@ describe('customer order continuity', () => {
     ).toBe(stockBefore.stockReserved);
   });
 });
-

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { selectDelivererQueue, useAppStore } from '@/store';
+import { authenticateCustomerFixture } from '@/test-utils/auth';
 import type { CommandResult, Product } from '@/types';
 import {
   saveProductState,
@@ -17,7 +18,7 @@ describe('Admin high-impact workflows', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
+    authenticateCustomerFixture();
   });
 
   it('confirms, prepares, and assigns one order across role queues', () => {
@@ -259,7 +260,7 @@ describe('Admin high-impact workflows', () => {
 
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' });
+    authenticateCustomerFixture();
     expect(useAppStore.getState().catalog.products.some((item) => item.id === newProduct.id))
       .toBe(false);
     expect(useAppStore.getState().catalog.products.find((item) => item.id === original.id))

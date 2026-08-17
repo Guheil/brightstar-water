@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '@/store';
+import { authenticateCustomerFixture } from '@/test-utils/auth';
 
 const CUSTOMER_ID = 'customer-01';
 const ADMIN_ID = 'user-admin-01';
@@ -24,7 +25,7 @@ describe('frontend order workflow', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
-    commands.signIn({ email: 'customer@brightstar.local', password: 'BrightStar123!' }, AT);
+    authenticateCustomerFixture(AT);
   });
 
   it('reserves stock atomically when placing an order', () => {

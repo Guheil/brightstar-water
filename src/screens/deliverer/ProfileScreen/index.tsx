@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DelivererShell from '@/components/layout/DelivererShell';
 import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog';
+import { signOutCurrentUser } from '@/lib/auth/client';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
@@ -31,16 +32,18 @@ export default function ProfileScreen() {
     state.deliveries.deliverers.find((item) => item.id === currentDelivererId),
   );
   const deliveries = useAppStore((state) => state.deliveries.records);
-  const signOut = useAppStore((state) => state.commands.signOut);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const ownDeliveries = deliveries.filter((delivery) => delivery.delivererId === currentDelivererId);
   const completed = ownDeliveries.filter((delivery) => delivery.status === 'delivered').length;
   const active = ownDeliveries.filter((delivery) => ['assigned', 'accepted', 'out_for_delivery'].includes(delivery.status)).length;
   const failed = ownDeliveries.filter((delivery) => delivery.status === 'failed').length;
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setLogoutOpen(false);
-    signOut();
-    router.push('/login');
+    await signOutCurrentUser();
+    clearAuthSession();
+    router.replace('/login');
+    router.refresh();
   };
 
   return (

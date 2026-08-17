@@ -11,6 +11,7 @@ import {
   Package,
   Truck,
   Users,
+  UserPlus,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -60,6 +61,7 @@ const navigationIcons: Record<AdminNavigationIcon, LucideIcon> = {
   inventory: Boxes,
   products: Package,
   customers: Users,
+  accounts: UserPlus,
   loyalty: Gift,
 };
 
@@ -74,7 +76,7 @@ function AdminNavigation({ activeHref, items, onNavigate }: NavigationProps) {
     <SidebarNavigation aria-label="Admin navigation">
       {items.map((item) => {
         const active = activeHref === item.href;
-        const Icon = navigationIcons[item.icon];
+        const Icon = navigationIcons[item.icon] ?? Users;
 
         return (
           <SidebarNavLink

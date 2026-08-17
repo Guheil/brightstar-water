@@ -1,3 +1,5 @@
+import type { SupabaseProfile } from '@/lib/auth/types';
+
 export interface CustomerDetailScreenProps {
-  customerId: string;
+  customer: SupabaseProfile | null;
 }

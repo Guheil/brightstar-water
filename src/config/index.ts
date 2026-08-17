@@ -10,3 +10,4 @@ export * from './brands';
 export * from './storefrontMedia';
 
 export * from './deliveryMapConfig';
+export * from './legal';

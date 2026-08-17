@@ -74,216 +74,65 @@ const toDeliveryAddressSnapshot = (
 const cleanPlainText = (value: string): string =>
   value.replace(/[\u0000-\u001F\u007F<>]/g, '').trim();
 
-const VERIFICATION_TTL_MS = 10 * 60 * 1000;
-const VERIFICATION_ATTEMPTS = 5;
-
-const createVerificationCode = (): string => {
-  const values = new Uint32Array(1);
-  globalThis.crypto.getRandomValues(values);
-  return String(values[0] % 1_000_000).padStart(6, '0');
-};
-
 const getAuthenticatedCustomerId = (state: AppStore): EntityId | null =>
   state.auth.session?.user.role === 'customer' && state.auth.session.user.customerId
     ? state.auth.session.user.customerId
     : null;
 
 export const useAppStore = create<AppStore>()((set, get) => {
-  const signIn: AppCommands['signIn'] = (credentials, at) => {
-    const normalizedEmail = credentials.email.trim().toLocaleLowerCase();
-    const account = get().auth.accounts.find(
-      (candidate) => candidate.email.toLocaleLowerCase() === normalizedEmail,
-    );
-
-    if (!account || account.password !== credentials.password) {
-      return commandFailure('invalid_input', 'The email or password is incorrect.');
+  const syncAuthSession: AppCommands['syncAuthSession'] = ({ session, phone }) => {
+    if (!session) {
+      set((state) => ({ auth: { ...state.auth, session: null, initialized: true } }));
+      return;
     }
 
-    if (account.customerId) {
-      const customer = get().customers.records.find((item) => item.id === account.customerId);
-      if (customer?.status === 'inactive') {
-        return commandFailure('not_allowed', 'This account is currently unavailable.');
+    const occurredAt = session.signedInAt;
+    const customerId = session.user.role === 'customer' ? session.user.customerId : undefined;
+
+    set((state) => {
+      if (!customerId) {
+        return { auth: { ...state.auth, session, initialized: true } };
       }
-    }
 
-    const session = {
-      user: {
-        id: account.id,
-        role: account.role,
-        displayName: account.displayName,
-        email: account.email,
-        ...(account.customerId ? { customerId: account.customerId } : {}),
-        ...(account.delivererId ? { delivererId: account.delivererId } : {}),
-      },
-      signedInAt: resolveTimestamp(at),
-    };
+      const existingCustomer = state.customers.records.find((item) => item.id === customerId);
+      const nextCustomer = {
+        id: customerId,
+        displayName: session.user.displayName,
+        email: session.user.email,
+        phonePlaceholder: phone ?? existingCustomer?.phonePlaceholder ?? '',
+        status: 'active' as const,
+        addresses: existingCustomer?.addresses ?? [],
+        createdAt: existingCustomer?.createdAt ?? occurredAt,
+        updatedAt: occurredAt,
+      };
+      const customers = existingCustomer
+        ? state.customers.records.map((item) => item.id === customerId ? nextCustomer : item)
+        : [nextCustomer, ...state.customers.records];
+      const hasLoyaltyAccount = state.loyalty.accounts.some((item) => item.customerId === customerId);
 
-    set((state) => ({ auth: { ...state.auth, session, pendingRegistration: null } }));
-    return commandSuccess(session);
+      return {
+        auth: { ...state.auth, session, initialized: true },
+        customers: { records: customers },
+        loyalty: hasLoyaltyAccount
+          ? state.loyalty
+          : {
+              ...state.loyalty,
+              accounts: [
+                { customerId, pointsAvailable: 0, updatedAt: occurredAt },
+                ...state.loyalty.accounts,
+              ],
+            },
+      };
+    });
   };
 
   const signOut: AppCommands['signOut'] = () => {
     set((state) => ({
-      auth: { ...state.auth, session: null, pendingRegistration: null },
+      auth: { ...state.auth, session: null, initialized: true },
       cart: { items: [], lastPlacedOrderId: null },
     }));
   };
 
-
-  const beginCustomerRegistration: AppCommands['beginCustomerRegistration'] = (input, at) => {
-    const state = get();
-    const displayName = cleanPlainText(input.displayName);
-    const email = input.email.trim().toLocaleLowerCase();
-    const phone = cleanPlainText(input.phone);
-    if (displayName.length < 2 || displayName.length > 60) {
-      return commandFailure('invalid_input', 'Enter a name between 2 and 60 characters.', 'displayName');
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      return commandFailure('invalid_input', 'Enter a valid email address.', 'email');
-    }
-    if (!/^09\d{9}$/.test(phone.replace(/[\s-]/g, ''))) {
-      return commandFailure('invalid_input', 'Enter an 11-digit Philippine mobile number.', 'phone');
-    }
-    if (input.password.length < 8 || input.password.length > 72) {
-      return commandFailure('invalid_input', 'Use a password between 8 and 72 characters.', 'password');
-    }
-    if (state.auth.accounts.some((account) => account.email.toLocaleLowerCase() === email)) {
-      return commandFailure('conflict', 'An account already uses this email address.', 'email');
-    }
-    const startedAt = new Date(resolveTimestamp(at));
-    const verificationCode = createVerificationCode();
-    const pendingRegistration = {
-      displayName,
-      email,
-      phone: phone.replace(/[\s-]/g, ''),
-      password: input.password,
-      verificationCode,
-      expiresAt: new Date(startedAt.getTime() + VERIFICATION_TTL_MS).toISOString(),
-      attemptsRemaining: VERIFICATION_ATTEMPTS,
-    };
-    set({ auth: { ...state.auth, pendingRegistration } });
-    return commandSuccess({
-      email,
-      verificationCode,
-      expiresAt: pendingRegistration.expiresAt,
-      attemptsRemaining: pendingRegistration.attemptsRemaining,
-    });
-  };
-
-  const resendCustomerVerification: AppCommands['resendCustomerVerification'] = (at) => {
-    const state = get();
-    const pending = state.auth.pendingRegistration;
-    if (!pending) {
-      return commandFailure('not_found', 'Start account registration before requesting another code.');
-    }
-    const verificationCode = createVerificationCode();
-    const now = new Date(resolveTimestamp(at));
-    const nextPending = {
-      ...pending,
-      verificationCode,
-      expiresAt: new Date(now.getTime() + VERIFICATION_TTL_MS).toISOString(),
-      attemptsRemaining: VERIFICATION_ATTEMPTS,
-    };
-    set({ auth: { ...state.auth, pendingRegistration: nextPending } });
-    return commandSuccess({
-      email: nextPending.email,
-      verificationCode,
-      expiresAt: nextPending.expiresAt,
-      attemptsRemaining: nextPending.attemptsRemaining,
-    });
-  };
-
-  const verifyCustomerRegistration: AppCommands['verifyCustomerRegistration'] = (code, at) => {
-    const state = get();
-    const pending = state.auth.pendingRegistration;
-    if (!pending) {
-      return commandFailure('not_found', 'Start account registration before entering a verification code.');
-    }
-    const occurredAt = resolveTimestamp(at);
-    if (new Date(occurredAt).getTime() > new Date(pending.expiresAt).getTime()) {
-      return commandFailure('not_allowed', 'This verification code has expired. Request a new code.');
-    }
-    const cleanCode = code.trim();
-    if (!/^\d{6}$/.test(cleanCode)) {
-      return commandFailure('invalid_input', 'Enter the 6-digit verification code.', 'verificationCode');
-    }
-    if (cleanCode !== pending.verificationCode) {
-      const attemptsRemaining = Math.max(0, pending.attemptsRemaining - 1);
-      set({
-        auth: {
-          ...state.auth,
-          pendingRegistration: { ...pending, attemptsRemaining },
-        },
-      });
-      return commandFailure(
-        'invalid_input',
-        attemptsRemaining
-          ? `That code is not correct. ${attemptsRemaining} attempts remaining.`
-          : 'Too many incorrect attempts. Request a new verification code.',
-        'verificationCode',
-      );
-    }
-    if (pending.attemptsRemaining <= 0) {
-      return commandFailure('not_allowed', 'Request a new verification code before trying again.');
-    }
-
-    const customerId = createSequenceId('customer', state.meta.nextCustomerSequence);
-    const userId = createSequenceId('user-customer', state.meta.nextUserSequence);
-    const customer = {
-      id: customerId,
-      displayName: pending.displayName,
-      email: pending.email,
-      phonePlaceholder: pending.phone,
-      status: 'active' as const,
-      addresses: [],
-      createdAt: occurredAt,
-      updatedAt: occurredAt,
-    };
-    const account = {
-      id: userId,
-      role: 'customer' as const,
-      displayName: pending.displayName,
-      email: pending.email,
-      customerId,
-      password: pending.password,
-    };
-    const session = {
-      user: {
-        id: userId,
-        role: 'customer' as const,
-        displayName: pending.displayName,
-        email: pending.email,
-        customerId,
-      },
-      signedInAt: occurredAt,
-    };
-    set({
-      auth: {
-        ...state.auth,
-        accounts: [...state.auth.accounts, account],
-        pendingRegistration: null,
-        session,
-      },
-      customers: { records: [customer, ...state.customers.records] },
-      loyalty: {
-        ...state.loyalty,
-        accounts: [
-          { customerId, pointsAvailable: 0, updatedAt: occurredAt },
-          ...state.loyalty.accounts,
-        ],
-      },
-      meta: {
-        ...state.meta,
-        nextCustomerSequence: state.meta.nextCustomerSequence + 1,
-        nextUserSequence: state.meta.nextUserSequence + 1,
-      },
-    });
-    return commandSuccess(session);
-  };
-
-  const cancelCustomerRegistration: AppCommands['cancelCustomerRegistration'] = () => {
-    set((state) => ({ auth: { ...state.auth, pendingRegistration: null } }));
-  };
 
   const saveDeliveryAddress: AppCommands['saveDeliveryAddress'] = (input) => {
     const state = get();
@@ -1711,12 +1560,8 @@ export const useAppStore = create<AppStore>()((set, get) => {
   return {
     ...createInitialAppData(),
     commands: {
-      signIn,
+      syncAuthSession,
       signOut,
-      beginCustomerRegistration,
-      resendCustomerVerification,
-      verifyCustomerRegistration,
-      cancelCustomerRegistration,
       saveDeliveryAddress,
       addCartItem,
       updateCartItemQuantity,

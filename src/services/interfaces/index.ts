@@ -1,7 +1,4 @@
 import type {
-  AuthCredentials,
-  AuthSession,
-  CommandResult,
   Customer,
   DelivererProfile,
   Delivery,
@@ -34,16 +31,6 @@ export interface OrderQuery {
 export interface DeliveryQuery {
   delivererId?: EntityId;
   statuses?: readonly DeliveryStatus[];
-}
-
-/** Authentication service boundary used by the application. */
-export interface AuthService {
-  getSession(): Promise<AuthSession | null>;
-  signIn(
-    credentials: AuthCredentials,
-    at?: ISODateString,
-  ): Promise<CommandResult<AuthSession>>;
-  signOut(): Promise<void>;
 }
 
 /** Catalog reads and Admin product mutations expected from a future product API. */
@@ -121,7 +108,6 @@ export interface DataService {
 }
 
 export interface AppServices {
-  auth: AuthService;
   products: ProductService;
   customers: CustomerService;
   orders: OrderService;

@@ -1,10 +1,5 @@
 import type {
-  AuthAccount,
-  AuthCredentials,
   AuthSession,
-  CustomerRegistrationInput,
-  PendingCustomerRegistration,
-  RegistrationChallenge,
   CartLine,
   CommandResult,
   Customer,
@@ -29,8 +24,12 @@ import type {
 export interface AuthSliceState {
   session: AuthSession | null;
   accessNotice: string;
-  accounts: AuthAccount[];
-  pendingRegistration: PendingCustomerRegistration | null;
+  initialized: boolean;
+}
+
+export interface SyncAuthSessionInput {
+  session: AuthSession | null;
+  phone?: string;
 }
 
 export interface CatalogSliceState {
@@ -128,15 +127,8 @@ export interface LoyaltyAdjustmentInput {
 }
 
 export interface AppCommands {
-  signIn(credentials: AuthCredentials, at?: ISODateString): CommandResult<AuthSession>;
+  syncAuthSession(input: SyncAuthSessionInput): void;
   signOut(): void;
-  beginCustomerRegistration(
-    input: CustomerRegistrationInput,
-    at?: ISODateString,
-  ): CommandResult<RegistrationChallenge>;
-  resendCustomerVerification(at?: ISODateString): CommandResult<RegistrationChallenge>;
-  verifyCustomerRegistration(code: string, at?: ISODateString): CommandResult<AuthSession>;
-  cancelCustomerRegistration(): void;
   saveDeliveryAddress(input: SaveDeliveryAddressInput): CommandResult<DeliveryAddress>;
   addCartItem(productId: EntityId, quantity?: number): CommandResult<CartLine>;
   updateCartItemQuantity(productId: EntityId, quantity: number): CommandResult<CartLine>;

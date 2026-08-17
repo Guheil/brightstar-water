@@ -7,20 +7,14 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Notice from '@/components/ui/Notice';
-import { AUTH_ACCOUNTS } from '@/data';
+import { loadCurrentAppSession, signOutCurrentUser } from '@/lib/auth/client';
+import { ROLE_DESTINATIONS } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { resolveSafeNextPath } from '@/utils';
 import AuthScaffold from '../AuthScaffold';
-import type { DemoAccessAccount, LoginFormValues, LoginScreenProps } from './interface';
+import type { LoginFormValues, LoginScreenProps } from './interface';
 import {
-  DemoAccess,
-  DemoAccessHint,
-  DemoAccessList,
-  DemoAccessRow,
-  DemoAccessSummary,
-  DemoAccountEmail,
-  DemoAccountName,
-  DemoUseButton,
   ErrorRegion,
   Field,
   Form,
@@ -32,39 +26,20 @@ import {
 } from './elements';
 
 const loginSchema = z.object({
-  email: z.string().trim().email('Enter a valid email address.'),
-  password: z.string().min(1, 'Enter your password.'),
+  email: z.string().trim().email('Enter a valid email address.').max(254),
+  password: z.string().min(1, 'Enter your password.').max(72, 'The password is too long.'),
 });
-
-const roleDestinations = {
-  customer: '/customer/account',
-  admin: '/admin/overview',
-  deliverer: '/deliverer',
-} as const;
-
-const roleLabels = {
-  customer: 'Customer',
-  admin: 'Administrator',
-  deliverer: 'Deliverer',
-} as const;
-
-const demoAccounts: readonly DemoAccessAccount[] = AUTH_ACCOUNTS.map((account) => ({
-  email: account.email,
-  label: roleLabels[account.role],
-  password: account.password,
-  role: account.role,
-}));
 
 export default function LoginScreen({ nextPath }: LoginScreenProps) {
   const router = useRouter();
-  const signIn = useAppStore((state) => state.commands.signIn);
+  const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
+  const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
-    setValue,
   } = useForm<LoginFormValues>({
     defaultValues: { email: '', password: '' },
     resolver: zodResolver(loginSchema),
@@ -72,25 +47,41 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmissionError(null);
-    await new Promise((resolve) => setTimeout(resolve, 280));
-    const result = signIn(values);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: values.email.trim().toLowerCase(),
+      password: values.password,
+    });
 
-    if (!result.ok) {
-      setSubmissionError('The email or password is incorrect. Check your details and try again.');
+    if (error) {
+      setSubmissionError(
+        error.status === 429
+          ? 'Too many sign-in attempts. Please wait a moment and try again.'
+          : 'The email or password is incorrect. Check your details and try again.',
+      );
       return;
     }
 
-    const destination = result.value.user.role === 'customer'
-      ? resolveSafeNextPath(nextPath, roleDestinations.customer)
-      : roleDestinations[result.value.user.role];
-    router.push(destination);
-  });
+    const current = await loadCurrentAppSession(supabase);
+    if (!current.session) {
+      await signOutCurrentUser();
+      clearAuthSession();
+      setSubmissionError(
+        current.profile?.status === 'inactive'
+          ? 'This account is currently unavailable.'
+          : 'Your account profile could not be loaded. Please contact the administrator.',
+      );
+      return;
+    }
 
-  const applyDemoAccount = (account: DemoAccessAccount) => {
-    setSubmissionError(null);
-    setValue('email', account.email, { shouldDirty: true, shouldValidate: true });
-    setValue('password', account.password, { shouldDirty: true, shouldValidate: true });
-  };
+    syncAuthSession({ session: current.session, phone: current.profile?.phone });
+    const destination = current.session.user.role === 'customer'
+      ? resolveSafeNextPath(nextPath, ROLE_DESTINATIONS.customer)
+      : ROLE_DESTINATIONS[current.session.user.role];
+
+    router.replace(destination);
+    router.refresh();
+  });
 
   return (
     <AuthScaffold
@@ -112,7 +103,7 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
           fullWidth
           helperText={errors.email?.message}
           label="Email address"
-          slotProps={{ htmlInput: { autoCapitalize: 'none', spellCheck: false } }}
+          slotProps={{ htmlInput: { autoCapitalize: 'none', maxLength: 254, spellCheck: false } }}
           type="email"
           {...register('email')}
         />
@@ -124,7 +115,7 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
           label="Password"
           type={showPassword ? 'text' : 'password'}
           slotProps={{
-            htmlInput: { autoCapitalize: 'none', spellCheck: false },
+            htmlInput: { autoCapitalize: 'none', maxLength: 72, spellCheck: false },
             input: {
               endAdornment: (
                 <PasswordAdornment position="end">
@@ -147,27 +138,10 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </SubmitButton>
         <FormLinks>
-          <TextLink href="/forgot-password">Forgot password?</TextLink>
-          <TextLink href={`/register?next=${encodeURIComponent(resolveSafeNextPath(nextPath, '/customer/account'))}`}>Create a customer account</TextLink>
+          <TextLink href={`/register?next=${encodeURIComponent(resolveSafeNextPath(nextPath, '/customer/account'))}`}>
+            Create a customer account
+          </TextLink>
         </FormLinks>
-
-        <DemoAccess>
-          <DemoAccessSummary>Demo access</DemoAccessSummary>
-          <DemoAccessHint>Use an account shortcut when reviewing each workspace.</DemoAccessHint>
-          <DemoAccessList>
-            {demoAccounts.map((account) => (
-              <DemoAccessRow key={account.role}>
-                <div>
-                  <DemoAccountName>{account.label}</DemoAccountName>
-                  <DemoAccountEmail>{account.email}</DemoAccountEmail>
-                </div>
-                <DemoUseButton onClick={() => applyDemoAccount(account)} type="button">
-                  Use
-                </DemoUseButton>
-              </DemoAccessRow>
-            ))}
-          </DemoAccessList>
-        </DemoAccess>
       </Form>
     </AuthScaffold>
   );

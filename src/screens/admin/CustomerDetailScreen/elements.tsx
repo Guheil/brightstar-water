@@ -47,46 +47,6 @@ export const DetailValue = styled('dd')(({ theme }) => ({
   overflowWrap: 'anywhere',
 }));
 
-export const AddressList = styled('ul')(({ theme }) => ({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: theme.spacing(4),
-  margin: 0,
-  padding: 0,
-  listStyle: 'none',
-
-  [theme.breakpoints.down('md')]: {
-    gridTemplateColumns: '1fr',
-  },
-}));
-
-export const AddressItem = styled('li')(({ theme }) => ({
-  paddingBlock: theme.spacing(2),
-  borderTopWidth: theme.spacing(0.125),
-  borderTopStyle: 'solid',
-  borderTopColor: theme.vars.palette.divider,
-}));
-
-export const AddressTitle = styled('h3')(({ theme }) => ({
-  ...theme.typography.h6,
-  margin: 0,
-  color: theme.vars.palette.text.primary,
-}));
-
-export const AddressText = styled('p')(({ theme }) => ({
-  ...theme.typography.body2,
-  margin: 0,
-  marginBlockStart: theme.spacing(0.75),
-  color: theme.vars.palette.text.secondary,
-}));
-
-export const TableLink = styled(AppLink)(({ theme }) => ({
-  color: theme.vars.palette.water.dark,
-  fontWeight: theme.typography.fontWeightSemiBold,
-  textDecoration: 'underline',
-  textUnderlineOffset: theme.spacing(0.5),
-}));
-
 export const EmptyActionLink = styled(AppLink)(({ theme }) => ({
   minHeight: theme.spacing(5.5),
   display: 'inline-flex',

@@ -1,37 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   CUSTOMER_DATA,
-  DELIVERER_DATA,
   DELIVERY_DATA,
-  AUTH_ACCOUNTS,
   ORDER_DATA,
   PAYMENT_DATA,
 } from '@/data';
 import { createOrderReference } from '@/utils';
 
 describe('application data integrity', () => {
-  it('keeps account identities aligned with customer and deliverer profiles', () => {
-    const customerAccount = AUTH_ACCOUNTS.find((account) => account.role === 'customer');
-    const adminAccount = AUTH_ACCOUNTS.find((account) => account.role === 'admin');
-    const delivererAccount = AUTH_ACCOUNTS.find((account) => account.role === 'deliverer');
-
-    expect(customerAccount).toMatchObject({
-      displayName: CUSTOMER_DATA[0].displayName,
-      email: CUSTOMER_DATA[0].email,
-      password: 'BrightStar123!',
-    });
-    expect(adminAccount).toMatchObject({
-      displayName: 'Store Administrator',
-      email: 'admin@brightstar.local',
-      password: 'BrightStar123!',
-    });
-    expect(delivererAccount).toMatchObject({
-      displayName: DELIVERER_DATA[0].displayName,
-      email: DELIVERER_DATA[0].email,
-      password: 'BrightStar123!',
-    });
-  });
-
   it('keeps every delivery address synchronized with its saved customer address', () => {
     for (const delivery of DELIVERY_DATA) {
       const order = ORDER_DATA.find((candidate) => candidate.id === delivery.orderId);

@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { REGISTRATION_OTP_LENGTH, sanitizeOtpDigits } from './RegisterScreen/utils';
 
 const registerSource = fs.readFileSync(path.join(__dirname, 'RegisterScreen', 'index.tsx'), 'utf8');
 const registerElements = fs.readFileSync(path.join(__dirname, 'RegisterScreen', 'elements.tsx'), 'utf8');
 
 describe('registration OTP cells', () => {
+  it('enforces a six-digit numeric OTP contract', () => {
+    expect(REGISTRATION_OTP_LENGTH).toBe(6);
+    expect(sanitizeOtpDigits('12345678')).toBe('123456');
+    expect(sanitizeOtpDigits('12a34-56')).toBe('123456');
+    expect(registerSource).toContain('/^\\d{6}$/');
+  });
+
   it('renders six coordinated verification inputs with mobile OTP semantics', () => {
     expect(registerSource).toContain('REGISTRATION_OTP_LENGTH');
     expect(registerSource).toContain('<OtpCells');

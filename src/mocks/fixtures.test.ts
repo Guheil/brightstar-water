@@ -3,7 +3,6 @@ import {
   CUSTOMER_FIXTURES,
   DELIVERER_FIXTURES,
   DELIVERY_FIXTURES,
-  DEMO_AUTH_ACCOUNTS,
   INVENTORY_ADJUSTMENT_FIXTURES,
   LOYALTY_ACTIVITY_FIXTURES,
   ORDER_FIXTURES,
@@ -16,28 +15,6 @@ const PRODUCTION_BREAKING_COPY =
   /\b(?:demo|mock|prototype|fictional|simulated?|simulation|placeholder|sample)\b/i;
 
 describe('production-facing fixture copy', () => {
-  it('keeps account identities aligned with customer and deliverer profiles', () => {
-    const customerAccount = DEMO_AUTH_ACCOUNTS.find((account) => account.role === 'customer');
-    const adminAccount = DEMO_AUTH_ACCOUNTS.find((account) => account.role === 'admin');
-    const delivererAccount = DEMO_AUTH_ACCOUNTS.find((account) => account.role === 'deliverer');
-
-    expect(customerAccount).toMatchObject({
-      displayName: CUSTOMER_FIXTURES[0].displayName,
-      email: CUSTOMER_FIXTURES[0].email,
-      password: 'BrightStar123!',
-    });
-    expect(adminAccount).toMatchObject({
-      displayName: 'Store Administrator',
-      email: 'admin@brightstar.local',
-      password: 'BrightStar123!',
-    });
-    expect(delivererAccount).toMatchObject({
-      displayName: DELIVERER_FIXTURES[0].displayName,
-      email: DELIVERER_FIXTURES[0].email,
-      password: 'BrightStar123!',
-    });
-  });
-
   it('keeps every delivery address synchronized with its saved customer address', () => {
     for (const delivery of DELIVERY_FIXTURES) {
       const order = ORDER_FIXTURES.find((candidate) => candidate.id === delivery.orderId);
@@ -78,7 +55,6 @@ describe('production-facing fixture copy', () => {
     ]);
 
     const visibleCopy = [
-      ...DEMO_AUTH_ACCOUNTS.flatMap((account) => [account.displayName, account.email]),
       ...CUSTOMER_FIXTURES.flatMap((customer) => [
         customer.displayName,
         customer.email,
