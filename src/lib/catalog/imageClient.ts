@@ -78,4 +78,5 @@ export async function prepareProductImage(file: File): Promise<PreparedProductIm
   } finally {
     bitmap.close();
   }
+  
 }
