@@ -4,7 +4,10 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { STOREFRONT_MEDIA } from '@/config';
+import AddToCartConfirmDialog from '@/components/ui/AddToCartConfirmDialog';
+import CartAddedToast from '@/components/ui/CartAddedToast';
 import EmptyState from '@/components/ui/EmptyState';
+import Notice from '@/components/ui/Notice';
 import AuthRequiredDialog from '@/screens/public/AuthRequiredDialog';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
@@ -24,7 +27,6 @@ import {
   Container,
   CoverageLink,
   EmptyPanel,
-  Feedback,
   Intro,
   Introduction,
   ProductArticle,
@@ -85,7 +87,11 @@ export default function ShopScreen({
   const session = useAppStore((state) => state.auth.session);
   const isCustomer = session?.user.role === 'customer' && Boolean(session.user.customerId);
   const products = useAppStore((state) => state.catalog.products);
+  const catalogInitialized = useAppStore((state) => state.catalog.initialized);
+  const catalogError = useAppStore((state) => state.catalog.error);
   const inventory = useAppStore((state) => state.inventory.items);
+  const cartItems = useAppStore((state) => state.cart.items);
+  const cartReady = useAppStore((state) => state.cart.initialized && Boolean(state.cart.ownerCustomerId));
   const addCartItem = useAppStore((state) => state.commands.addCartItem);
   const [category, setCategory] = useState<ShopCategoryFilter>(() =>
     normalizeCategory(initialCategory),
@@ -93,7 +99,12 @@ export default function ShopScreen({
   const [query, setQuery] = useState(initialQuery);
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
   const [sort, setSort] = useState<ShopSort>('featured');
-  const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null);
+  const [pendingCart, setPendingCart] = useState<{
+    product: ShopProductView;
+    quantity: number;
+  } | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastSequence, setToastSequence] = useState(0);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const storefrontImage =
     lockedCategory === 'water'
@@ -111,13 +122,17 @@ export default function ShopScreen({
           (stock?.stockOnHand ?? 0) - (stock?.stockReserved ?? 0),
         );
 
+        const currentCartQuantity =
+          cartItems.find((item) => item.productId === product.id)?.quantity ?? 0;
+
         return {
           ...product,
           availableStock,
+          maxAddableQuantity: Math.max(0, availableStock - currentCartQuantity),
           isAvailable: product.isActive && availableStock > 0,
         };
       }),
-    [inventory, products],
+    [cartItems, inventory, products],
   );
 
   const visibleProducts = useMemo(() => {
@@ -257,6 +272,12 @@ export default function ShopScreen({
           ))}
         </CategoryControls>
 
+        {!catalogInitialized ? (
+          <Notice title="Loading products">Current products and inventory are being loaded from the database.</Notice>
+        ) : catalogError ? (
+          <Notice title="Catalog unavailable" tone="error">{catalogError}</Notice>
+        ) : null}
+
         <ResultsBar aria-live="polite">
           <ResultsCount>
             {visibleProducts.length}{' '}
@@ -265,7 +286,7 @@ export default function ShopScreen({
           <ResultsCount>Current inventory</ResultsCount>
         </ResultsBar>
 
-        {visibleProducts.length ? (
+        {!catalogInitialized ? null : visibleProducts.length ? (
           <ProductGrid>
             {visibleProducts.map((product, index) => (
               <ProductArticle
@@ -300,24 +321,18 @@ export default function ShopScreen({
                       : 'Currently unavailable'}
                   </ProductAvailability>
                   <AddButton
-                    disabled={!product.isAvailable}
+                    disabled={!product.isAvailable || product.maxAddableQuantity <= 0 || (isCustomer && !cartReady)}
                     onClick={() => {
                       if (!isCustomer) {
                         setAuthPromptOpen(true);
                         return;
                       }
-                      const result = addCartItem(product.id);
-                      setRecentlyAdded(result.ok ? product.id : null);
+                      setPendingCart({ product, quantity: 1 });
                     }}
                     variant="contained"
                   >
                     Add to cart
                   </AddButton>
-                  <Feedback aria-atomic="true" aria-live="polite">
-                    {recentlyAdded === product.id
-                      ? `${product.name} added to your cart.`
-                      : ''}
-                  </Feedback>
                 </ProductContent>
               </ProductArticle>
             ))}
@@ -336,6 +351,42 @@ export default function ShopScreen({
           </EmptyPanel>
         )}
       </Container>
+      <AddToCartConfirmDialog
+        maxQuantity={pendingCart?.product.maxAddableQuantity ?? 1}
+        onClose={() => setPendingCart(null)}
+        onConfirm={() => {
+          const selection = pendingCart;
+          setPendingCart(null);
+          if (!selection) return;
+
+          const result = addCartItem(selection.product.id, selection.quantity);
+          if (!result.ok) return;
+
+          setToastMessage(
+            selection.quantity === 1
+              ? `${selection.product.name} added to your cart.`
+              : `${selection.quantity} × ${selection.product.name} added to your cart.`,
+          );
+          setToastSequence((current) => current + 1);
+        }}
+        onQuantityChange={(nextQuantity) =>
+          setPendingCart((current) =>
+            current ? { ...current, quantity: nextQuantity } : current,
+          )
+        }
+        open={Boolean(pendingCart)}
+        productName={pendingCart?.product.name ?? ''}
+        quantity={pendingCart?.quantity ?? 1}
+        subtotalLabel={formatPhp(
+          (pendingCart?.product.priceCentavos ?? 0) * (pendingCart?.quantity ?? 1),
+        )}
+      />
+      <CartAddedToast
+        key={toastSequence}
+        message={toastMessage ?? ''}
+        onClose={() => setToastMessage(null)}
+        open={Boolean(toastMessage)}
+      />
       <AuthRequiredDialog
         nextPath={pathname}
         onClose={() => setAuthPromptOpen(false)}

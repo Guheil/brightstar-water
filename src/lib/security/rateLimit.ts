@@ -7,7 +7,7 @@ interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
-export async function consumeAdminRateLimit(
+export async function consumeServerRateLimit(
   adminClient: SupabaseClient,
   key: string,
   limit: number,
@@ -27,3 +27,5 @@ export async function consumeAdminRateLimit(
     retryAfterSeconds: Number(row?.retry_after_seconds ?? 0),
   };
 }
+
+export const consumeAdminRateLimit = consumeServerRateLimit;

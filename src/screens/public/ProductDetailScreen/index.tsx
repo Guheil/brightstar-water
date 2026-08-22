@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import AddToCartConfirmDialog from '@/components/ui/AddToCartConfirmDialog';
+import CartAddedToast from '@/components/ui/CartAddedToast';
 import EmptyState from '@/components/ui/EmptyState';
 import QuantityControl from '@/components/ui/QuantityControl';
 import AuthRequiredDialog from '@/screens/public/AuthRequiredDialog';
@@ -21,7 +23,6 @@ import {
   Description,
   DetailGrid,
   Divider,
-  Feedback,
   MissingPanel,
   Price,
   ProductCopy,
@@ -37,27 +38,42 @@ export default function ProductDetailScreen({
   deliveryHref = '/about-delivery',
   expectedCategory,
   productId,
+  initialProduct = null,
+  initialInventory = null,
   shopHref = '/shop',
 }: ProductDetailScreenProps) {
   const pathname = usePathname();
   const session = useAppStore((state) => state.auth.session);
   const isCustomer = session?.user.role === 'customer' && Boolean(session.user.customerId);
-  const product = useAppStore((state) =>
+  const storeProduct = useAppStore((state) =>
     state.catalog.products.find(
       (item) => item.id === productId || item.slug === productId,
     ),
   );
-  const inventory = useAppStore((state) =>
+  const catalogInitialized = useAppStore((state) => state.catalog.initialized);
+  const product = storeProduct ?? initialProduct ?? undefined;
+  const storeInventory = useAppStore((state) =>
     state.inventory.items.find((item) => item.productId === product?.id),
+  );
+  const inventory = storeInventory ?? (initialInventory?.productId === product?.id ? initialInventory : undefined);
+  const cartReady = useAppStore((state) => state.cart.initialized && Boolean(state.cart.ownerCustomerId));
+  const cartQuantity = useAppStore((state) =>
+    state.cart.items.find((item) => item.productId === product?.id)?.quantity ?? 0,
   );
   const addCartItem = useAppStore((state) => state.commands.addCartItem);
   const availableStock = Math.max(
     0,
     (inventory?.stockOnHand ?? 0) - (inventory?.stockReserved ?? 0),
   );
+  const maxAddableQuantity = Math.max(0, availableStock - cartQuantity);
   const [quantity, setQuantity] = useState(1);
-  const [addedQuantity, setAddedQuantity] = useState(0);
+  const [pendingQuantity, setPendingQuantity] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastSequence, setToastSequence] = useState(0);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const selectedQuantity = maxAddableQuantity > 0
+    ? Math.min(quantity, maxAddableQuantity)
+    : quantity;
 
   if (!product || (expectedCategory && product.category !== expectedCategory)) {
     return (
@@ -109,30 +125,24 @@ export default function ProductDetailScreen({
               <QuantityControl
                 disabled={!isAvailable}
                 label={product.name}
-                max={Math.max(1, availableStock)}
+                max={Math.max(1, maxAddableQuantity)}
                 onChange={setQuantity}
-                value={quantity}
+                value={selectedQuantity}
               />
               <AddButton
-                disabled={!isAvailable}
+                disabled={!isAvailable || !catalogInitialized || maxAddableQuantity <= 0 || (isCustomer && !cartReady)}
                 onClick={() => {
                   if (!isCustomer) {
                     setAuthPromptOpen(true);
                     return;
                   }
-                  const result = addCartItem(product.id, quantity);
-                  setAddedQuantity(result.ok ? quantity : 0);
+                  setPendingQuantity(selectedQuantity);
                 }}
                 variant="contained"
               >
-                Add {formatPhp(product.priceCentavos * quantity)} to cart
+                Add {formatPhp(product.priceCentavos * selectedQuantity)} to cart
               </AddButton>
             </PurchaseRow>
-            <Feedback aria-atomic="true" aria-live="polite">
-              {addedQuantity
-                ? `${addedQuantity} ${addedQuantity === 1 ? 'item' : 'items'} added to your cart.`
-                : ''}
-            </Feedback>
             <DeliveryNote>
               <DeliveryTitle>Scheduled local delivery</DeliveryTitle>
               <DeliveryText>
@@ -146,6 +156,39 @@ export default function ProductDetailScreen({
           </ProductCopy>
         </DetailGrid>
       </Container>
+      <AddToCartConfirmDialog
+        maxQuantity={Math.max(1, maxAddableQuantity)}
+        onClose={() => setPendingQuantity(null)}
+        onConfirm={() => {
+          const confirmedQuantity = pendingQuantity;
+          setPendingQuantity(null);
+          if (!confirmedQuantity) return;
+
+          const result = addCartItem(product.id, confirmedQuantity);
+          if (!result.ok) return;
+
+          setQuantity(confirmedQuantity);
+          setToastMessage(
+            confirmedQuantity === 1
+              ? `${product.name} added to your cart.`
+              : `${confirmedQuantity} × ${product.name} added to your cart.`,
+          );
+          setToastSequence((current) => current + 1);
+        }}
+        onQuantityChange={setPendingQuantity}
+        open={pendingQuantity !== null}
+        productName={product.name}
+        quantity={pendingQuantity ?? selectedQuantity}
+        subtotalLabel={formatPhp(
+          product.priceCentavos * (pendingQuantity ?? selectedQuantity),
+        )}
+      />
+      <CartAddedToast
+        key={toastSequence}
+        message={toastMessage ?? ''}
+        onClose={() => setToastMessage(null)}
+        open={Boolean(toastMessage)}
+      />
       <AuthRequiredDialog
         nextPath={pathname}
         onClose={() => setAuthPromptOpen(false)}

@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Clipboard, MapPin, Phone } from 'lucide-react';
 import DelivererShell from '@/components/layout/DelivererShell';
 import Notice from '@/components/ui/Notice';
+import LoadingState from '@/components/ui/LoadingState';
 import StatusText from '@/components/ui/StatusText';
+import { fetchPublicCatalog } from '@/lib/catalog/client';
+import { delivererAcceptDelivery, delivererCompleteDelivery, delivererStartDelivery, fetchOperationalDeliveryDetail } from '@/lib/orders/client';
 import { selectDeliveryById, selectOrderById, selectPaymentForOrder, useAppStore } from '@/store';
-import { formatPhp } from '@/utils';
-import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
+import { formatDeliveryDate, formatPhp, getPreferredScheduleText } from '@/utils';
+import { delivererNavigation } from '../_shared/delivererNavigation';
 import {
   ActionButton,
   ActionCopy,
@@ -51,12 +54,34 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
   const delivery = useAppStore(selectDeliveryById(deliveryId));
   const order = useAppStore(selectOrderById(delivery?.orderId ?? ''));
   const payment = useAppStore(selectPaymentForOrder(delivery?.orderId ?? ''));
-  const commands = useAppStore((state) => state.commands);
+  const mergeOperationalSnapshot = useAppStore((state) => state.commands.mergeOperationalSnapshot);
+  const syncCatalogSnapshot = useAppStore((state) => state.commands.syncCatalogSnapshot);
   const [message, setMessage] = useState('');
   const [cashReceived, setCashReceived] = useState('');
   const [completionNote, setCompletionNote] = useState('');
   const [proofImage, setProofImage] = useState('');
   const [proofFileName, setProofFileName] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [checkedDeliveryId, setCheckedDeliveryId] = useState<string | null>(null);
+  const detailChecked = Boolean(delivery && order) || checkedDeliveryId === deliveryId;
+
+  useEffect(() => {
+    if (delivery && order) return;
+    const controller = new AbortController();
+    void fetchOperationalDeliveryDetail(deliveryId, controller.signal)
+      .then((snapshot) => mergeOperationalSnapshot(snapshot))
+      .catch(() => undefined)
+      .finally(() => { if (!controller.signal.aborted) setCheckedDeliveryId(deliveryId); });
+    return () => controller.abort();
+  }, [delivery, deliveryId, mergeOperationalSnapshot, order]);
+
+  if ((!delivery || !order) && !detailChecked) {
+    return (
+      <DelivererShell brandName="MRJE + Bright Star" navigation={delivererNavigation} headerTitle="Loading delivery">
+        <LoadingState label="Loading delivery" description="Retrieving the latest assignment state." />
+      </DelivererShell>
+    );
+  }
 
   if (!delivery || !order) {
     return (
@@ -86,12 +111,21 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
   const categories = new Set(order.items.map((item) => item.category));
   const tone = categories.size > 1 ? 'mixed' : categories.has('gas') ? 'gas' : 'water';
 
-  const run = (action: 'accept' | 'start') => {
-    const result =
-      action === 'accept'
-        ? commands.acceptDelivery(delivery.id, currentDelivererId)
-        : commands.startDelivery(delivery.id, currentDelivererId);
-    setMessage(result.ok ? 'Delivery state updated.' : result.error.message);
+  const refreshOperations = async () => {
+    const [operations, catalog] = await Promise.all([fetchOperationalDeliveryDetail(delivery.id), fetchPublicCatalog()]);
+    mergeOperationalSnapshot(operations);
+    syncCatalogSnapshot(catalog);
+  };
+
+  const run = async (action: 'accept' | 'start') => {
+    try {
+      if (action === 'accept') await delivererAcceptDelivery(delivery.id);
+      else await delivererStartDelivery(delivery.id);
+      await refreshOperations();
+      setMessage('Delivery state updated.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The delivery could not be updated.');
+    }
   };
 
   const copyAddress = async () => {
@@ -121,13 +155,14 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
         return;
       }
       setProofImage(reader.result);
+      setProofFile(file);
       setProofFileName(file.name);
       setMessage('Delivery photo attached.');
     };
     reader.readAsDataURL(file);
   };
 
-  const complete = () => {
+  const complete = async () => {
     let cashReceivedCentavos: number | undefined;
     if (delivery.paymentMethod === 'cod') {
       const pesos = Number(cashReceived);
@@ -141,21 +176,22 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
         return;
       }
     }
-
-    const evidence = commands.recordDeliveryCompletion({
-      deliveryId: delivery.id,
-      delivererId: currentDelivererId,
-      ...(cashReceivedCentavos != null ? { cashReceivedCentavos } : {}),
-      ...(proofImage ? { proofImageDataUrl: proofImage, proofFileName } : {}),
-      ...(completionNote.trim() ? { note: completionNote.trim() } : {}),
-    });
-    if (!evidence.ok) {
-      setMessage(evidence.error.message);
+    if (!proofFile) {
+      setMessage('Add a delivery photo before completing the stop.');
       return;
     }
-    const result = commands.completeDelivery(delivery.id, currentDelivererId);
-    setMessage(result.ok ? 'Delivery completed successfully.' : result.error.message);
+    try {
+      await delivererCompleteDelivery(delivery.id, {
+        ...(cashReceivedCentavos != null ? { cashReceivedCentavos } : {}),
+        ...(completionNote.trim() ? { note: completionNote.trim() } : {}),
+      }, proofFile);
+      await refreshOperations();
+      setMessage('Delivery completed successfully.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The delivery could not be completed.');
+    }
   };
+
 
   return (
     <DelivererShell
@@ -163,7 +199,7 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
       navigation={delivererNavigation}
       activeHref="/deliverer/deliveries"
       headerTitle={order.reference}
-      headerMeta={`${delivery.schedule.date} · ${delivery.schedule.windowLabel}`}
+      headerMeta={`${formatDeliveryDate(delivery.schedule.date)} · ${delivery.schedule.windowLabel}`}
     >
       <Root>
         <DeliveryHero $tone={tone}>
@@ -171,7 +207,7 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
             <HeroReference>{delivery.address.recipientName}</HeroReference>
             <HeroMeta>{tone === 'gas' ? 'MRJE Gas' : tone === 'water' ? 'Bright Star Water' : 'Mixed storefront order'}</HeroMeta>
             <HeroMeta>{delivery.address.area} · {delivery.address.distanceKm.toFixed(1)} km</HeroMeta>
-            <HeroMeta>{delivery.schedule.windowLabel}</HeroMeta>
+            <HeroMeta>{getPreferredScheduleText(delivery.schedule) ?? `Estimated ${formatDeliveryDate(delivery.schedule.date)} · ${delivery.schedule.windowLabel}`}</HeroMeta>
           </div>
           <HeroAmount>
             <HeroAmountValue>
@@ -249,10 +285,10 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
               {delivery.status.replaceAll('_', ' ')}
             </StatusText>
             {delivery.status === 'assigned' ? (
-              <ActionButton onClick={() => run('accept')}>Accept assignment</ActionButton>
+              <ActionButton onClick={() => void run('accept')}>Accept assignment</ActionButton>
             ) : null}
             {delivery.status === 'accepted' ? (
-              <ActionButton onClick={() => run('start')}>Start delivery</ActionButton>
+              <ActionButton onClick={() => void run('start')}>Start delivery</ActionButton>
             ) : null}
             {delivery.status === 'out_for_delivery' ? (
               <>
@@ -279,13 +315,13 @@ export default function DeliveryDetailScreen({ deliveryId }: DeliveryDetailScree
                   slotProps={{ htmlInput: { maxLength: 240 } }}
                   value={completionNote}
                 />
-                <ActionButton onClick={complete}>Complete delivery</ActionButton>
+                <ActionButton onClick={() => void complete()}>Complete delivery</ActionButton>
                 <FailureLink href={`/deliverer/deliveries/${delivery.id}/report-failure`}>
                   Report unsuccessful delivery
                 </FailureLink>
               </>
             ) : null}
-            {delivery.completionEvidence?.proofImageDataUrl ? (
+            {delivery.completionEvidence && (delivery.completionEvidence.proofAvailable || delivery.completionEvidence.proofImageDataUrl) ? (
               <ActionCopy>Delivery photo and completion details are recorded.</ActionCopy>
             ) : null}
             {message ? <Result role="status">{message}</Result> : null}

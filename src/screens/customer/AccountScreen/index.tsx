@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, PackageSearch } from 'lucide-react';
+import { ArrowRight, CircleAlert, MapPin, PackageSearch, UserRound, History, Gift } from 'lucide-react';
 import { EmptyState, StatusText } from '@/components';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
@@ -10,6 +10,7 @@ import {
   AccountIdentity,
   AccountPage,
   ActionDescription,
+  ActionIcon,
   ActionLabel,
   ActionList,
   ActionRow,
@@ -34,24 +35,6 @@ import {
 } from './elements';
 import type { AccountAction } from './interface';
 
-const ACCOUNT_ACTIONS: readonly AccountAction[] = [
-  {
-    href: '/customer/profile',
-    label: 'Profile and delivery addresses',
-    description: 'Review your contact details and saved delivery addresses.',
-  },
-  {
-    href: '/customer/orders',
-    label: 'Order history',
-    description: 'Follow active deliveries and review previous orders.',
-  },
-  {
-    href: '/customer/loyalty',
-    label: 'Loyalty activity',
-    description: 'See available and pending points, plus earning details.',
-  },
-];
-
 export default function AccountScreen() {
   const customerId = useAppStore(getActiveCustomerId);
   const customers = useAppStore((state) => state.customers.records);
@@ -63,6 +46,29 @@ export default function AccountScreen() {
     .sort((a, b) => b.placedAt.localeCompare(a.placedAt));
   const latestOrder = customerOrders[0];
   const loyalty = accounts.find((account) => account.customerId === customerId);
+  const addressesInitialized = useAppStore((state) => state.customers.addressesInitialized);
+  const addressesError = useAppStore((state) => state.customers.addressesError);
+  const usableAddress = customer?.addresses.find((address) => Number.isFinite(address.distanceKm));
+  const defaultAddress = customer?.addresses.find((address) => address.isDefault) ?? usableAddress;
+  const needsAddress = addressesInitialized && !addressesError && !usableAddress;
+  const accountActions: readonly AccountAction[] = [
+    {
+      href: '/customer/addresses',
+      label: addressesError ? 'Delivery addresses unavailable' : needsAddress ? 'Delivery address needed' : 'Delivery addresses',
+      description: addressesError
+        ? 'Open saved addresses to retry loading your delivery locations.'
+        : needsAddress
+          ? 'Add a Home, Work, or other address before checkout.'
+          : addressesInitialized
+            ? `${defaultAddress?.label ?? 'Saved address'} is ready for checkout.`
+            : 'Loading your saved delivery addresses.',
+      icon: addressesError || needsAddress ? <CircleAlert /> : <MapPin />,
+      warning: Boolean(addressesError) || needsAddress,
+    },
+    { href: '/customer/profile', label: 'Profile details', description: 'Review your name, email, and contact number.', icon: <UserRound /> },
+    { href: '/customer/orders', label: 'Order history', description: 'Follow active deliveries and review previous orders.', icon: <History /> },
+    { href: '/customer/loyalty', label: 'Loyalty activity', description: 'See available and pending points, plus earning details.', icon: <Gift /> },
+  ];
 
   if (!customer) {
     return (
@@ -124,8 +130,9 @@ export default function AccountScreen() {
 
           <SectionTitle>Account tasks</SectionTitle>
           <ActionList>
-            {ACCOUNT_ACTIONS.map((action) => (
+            {accountActions.map((action) => (
               <ActionRow href={action.href} key={action.href}>
+                <ActionIcon $warning={action.warning} aria-hidden="true">{action.icon}</ActionIcon>
                 <ActionText>
                   <ActionLabel>{action.label}</ActionLabel>
                   <ActionDescription>{action.description}</ActionDescription>

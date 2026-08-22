@@ -30,15 +30,25 @@ export interface DeliveryAddressSnapshot {
   deliveryNote?: string;
 }
 
+export type DeliveryScheduleMode = 'earliest_available' | 'preferred';
+
 export interface DeliverySchedule {
+  /** Effective date used by legacy sorting and delivery queues. */
   date: string;
+  /** Effective window used by legacy sorting and delivery queues. */
   windowLabel: string;
+  mode?: DeliveryScheduleMode;
+  estimatedDate?: string;
+  estimatedWindowLabel?: string;
+  preferredDate?: string;
+  preferredWindowLabel?: string;
 }
 
 export interface DeliveryCompletionEvidence {
   cashReceivedCentavos?: MoneyCentavos;
   proofFileName?: string;
   proofImageDataUrl?: string;
+  proofAvailable?: boolean;
   note?: string;
   recordedAt: ISODateString;
   recordedBy: EntityId;

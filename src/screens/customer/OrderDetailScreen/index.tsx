@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { EmptyState, Notice, StatusText } from '@/components';
+import { useEffect, useState } from 'react';
+import { EmptyState, LoadingState, Notice, StatusText } from '@/components';
+import { fetchOperationalOrderDetail, requestOrderCancellation } from '@/lib/orders/client';
 import { useAppStore } from '@/store';
-import { canCancelOrder, formatPhp } from '@/utils';
+import { canCancelOrder, formatPhp, getEstimatedScheduleText, getPreferredScheduleText } from '@/utils';
 import { getActiveCustomerId } from '../_shared/customer';
 import {
   ORDER_STATUS_LABELS,
@@ -51,12 +52,28 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
   const order = useAppStore((state) => state.orders.records.find((item) => item.id === orderId));
   const delivery = useAppStore((state) => state.deliveries.records.find((item) => item.orderId === orderId));
   const payment = useAppStore((state) => state.payments.records.find((item) => item.orderId === orderId));
-  const requestCancellation = useAppStore((state) => state.commands.requestCancellation);
+  const mergeOperationalSnapshot = useAppStore((state) => state.commands.mergeOperationalSnapshot);
+  const [detailChecked, setDetailChecked] = useState(Boolean(order));
   const [cancellationForm, setCancellationForm] = useState<CancellationFormState>({
     open: false,
     reason: '',
     error: null,
   });
+
+  useEffect(() => {
+    if (order && order.customerId === customerId) { setDetailChecked(true); return; }
+    const controller = new AbortController();
+    setDetailChecked(false);
+    void fetchOperationalOrderDetail(orderId, controller.signal)
+      .then((snapshot) => mergeOperationalSnapshot(snapshot))
+      .catch(() => undefined)
+      .finally(() => { if (!controller.signal.aborted) setDetailChecked(true); });
+    return () => controller.abort();
+  }, [customerId, mergeOperationalSnapshot, order, orderId]);
+
+  if ((!order || order.customerId !== customerId) && !detailChecked) {
+    return <DetailPage><LoadingState label="Loading order" description="Retrieving your latest order details." /></DetailPage>;
+  }
 
   if (!order || order.customerId !== customerId) {
     return (
@@ -70,13 +87,17 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     );
   }
 
-  const submitCancellation = () => {
-    const result = requestCancellation(order.id, customerId, cancellationForm.reason);
-    if (!result.ok) {
-      setCancellationForm((current) => ({ ...current, error: result.error.message }));
-      return;
+  const submitCancellation = async () => {
+    try {
+      await requestOrderCancellation(order.id, cancellationForm.reason);
+      mergeOperationalSnapshot(await fetchOperationalOrderDetail(order.id));
+      setCancellationForm({ open: false, reason: '', error: null });
+    } catch (error) {
+      setCancellationForm((current) => ({
+        ...current,
+        error: error instanceof Error ? error.message : 'The cancellation request could not be sent.',
+      }));
     }
-    setCancellationForm({ open: false, reason: '', error: null });
   };
 
   return (
@@ -219,7 +240,8 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <SectionTitle>Delivery</SectionTitle>
             <AddressText>{delivery?.address.addressLine}</AddressText>
             <AddressText>{delivery?.address.municipality}, {delivery?.address.province}</AddressText>
-            <AddressText>{order.deliverySchedule.date} · {order.deliverySchedule.windowLabel}</AddressText>
+            <AddressText>Estimated: {getEstimatedScheduleText(order.deliverySchedule)}</AddressText>
+            <AddressText>Preference: {getPreferredScheduleText(order.deliverySchedule) ?? 'Earliest available'}</AddressText>
             <AddressText>Status: {delivery?.status.replaceAll('_', ' ') ?? 'Unavailable'}</AddressText>
           </Panel>
 

@@ -17,6 +17,7 @@ export default function AdminFormDialog({
   open,
   submitDisabled = false,
   submitLabel,
+  submitTone = 'primary',
   title,
 }: AdminFormDialogProps) {
   return (
@@ -36,7 +37,7 @@ export default function AdminFormDialog({
       </FormDialogContent>
       <FormDialogActions>
         <CancelButton onClick={onClose}>Cancel</CancelButton>
-        <SubmitButton disabled={submitDisabled} form={formId} type="submit">
+        <SubmitButton $tone={submitTone} disabled={submitDisabled} form={formId} type="submit">
           {submitLabel}
         </SubmitButton>
       </FormDialogActions>

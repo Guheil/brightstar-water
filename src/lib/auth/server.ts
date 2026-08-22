@@ -2,7 +2,11 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { UserRole } from '@/types';
 import { ROLE_DESTINATIONS } from './session';
-import type { SupabaseProfile } from './types';
+import {
+  profileCanAccessApplication,
+  profileRequiresOnboarding,
+  type SupabaseProfile,
+} from './types';
 
 const isUserRole = (value: unknown): value is UserRole =>
   value === 'customer' || value === 'admin' || value === 'deliverer';
@@ -16,7 +20,7 @@ export async function getAuthenticatedProfile(): Promise<SupabaseProfile | null>
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,email,full_name,phone,role,status,created_at,updated_at')
+    .select('id,email,full_name,phone,role,status,account_origin,onboarding_stage,onboarding_password_changed_at,onboarding_completed_at,created_at,updated_at')
     .eq('id', userId)
     .single();
 
@@ -28,6 +32,8 @@ export async function requireRole(role: UserRole): Promise<SupabaseProfile> {
   const profile = await getAuthenticatedProfile();
 
   if (!profile || profile.status !== 'active') redirect('/login');
+  if (profileRequiresOnboarding(profile)) redirect('/onboarding');
+  if (!profileCanAccessApplication(profile)) redirect('/login');
   if (profile.role !== role) redirect(ROLE_DESTINATIONS[profile.role]);
 
   return profile;

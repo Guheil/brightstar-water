@@ -3,11 +3,13 @@
 import { Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { fetchOlderOperationalPage } from '@/lib/orders/client';
+import type { OperationalCursor } from '@/lib/orders/types';
 import EmptyState from '@/components/ui/EmptyState';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import type { Order } from '@/types';
-import { formatPhp } from '@/utils';
+import { formatPhp, getEffectiveScheduleText } from '@/utils';
 import AdminDataTable from '../components/AdminDataTable';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
@@ -19,6 +21,7 @@ import {
   FilterField,
   FilterOption,
   ResetButton,
+  LoadMoreButton,
   ResultCount,
   ResultFooter,
   ResultPagination,
@@ -35,12 +38,16 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
   const customers = useAppStore((state) => state.customers.records);
   const payments = useAppStore((state) => state.payments.records);
   const deliveries = useAppStore((state) => state.deliveries.records);
+  const mergeOperationalSnapshot = useAppStore((state) => state.commands.mergeOperationalSnapshot);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
   const [paymentMethod, setPaymentMethod] = useState('all');
   const [date, setDate] = useState('');
   const [sort, setSort] = useState<OrderSort>('newest');
   const [page, setPage] = useState(1);
+  const [olderCursor, setOlderCursor] = useState<OperationalCursor | null>(null);
+  const [olderExhausted, setOlderExhausted] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const filteredOrders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -72,7 +79,7 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
   }, [customers, date, orders, paymentMethod, query, sort, status]);
 
   const orderMetrics = [
-    { label: 'All orders', value: orders.length },
+    { label: 'Loaded orders', value: orders.length },
     { label: 'Needs review', value: orders.filter((order) => order.status === 'pending_review').length, tone: 'warning' as const },
     { label: 'Preparing', value: orders.filter((order) => ['confirmed', 'preparing'].includes(order.status)).length, tone: 'gas' as const },
     { label: 'Out for delivery', value: orders.filter((order) => order.status === 'out_for_delivery').length, tone: 'water' as const },
@@ -109,7 +116,7 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
     {
       key: 'schedule',
       label: 'Delivery schedule',
-      render: (order) => `${order.deliverySchedule.date} · ${order.deliverySchedule.windowLabel}`,
+      render: (order) => getEffectiveScheduleText(order.deliverySchedule),
     },
     {
       key: 'payment',
@@ -165,6 +172,21 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
       ),
     },
   ];
+
+  const loadOlderOrders = async () => {
+    if (loadingOlder || olderExhausted || !orders.length) return;
+    const oldest = [...orders].sort((a, b) => a.placedAt.localeCompare(b.placedAt) || a.id.localeCompare(b.id))[0];
+    const cursor = olderCursor ?? { placedAt: oldest.placedAt, id: oldest.id };
+    setLoadingOlder(true);
+    try {
+      const result = await fetchOlderOperationalPage(cursor);
+      mergeOperationalSnapshot(result.snapshot);
+      setOlderCursor(result.nextCursor);
+      if (!result.nextCursor) setOlderExhausted(true);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
 
   const resetFilters = () => {
     setQuery('');
@@ -263,13 +285,15 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
             <ResultCount>
               Showing {visibleOrders.length} of {filteredOrders.length} matching orders
             </ResultCount>
-            {pageCount > 1 ? (
-              <ResultPagination
-                count={pageCount}
-                onChange={(_, nextPage) => setPage(nextPage)}
-                page={safePage}
-              />
-            ) : null}
+            <div>
+              {pageCount > 1 ? (
+                <ResultPagination
+                  count={pageCount}
+                  onChange={(_, nextPage) => setPage(nextPage)}
+                  page={safePage}
+                />
+              ) : null}
+            </div>
           </ResultFooter>
         </>
       ) : (
@@ -279,6 +303,11 @@ export default function OrdersScreen({ className }: OrdersScreenProps) {
           title="No orders match these filters"
         />
       )}
+      {orders.length >= 100 && !olderExhausted ? (
+        <LoadMoreButton disabled={loadingOlder} onClick={() => void loadOlderOrders()}>
+          {loadingOlder ? 'Loading older orders…' : 'Load older orders'}
+        </LoadMoreButton>
+      ) : null}
     </Root>
   );
 }

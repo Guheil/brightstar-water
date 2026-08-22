@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import AppLink from '@/components/ui/AppLink';
@@ -116,4 +117,14 @@ export const Primary = styled(Typography)(({ theme }) => ({
 export const Secondary = styled(Typography)(({ theme }) => ({
   ...theme.typography.body2,
   color: theme.vars.palette.text.secondary,
+}));
+
+export const LoadMoreButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+  justifySelf: 'start',
+  paddingInline: theme.spacing(2.5),
+  border: `1px solid ${theme.vars.palette.divider}`,
+  color: theme.vars.palette.text.primary,
+  backgroundColor: theme.vars.palette.background.paper,
+  '&:hover': { backgroundColor: theme.vars.palette.action.hover },
 }));

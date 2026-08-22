@@ -1,11 +1,13 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Smartphone, ShoppingBasket, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { EmptyState, Notice } from '@/components';
-import { DELIVERY_MAP_CONFIG } from '@/config';
+import { EmptyState, LoadingState, Notice } from '@/components';
+import AddressEditorDialog from '@/components/customer/AddressEditorDialog';
+import AddressSelector from '@/components/customer/AddressSelector';
+import { fetchPublicCatalog } from '@/lib/catalog/client';
+import { fetchOperationalSnapshot, placeCustomerOrder } from '@/lib/orders/client';
 import { useAppStore } from '@/store';
 import type { PaymentMethod } from '@/types';
 import {
@@ -13,12 +15,16 @@ import {
   calculateDeliveryFee,
   calculateLoyaltyPoints,
   calculateOrderTotals,
+  buildDeliverySchedule,
+  calculateEstimatedDelivery,
+  formatDeliveryDate,
   formatPhp,
+  getAvailablePreferredWindows,
   getAvailableStock,
+  getPreferredDateBounds,
 } from '@/utils';
 import { useCustomerCart } from '../_shared/CustomerAreaShell';
 import { getActiveCustomerId } from '../_shared/customer';
-import type { DeliveryPinChange } from '../DeliveryPinMap/interface';
 import {
   Actions,
   BackLink,
@@ -30,13 +36,13 @@ import {
   ChoiceList,
   ChoiceRadio,
   ChoiceTitle,
-  Field,
+  EstimateLabel,
+  EstimatePanel,
+  EstimateValue,
   FinePrint,
-  FullField,
   Header,
   HiddenFileInput,
   Lead,
-  LocationFields,
   NoteField,
   PaymentAmount,
   PaymentNoticeActions,
@@ -50,6 +56,10 @@ import {
   ReviewLabel,
   ReviewList,
   ReviewValue,
+  ScheduleField,
+  ScheduleFields,
+  ScheduleMenuItem,
+  SchedulePreferencePanel,
   SecondaryButton,
   StageDescription,
   StagePanel,
@@ -67,17 +77,12 @@ import {
   UploadButton,
 } from './elements';
 import type {
+  CheckoutPlacementPhase,
+  CheckoutPlacementProgress,
   CheckoutStage,
   CheckoutStageDefinition,
-  DeliveryFormState,
   PaymentChoice,
-  ScheduleOption,
 } from './interface';
-
-const DeliveryPinMap = dynamic(() => import('../DeliveryPinMap'), {
-  ssr: false,
-  loading: () => <Notice tone="info">Loading the delivery map…</Notice>,
-});
 
 const STAGES: readonly CheckoutStageDefinition[] = [
   { id: 'location', label: 'Location' },
@@ -85,12 +90,6 @@ const STAGES: readonly CheckoutStageDefinition[] = [
   { id: 'payment', label: 'Payment' },
   { id: 'payment_details', label: 'Payment details' },
   { id: 'review', label: 'Review' },
-];
-
-const SCHEDULES: readonly ScheduleOption[] = [
-  { id: 'slot-morning', date: '2026-08-17', windowLabel: '9:00 AM to 12:00 PM' },
-  { id: 'slot-afternoon', date: '2026-08-17', windowLabel: '1:00 PM to 4:00 PM' },
-  { id: 'slot-next-day', date: '2026-08-18', windowLabel: '9:00 AM to 12:00 PM' },
 ];
 
 const PAYMENT_CHOICES: readonly PaymentChoice[] = [
@@ -106,6 +105,21 @@ const PAYMENT_CHOICES: readonly PaymentChoice[] = [
   },
 ];
 
+const PLACEMENT_PROGRESS: Readonly<Record<CheckoutPlacementPhase, CheckoutPlacementProgress>> = {
+  creating_order: {
+    label: 'Creating your order',
+    description: 'We are reserving your items and saving your delivery details.',
+  },
+  refreshing_order_data: {
+    label: 'Updating your order history',
+    description: 'Your order is received. We are loading the latest confirmation details.',
+  },
+  opening_confirmation: {
+    label: 'Opening your confirmation',
+    description: 'Your order is ready. Taking you to the confirmation page now.',
+  },
+};
+
 const allowedProofTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const maxProofBytes = 5 * 1024 * 1024;
 
@@ -115,11 +129,15 @@ export default function CheckoutScreen() {
   const customerId = useAppStore(getActiveCustomerId);
   const customers = useAppStore((state) => state.customers.records);
   const products = useAppStore((state) => state.catalog.products);
+  const catalogInitialized = useAppStore((state) => state.catalog.initialized);
+  const catalogError = useAppStore((state) => state.catalog.error);
   const inventory = useAppStore((state) => state.inventory.items);
-  const placeOrder = useAppStore((state) => state.commands.placeOrder);
-  const saveDeliveryAddress = useAppStore((state) => state.commands.saveDeliveryAddress);
+  const syncCatalogSnapshot = useAppStore((state) => state.commands.syncCatalogSnapshot);
+  const syncOperationalSnapshot = useAppStore((state) => state.commands.syncOperationalSnapshot);
+  const syncCustomerAddresses = useAppStore((state) => state.commands.syncCustomerAddresses);
+  const addressesInitialized = useAppStore((state) => state.customers.addressesInitialized);
+  const addressesError = useAppStore((state) => state.customers.addressesError);
   const customer = customers.find((item) => item.id === customerId);
-  const defaultAddress = customer?.addresses.find((address) => address.isDefault) ?? customer?.addresses[0];
   const lines = items.flatMap((cartItem) => {
     const product = products.find((item) => item.id === cartItem.productId);
     const stock = inventory.find((item) => item.productId === cartItem.productId);
@@ -131,28 +149,57 @@ export default function CheckoutScreen() {
   const stockIssues = lines.filter(({ cartItem, availableStock }) => cartItem.quantity > availableStock);
   const hasAvailabilityIssue = hasMissingProduct || stockIssues.length > 0;
   const [stage, setStage] = useState<CheckoutStage>('location');
-  const [scheduleId, setScheduleId] = useState(SCHEDULES[0].id);
+  const [scheduleMode, setScheduleMode] = useState<'earliest_available' | 'preferred'>('earliest_available');
+  const [preferredDate, setPreferredDate] = useState('');
+  const [preferredWindowId, setPreferredWindowId] = useState<'any' | 'morning' | 'afternoon'>('any');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [customerNote, setCustomerNote] = useState('');
   const [deliveryAddressId, setDeliveryAddressId] = useState('');
-  const [pinLocation, setPinLocation] = useState<DeliveryPinChange | null>(null);
+  const [addressEditorOpen, setAddressEditorOpen] = useState(false);
   const [paymentNoticeOpen, setPaymentNoticeOpen] = useState(false);
   const [proofImageDataUrl, setProofImageDataUrl] = useState('');
   const [proofFileName, setProofFileName] = useState('');
-  const [placing, setPlacing] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+  const [placementPhase, setPlacementPhase] = useState<CheckoutPlacementPhase | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [deliveryForm, setDeliveryForm] = useState<DeliveryFormState>({
-    recipientName: defaultAddress?.recipientName ?? customer?.displayName ?? '',
-    phone: defaultAddress?.phonePlaceholder ?? customer?.phonePlaceholder ?? '',
-    addressLine: defaultAddress?.addressLine ?? '',
-    area: defaultAddress?.area ?? '',
-    municipality: defaultAddress?.municipality ?? 'San Pedro',
-    province: defaultAddress?.province ?? 'Laguna',
-    deliveryNote: defaultAddress?.deliveryNote ?? '',
-  });
+  const placing = placementPhase !== null;
+  const placementProgress = placementPhase ? PLACEMENT_PROGRESS[placementPhase] : null;
 
-  const selectedSchedule = SCHEDULES.find((item) => item.id === scheduleId) ?? SCHEDULES[0];
-  const deliveryQuote = pinLocation ? calculateDeliveryFee(pinLocation.distanceKm) : null;
+  const fallbackDeliveryAddressId = customer?.addresses.find((address) => address.isDefault)?.id
+    ?? customer?.addresses[0]?.id
+    ?? '';
+  const selectedDeliveryAddressId = deliveryAddressId || fallbackDeliveryAddressId;
+  const selectedAddress = customer?.addresses.find((address) => address.id === selectedDeliveryAddressId) ?? null;
+  const deliveryEstimate = useMemo(
+    () => calculateEstimatedDelivery(selectedAddress?.distanceKm ?? 0),
+    [selectedAddress?.distanceKm],
+  );
+  const preferredDateBounds = useMemo(
+    () => getPreferredDateBounds(deliveryEstimate.date),
+    [deliveryEstimate.date],
+  );
+  const selectedPreferredDate = scheduleMode === 'preferred'
+    ? preferredDate || deliveryEstimate.date
+    : preferredDate;
+  const availablePreferredWindows = useMemo(
+    () => getAvailablePreferredWindows(selectedPreferredDate || deliveryEstimate.date, deliveryEstimate),
+    [deliveryEstimate, selectedPreferredDate],
+  );
+  const selectedPreferredWindowId = availablePreferredWindows.some(
+    (window) => window.id === preferredWindowId,
+  )
+    ? preferredWindowId
+    : 'any';
+  const selectedSchedule = useMemo(
+    () => buildDeliverySchedule({
+      estimate: deliveryEstimate,
+      preferredDate: scheduleMode === 'preferred' ? selectedPreferredDate : undefined,
+      preferredWindowId: scheduleMode === 'preferred' ? selectedPreferredWindowId : undefined,
+    }),
+    [deliveryEstimate, scheduleMode, selectedPreferredDate, selectedPreferredWindowId],
+  );
+  const deliveryQuote = selectedAddress ? calculateDeliveryFee(selectedAddress.distanceKm) : null;
   const subtotal = calculateCartSubtotal(
     lines.map(({ cartItem, product }) => ({
       quantity: cartItem.quantity,
@@ -165,21 +212,33 @@ export default function CheckoutScreen() {
   );
   const pointsPending = calculateLoyaltyPoints(subtotal);
   const stageIndex = STAGES.findIndex((item) => item.id === stage);
-  const locationComplete = Boolean(
-    deliveryForm.recipientName.trim() &&
-    deliveryForm.phone.trim() &&
-    deliveryForm.addressLine.trim() &&
-    deliveryForm.area.trim() &&
-    pinLocation &&
-    deliveryQuote?.serviceable,
-  );
+  const locationComplete = Boolean(selectedAddress && deliveryQuote?.serviceable);
 
-  const mapInitialCoordinate = useMemo(
-    () => defaultAddress?.latitude != null && defaultAddress.longitude != null
-      ? { latitude: defaultAddress.latitude, longitude: defaultAddress.longitude }
-      : DELIVERY_MAP_CONFIG.serviceCenter,
-    [defaultAddress],
-  );
+  if (!catalogInitialized) {
+    return (
+      <CheckoutPage>
+        <EmptyState
+          action={<BackLink href="/customer/cart">Return to cart</BackLink>}
+          description="Current products and inventory are loading from the database."
+          icon={<ShoppingBasket />}
+          title="Preparing checkout"
+        />
+      </CheckoutPage>
+    );
+  }
+
+  if (catalogError) {
+    return (
+      <CheckoutPage>
+        <EmptyState
+          action={<BackLink href="/customer/cart">Return to cart</BackLink>}
+          description={catalogError}
+          icon={<ShoppingBasket />}
+          title="Catalog unavailable"
+        />
+      </CheckoutPage>
+    );
+  }
 
   if (!customer || !customerId || !lines.length) {
     return (
@@ -194,62 +253,27 @@ export default function CheckoutScreen() {
     );
   }
 
-  const updateDeliveryField = (field: keyof DeliveryFormState, value: string) => {
-    setDeliveryAddressId('');
-    setDeliveryForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const handlePinChange = (nextLocation: DeliveryPinChange) => {
-    setDeliveryAddressId('');
-    setPinLocation(nextLocation);
-  };
-
-  const saveCheckoutLocation = () => {
-    setError(null);
-    if (!pinLocation) {
-      setError('Choose the exact delivery point on the map.');
-      return false;
-    }
-    if (!deliveryQuote?.serviceable) {
-      setError('Choose a delivery point inside the 10 km service area.');
-      return false;
-    }
-    if (!locationComplete) {
-      setError('Complete the recipient and delivery address details.');
-      return false;
-    }
-    if (deliveryAddressId) return true;
-
-    const result = saveDeliveryAddress({
-      customerId,
-      label: 'Order delivery',
-      recipientName: deliveryForm.recipientName,
-      phone: deliveryForm.phone,
-      addressLine: deliveryForm.addressLine,
-      area: deliveryForm.area,
-      municipality: deliveryForm.municipality,
-      province: deliveryForm.province,
-      distanceKm: pinLocation.distanceKm,
-      latitude: pinLocation.latitude,
-      longitude: pinLocation.longitude,
-      deliveryNote: deliveryForm.deliveryNote || undefined,
-      makeDefault: customer.addresses.length === 0,
-    });
-    if (!result.ok) {
-      setError(result.error.message);
-      return false;
-    }
-    setDeliveryAddressId(result.value.id);
-    return true;
-  };
-
   const nextStage = () => {
     setError(null);
     if (stage === 'location') {
-      if (saveCheckoutLocation()) setStage('schedule');
+      if (!selectedAddress || !deliveryQuote?.serviceable) {
+        setError('Choose a saved delivery address before continuing.');
+        return;
+      }
+      setStage('schedule');
       return;
     }
     if (stage === 'schedule') {
+      if (scheduleMode === 'preferred') {
+        if (!selectedPreferredDate || selectedPreferredDate < preferredDateBounds.min || selectedPreferredDate > preferredDateBounds.max) {
+          setError('Choose an available preferred delivery date.');
+          return;
+        }
+        if (selectedPreferredWindowId !== 'any' && !availablePreferredWindows.some((window) => window.id === selectedPreferredWindowId)) {
+          setError('Choose a time window that is still available for that date.');
+          return;
+        }
+      }
       setStage('payment');
       return;
     }
@@ -297,56 +321,59 @@ export default function CheckoutScreen() {
         return;
       }
       setProofFileName(cleanName);
+      setProofFile(file);
       setProofImageDataUrl(reader.result);
     };
     reader.onerror = () => setError('That screenshot could not be read. Choose another image.');
     reader.readAsDataURL(file);
   };
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (hasAvailabilityIssue) {
       setError('Return to your cart and adjust products that no longer have enough stock.');
       return;
     }
-    if (!deliveryAddressId || !deliveryQuote?.serviceable) {
+    if (!selectedDeliveryAddressId || !deliveryQuote?.serviceable) {
       setError('Confirm your delivery location before placing the order.');
       return;
     }
-    if (paymentMethod === 'gcash' && !proofImageDataUrl) {
+    if (paymentMethod === 'gcash' && !proofFile) {
       setError('Upload your GCash payment screenshot before placing the order.');
       return;
     }
-    setPlacing(true);
+    setPlacementPhase('creating_order');
     setError(null);
-    globalThis.setTimeout(() => {
-      const result = placeOrder({
-        customerId,
+    const stableKey = idempotencyKey || globalThis.crypto.randomUUID();
+    if (!idempotencyKey) setIdempotencyKey(stableKey);
+
+    try {
+      const result = await placeCustomerOrder({
         items: lines.map(({ cartItem, product }) => ({
           productId: product.id,
           quantity: cartItem.quantity,
         })),
-        deliveryAddressId,
-        deliverySchedule: {
-          date: selectedSchedule.date,
-          windowLabel: selectedSchedule.windowLabel,
-        },
+        deliveryAddressId: selectedDeliveryAddressId,
+        deliverySchedule: selectedSchedule,
         paymentMethod,
-        ...(paymentMethod === 'gcash' && proofImageDataUrl
-          ? { paymentProofImageDataUrl: proofImageDataUrl, paymentProofFileName: proofFileName }
-          : {}),
-        customerNote: customerNote.trim() || undefined,
-      });
+        ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
+        idempotencyKey: stableKey,
+      }, paymentMethod === 'gcash' ? proofFile : null);
 
-      if (!result.ok) {
-        setError(result.error.message);
-        setPlacing(false);
-        return;
-      }
-
+      setPlacementPhase('refreshing_order_data');
+      const [operations, catalog] = await Promise.all([
+        fetchOperationalSnapshot(),
+        fetchPublicCatalog(),
+      ]);
+      syncOperationalSnapshot(operations);
+      syncCatalogSnapshot(catalog);
       clearCart();
-      setLastPlacedOrderId(result.value.id);
-      router.push(`/customer/orders/${result.value.id}/confirmation`);
-    }, 450);
+      setLastPlacedOrderId(result.orderId);
+      setPlacementPhase('opening_confirmation');
+      router.push(`/customer/orders/${result.orderId}/confirmation`);
+    } catch (submissionError) {
+      setError(submissionError instanceof Error ? submissionError.message : 'The order could not be placed.');
+      setPlacementPhase(null);
+    }
   };
 
   return (
@@ -354,7 +381,7 @@ export default function CheckoutScreen() {
       <Header>
         <BackLink href="/customer/cart">Back to cart</BackLink>
         <Title>Checkout</Title>
-        <Lead>Set the delivery point, choose a schedule and payment method, then review everything before placing the order.</Lead>
+        <Lead>Set the delivery point, review the estimated arrival, choose an optional delivery preference and payment method, then confirm your order.</Lead>
       </Header>
 
       <StepList aria-label="Checkout progress">
@@ -372,7 +399,7 @@ export default function CheckoutScreen() {
       </StepList>
 
       <CheckoutLayout>
-        <StagePanel>
+        <StagePanel aria-busy={placing}>
           {error ? <Notice tone="error" title="Could not continue">{error}</Notice> : null}
           {hasAvailabilityIssue ? (
             <Notice tone="warning" title="Cart availability changed">
@@ -383,76 +410,107 @@ export default function CheckoutScreen() {
 
           {stage === 'location' ? (
             <>
-              <StageTitle>Pin the delivery location</StageTitle>
-              <StageDescription>Place the marker where you want the order delivered. The delivery fee updates from that point.</StageDescription>
-              <DeliveryPinMap initialCoordinate={mapInitialCoordinate} onChange={handlePinChange} />
-              {deliveryQuote ? (
-                <Notice tone={deliveryQuote.serviceable ? 'info' : 'warning'}>
-                  {pinLocation?.distanceKm.toFixed(2)} km from the service point. {deliveryQuote.label}
+              <StageTitle>Choose a delivery address</StageTitle>
+              <StageDescription>Select one of your saved locations. Add another address here without leaving checkout.</StageDescription>
+              {!addressesInitialized ? <Notice tone="info">Loading your saved delivery addresses...</Notice> : null}
+              {addressesError ? <Notice tone="error" title="Saved addresses unavailable">{addressesError} Refresh the page before continuing to checkout.</Notice> : null}
+              {addressesInitialized && !addressesError && customer.addresses.length ? (
+                <>
+                  <AddressSelector addresses={customer.addresses} onSelect={setDeliveryAddressId} selectedId={selectedDeliveryAddressId} />
+                  <SecondaryButton onClick={() => setAddressEditorOpen(true)} type="button" variant="outlined">Add another address</SecondaryButton>
+                </>
+              ) : null}
+              {addressesInitialized && !addressesError && customer.addresses.length === 0 ? (
+                <Notice tone="warning" title="Add a delivery address">
+                  Save a Home, Work, or other address and pin the exact delivery point before continuing.
                 </Notice>
               ) : null}
-              <LocationFields>
-                <Field
-                  label="Recipient name"
-                  onChange={(event) => updateDeliveryField('recipientName', event.target.value)}
-                  value={deliveryForm.recipientName}
-                />
-                <Field
-                  label="Mobile number"
-                  onChange={(event) => updateDeliveryField('phone', event.target.value)}
-                  value={deliveryForm.phone}
-                />
-                <FullField
-                  label="Street, building, or house details"
-                  onChange={(event) => updateDeliveryField('addressLine', event.target.value)}
-                  value={deliveryForm.addressLine}
-                />
-                <Field
-                  label="Barangay or area"
-                  onChange={(event) => updateDeliveryField('area', event.target.value)}
-                  value={deliveryForm.area}
-                />
-                <Field
-                  label="City"
-                  onChange={(event) => updateDeliveryField('municipality', event.target.value)}
-                  value={deliveryForm.municipality}
-                />
-                <Field
-                  label="Province"
-                  onChange={(event) => updateDeliveryField('province', event.target.value)}
-                  value={deliveryForm.province}
-                />
-                <FullField
-                  label="Delivery note (optional)"
-                  multiline
-                  minRows={2}
-                  onChange={(event) => updateDeliveryField('deliveryNote', event.target.value)}
-                  value={deliveryForm.deliveryNote}
-                />
-              </LocationFields>
+              {addressesInitialized && !addressesError && customer.addresses.length === 0 ? (
+                <PrimaryButton onClick={() => setAddressEditorOpen(true)} type="button" variant="contained">Add delivery address</PrimaryButton>
+              ) : null}
+              {selectedAddress && deliveryQuote ? (
+                <Notice tone={deliveryQuote.serviceable ? 'info' : 'warning'}>
+                  {selectedAddress.distanceKm.toFixed(2)} km from the service point. {deliveryQuote.label}
+                </Notice>
+              ) : null}
             </>
           ) : null}
 
           {stage === 'schedule' ? (
             <>
-              <StageTitle>Choose a delivery schedule</StageTitle>
-              <StageDescription>Select the date and time window that works for you.</StageDescription>
-              <ChoiceList role="radiogroup" aria-label="Delivery schedule">
-                {SCHEDULES.map((schedule) => (
-                  <ChoiceCard key={schedule.id} $selected={schedule.id === scheduleId}>
+              <StageTitle>Delivery timing</StageTitle>
+              <StageDescription>
+                Your estimated arrival is shown first. A preferred delivery date is optional.
+              </StageDescription>
+
+              <EstimatePanel aria-label="Estimated delivery arrival">
+                <EstimateLabel>Estimated arrival</EstimateLabel>
+                <EstimateValue>{formatDeliveryDate(deliveryEstimate.date)}</EstimateValue>
+                <StageDescription>{deliveryEstimate.windowLabel}</StageDescription>
+                <FinePrint>Based on your saved delivery location and current preparation time.</FinePrint>
+              </EstimatePanel>
+
+              <SchedulePreferencePanel>
+                <StageDescription>Preferred delivery schedule · Optional</StageDescription>
+                <ChoiceList role="radiogroup" aria-label="Preferred delivery schedule">
+                  <ChoiceCard $selected={scheduleMode === 'earliest_available'}>
                     <ChoiceRadio
-                      checked={schedule.id === scheduleId}
-                      name="delivery-schedule"
-                      onChange={() => setScheduleId(schedule.id)}
-                      value={schedule.id}
+                      checked={scheduleMode === 'earliest_available'}
+                      name="delivery-schedule-mode"
+                      onChange={() => setScheduleMode('earliest_available')}
+                      value="earliest_available"
                     />
                     <ChoiceCopy>
-                      <ChoiceTitle>{schedule.date}</ChoiceTitle>
-                      <ChoiceDescription>{schedule.windowLabel}</ChoiceDescription>
+                      <ChoiceTitle>Earliest available delivery</ChoiceTitle>
+                      <ChoiceDescription>No preferred date. We will use the earliest available delivery window.</ChoiceDescription>
                     </ChoiceCopy>
                   </ChoiceCard>
-                ))}
-              </ChoiceList>
+                  <ChoiceCard $selected={scheduleMode === 'preferred'}>
+                    <ChoiceRadio
+                      checked={scheduleMode === 'preferred'}
+                      name="delivery-schedule-mode"
+                      onChange={() => {
+                        setScheduleMode('preferred');
+                        setPreferredDate((current) => current || deliveryEstimate.date);
+                      }}
+                      value="preferred"
+                    />
+                    <ChoiceCopy>
+                      <ChoiceTitle>I prefer a specific delivery date</ChoiceTitle>
+                      <ChoiceDescription>Request a date and optionally choose a time window.</ChoiceDescription>
+                    </ChoiceCopy>
+                  </ChoiceCard>
+                </ChoiceList>
+
+                {scheduleMode === 'preferred' ? (
+                  <ScheduleFields>
+                    <ScheduleField
+                      helperText={`Available from ${formatDeliveryDate(preferredDateBounds.min)} through ${formatDeliveryDate(preferredDateBounds.max)}.`}
+                      slotProps={{ htmlInput: { min: preferredDateBounds.min, max: preferredDateBounds.max } }}
+                      label="Preferred delivery date"
+                      onChange={(event) => setPreferredDate(event.target.value)}
+                      type="date"
+                      value={selectedPreferredDate}
+                    />
+                    <ScheduleField
+                      label="Preferred time (optional)"
+                      onChange={(event) => setPreferredWindowId(event.target.value as 'any' | 'morning' | 'afternoon')}
+                      select
+                      value={selectedPreferredWindowId}
+                    >
+                      <ScheduleMenuItem value="any">Any available time</ScheduleMenuItem>
+                      {availablePreferredWindows.map((window) => (
+                        <ScheduleMenuItem key={window.id} value={window.id}>{window.label}</ScheduleMenuItem>
+                      ))}
+                    </ScheduleField>
+                  </ScheduleFields>
+                ) : null}
+              </SchedulePreferencePanel>
+
+              <Notice tone="info">
+                Estimated arrival begins after the order is confirmed. GCash orders may require payment verification before processing.
+              </Notice>
+
               <NoteField
                 label="Order note (optional)"
                 minRows={3}
@@ -544,7 +602,7 @@ export default function CheckoutScreen() {
           {stage === 'review' ? (
             <>
               <StageTitle>Review your order</StageTitle>
-              <StageDescription>Confirm the items, delivery point, schedule, and payment method before placing the order.</StageDescription>
+              <StageDescription>Confirm the items, delivery point, delivery timing, and payment method before placing the order.</StageDescription>
               <ReviewList>
                 {lines.map(({ cartItem, product }) => (
                   <ReviewItem key={product.id}>
@@ -554,15 +612,23 @@ export default function CheckoutScreen() {
                 ))}
                 <ReviewItem>
                   <ReviewLabel>Deliver to</ReviewLabel>
-                  <ReviewValue>{deliveryForm.addressLine}, {deliveryForm.area}</ReviewValue>
+                  <ReviewValue>{selectedAddress ? `${selectedAddress.addressLine}, ${selectedAddress.area}` : 'No address selected'}</ReviewValue>
                 </ReviewItem>
                 <ReviewItem>
                   <ReviewLabel>Distance</ReviewLabel>
-                  <ReviewValue>{pinLocation?.distanceKm.toFixed(2)} km</ReviewValue>
+                  <ReviewValue>{selectedAddress ? `${selectedAddress.distanceKm.toFixed(2)} km` : 'Not available'}</ReviewValue>
                 </ReviewItem>
                 <ReviewItem>
-                  <ReviewLabel>Schedule</ReviewLabel>
-                  <ReviewValue>{selectedSchedule.date}, {selectedSchedule.windowLabel}</ReviewValue>
+                  <ReviewLabel>Estimated arrival</ReviewLabel>
+                  <ReviewValue>{formatDeliveryDate(deliveryEstimate.date)} · {deliveryEstimate.windowLabel}</ReviewValue>
+                </ReviewItem>
+                <ReviewItem>
+                  <ReviewLabel>Delivery preference</ReviewLabel>
+                  <ReviewValue>
+                    {scheduleMode === 'preferred'
+                      ? `${formatDeliveryDate(selectedSchedule.preferredDate ?? selectedSchedule.date)} · ${selectedSchedule.preferredWindowLabel ?? selectedSchedule.windowLabel}`
+                      : 'Earliest available'}
+                  </ReviewValue>
                 </ReviewItem>
                 <ReviewItem>
                   <ReviewLabel>Payment</ReviewLabel>
@@ -572,15 +638,23 @@ export default function CheckoutScreen() {
             </>
           ) : null}
 
+          {placementProgress ? (
+            <LoadingState
+              compact
+              description={placementProgress.description}
+              label={placementProgress.label}
+            />
+          ) : null}
+
           <Actions>
-            {stage === 'location' ? <span /> : <SecondaryButton onClick={previousStage}>Back</SecondaryButton>}
+            {stage === 'location' ? <span /> : <SecondaryButton disabled={placing} onClick={previousStage}>Back</SecondaryButton>}
             {stage === 'review' ? (
-              <PrimaryButton disabled={placing} onClick={submitOrder} variant="contained">
+              <PrimaryButton disabled={placing} onClick={() => void submitOrder()} variant="contained">
                 {placing ? 'Placing order…' : 'Place order'}
               </PrimaryButton>
             ) : (
               <PrimaryButton
-                disabled={hasAvailabilityIssue || (stage === 'location' && !locationComplete)}
+                disabled={placing || hasAvailabilityIssue || (stage === 'location' && !locationComplete)}
                 onClick={nextStage}
                 variant="contained"
               >
@@ -594,13 +668,25 @@ export default function CheckoutScreen() {
           <SummaryTitle>Order summary</SummaryTitle>
           <SummaryList>
             <SummaryRow><dt>Subtotal</dt><dd>{formatPhp(totals.subtotalCentavos)}</dd></SummaryRow>
-            <SummaryRow><dt>Delivery</dt><dd>{deliveryQuote?.serviceable ? formatPhp(totals.deliveryFeeCentavos) : 'Select pin'}</dd></SummaryRow>
+            <SummaryRow><dt>Delivery</dt><dd>{deliveryQuote?.serviceable ? formatPhp(totals.deliveryFeeCentavos) : 'Select address'}</dd></SummaryRow>
             <SummaryTotal><dt>Total</dt><dd>{formatPhp(totals.totalCentavos)}</dd></SummaryTotal>
           </SummaryList>
           {deliveryQuote ? <Notice tone={deliveryQuote.serviceable ? 'info' : 'warning'}>{deliveryQuote.label}</Notice> : null}
           <FinePrint>Estimated loyalty after delivery: {pointsPending} points.</FinePrint>
         </SummaryPanel>
       </CheckoutLayout>
+
+      <AddressEditorDialog
+        initialPhone={customer.phonePlaceholder}
+        initialRecipientName={customer.displayName}
+        onClose={() => setAddressEditorOpen(false)}
+        onSaved={(addresses, saved) => {
+          syncCustomerAddresses(customerId, addresses);
+          setDeliveryAddressId(saved.id);
+          setAddressEditorOpen(false);
+        }}
+        open={addressEditorOpen}
+      />
 
       <PaymentNoticeDialog
         aria-describedby="gcash-payment-notice-description"

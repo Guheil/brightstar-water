@@ -6,6 +6,7 @@ import {
   selectPaymentForOrder,
 } from '../../../store/selectors';
 import { authenticateCustomerFixture } from '@/test-utils/auth';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 import { getAvailableStock } from '../../../utils';
 
 const ORDER_INPUT = {
@@ -27,6 +28,7 @@ describe('customer order continuity', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
+    hydrateCatalogFixtures();
     authenticateCustomerFixture();
   });
 

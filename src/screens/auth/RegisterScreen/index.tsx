@@ -15,6 +15,7 @@ import RegistrationAgreementDialog from '@/components/legal/RegistrationAgreemen
 import Notice from '@/components/ui/Notice';
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/config';
 import { loadCurrentAppSession } from '@/lib/auth/client';
+import { fetchCustomerCart } from '@/lib/cart/client';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { resolveSafeNextPath } from '@/utils';
@@ -82,6 +83,8 @@ const stages: readonly { id: RegistrationStage; label: string }[] = [
 export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
   const router = useRouter();
   const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
+  const syncCustomerCart = useAppStore((state) => state.commands.syncCustomerCart);
+  const markCustomerCartFailed = useAppStore((state) => state.commands.markCustomerCartFailed);
   const [stage, setStage] = useState<RegistrationStage>('details');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [verificationDigits, setVerificationDigits] = useState<string[]>(createEmptyOtpDigits);
@@ -246,6 +249,14 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
     }
 
     syncAuthSession({ session: current.session, phone: current.profile?.phone });
+    if (current.session.user.role === 'customer' && current.session.user.customerId) {
+      const customerId = current.session.user.customerId;
+      try {
+        syncCustomerCart(customerId, await fetchCustomerCart());
+      } catch {
+        markCustomerCartFailed(customerId, 'Your saved cart could not be loaded. New changes will retry automatically.');
+      }
+    }
     router.replace(resolveSafeNextPath(nextPath, '/customer/account'));
     router.refresh();
   };

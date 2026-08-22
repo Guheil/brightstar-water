@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
+import LoadingState from '@/components/ui/LoadingState';
 import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
+import { adminAssignDelivery, fetchOperationalDeliveryDetail } from '@/lib/orders/client';
 import { useAppStore } from '@/store';
-import { formatPhp } from '@/utils';
+import { formatPhp, getEstimatedScheduleText, getPreferredScheduleText } from '@/utils';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
-import { ADMIN_ACTOR_ID, formatDateTime, getStatusTone, humanize } from '../utils';
+import { formatDateTime, getStatusTone, humanize } from '../utils';
 import {
   AssignmentButton,
   AssignmentCopy,
@@ -51,10 +53,24 @@ export default function DeliveryDetailScreen({
     state.payments.records.find((item) => item.orderId === delivery?.orderId),
   );
   const deliverers = useAppStore((state) => state.deliveries.deliverers);
-  const assignDelivery = useAppStore((state) => state.commands.assignDelivery);
+  const mergeOperationalSnapshot = useAppStore((state) => state.commands.mergeOperationalSnapshot);
   const [selectedDeliverer, setSelectedDeliverer] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [checkedDeliveryId, setCheckedDeliveryId] = useState<string | null>(null);
+  const detailChecked = Boolean(delivery && order) || checkedDeliveryId === deliveryId;
+
+  useEffect(() => {
+    if (delivery && order) return;
+    const controller = new AbortController();
+    void fetchOperationalDeliveryDetail(deliveryId, controller.signal)
+      .then((snapshot) => mergeOperationalSnapshot(snapshot))
+      .catch(() => undefined)
+      .finally(() => { if (!controller.signal.aborted) setCheckedDeliveryId(deliveryId); });
+    return () => controller.abort();
+  }, [delivery, deliveryId, mergeOperationalSnapshot, order]);
+
+  if ((!delivery || !order) && !detailChecked) return <LoadingState label="Loading delivery" description="Retrieving the latest delivery state." />;
 
   if (!delivery || !order) {
     return (
@@ -73,32 +89,25 @@ export default function DeliveryDetailScreen({
     ['unassigned', 'assigned', 'accepted'].includes(delivery.status);
   const currentDeliverer = deliverers.find((item) => item.id === delivery.delivererId);
 
-  const confirmAssignment = () => {
+  const confirmAssignment = async () => {
     if (!selectedDeliverer) {
-      setFeedback({
-        tone: 'error',
-        title: 'Choose a deliverer',
-        message: 'Select an available deliverer before continuing.',
-      });
+      setFeedback({ tone: 'error', title: 'Choose a deliverer', message: 'Select an available deliverer before continuing.' });
       setConfirmOpen(false);
       return;
     }
-
-    const result = assignDelivery(
-      order.id,
-      selectedDeliverer,
-      ADMIN_ACTOR_ID,
-    );
-    setFeedback(
-      result.ok
-        ? {
-            tone: 'success',
-            title: delivery.delivererId ? 'Delivery reassigned' : 'Delivery assigned',
-            message: 'The deliverer queue and customer-facing order state are synchronized.',
-          }
-        : { tone: 'error', title: 'Assignment failed', message: result.error.message },
-    );
-    setConfirmOpen(false);
+    try {
+      await adminAssignDelivery(order.id, selectedDeliverer);
+      mergeOperationalSnapshot(await fetchOperationalDeliveryDetail(delivery.id));
+      setFeedback({
+        tone: 'success',
+        title: delivery.delivererId ? 'Delivery reassigned' : 'Delivery assigned',
+        message: 'The deliverer queue and customer-facing order state are synchronized.',
+      });
+    } catch (error) {
+      setFeedback({ tone: 'error', title: 'Assignment failed', message: error instanceof Error ? error.message : 'The delivery could not be assigned.' });
+    } finally {
+      setConfirmOpen(false);
+    }
   };
 
   return (
@@ -131,10 +140,10 @@ export default function DeliveryDetailScreen({
               <DetailValue>
                 <InlineLink href={`/admin/orders/${order.id}`}>{order.reference}</InlineLink>
               </DetailValue>
-              <DetailTerm>Schedule</DetailTerm>
-              <DetailValue>
-                {delivery.schedule.date} · {delivery.schedule.windowLabel}
-              </DetailValue>
+              <DetailTerm>Estimated arrival</DetailTerm>
+              <DetailValue>{getEstimatedScheduleText(delivery.schedule)}</DetailValue>
+              <DetailTerm>Customer preference</DetailTerm>
+              <DetailValue>{getPreferredScheduleText(delivery.schedule) ?? 'Earliest available'}</DetailValue>
               <DetailTerm>Deliverer</DetailTerm>
               <DetailValue>{currentDeliverer?.displayName ?? 'Unassigned'}</DetailValue>
               <DetailTerm>Last update</DetailTerm>
@@ -238,7 +247,7 @@ export default function DeliveryDetailScreen({
         confirmLabel={delivery.delivererId ? 'Reassign delivery' : 'Assign delivery'}
         description="The selected deliverer queue and the customer-facing order status will update together."
         onClose={() => setConfirmOpen(false)}
-        onConfirm={confirmAssignment}
+        onConfirm={() => void confirmAssignment()}
         open={confirmOpen}
         title={delivery.delivererId ? 'Reassign this delivery?' : 'Assign this delivery?'}
       />

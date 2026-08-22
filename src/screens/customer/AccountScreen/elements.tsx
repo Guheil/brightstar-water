@@ -136,7 +136,7 @@ export const ActionList = styled('div')(({ theme }) => ({
 
 export const ActionRow = styled(AppLink)(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: '1fr auto',
+  gridTemplateColumns: 'auto 1fr auto',
   gap: theme.spacing(2),
   alignItems: 'center',
   minHeight: 64,
@@ -149,6 +149,17 @@ export const ActionRow = styled(AppLink)(({ theme }) => ({
   '&:focus-visible': { outline: `3px solid ${theme.vars.palette.action.focus}` },
 }));
 
+
+export const ActionIcon = styled('span', { shouldForwardProp: (prop) => prop !== '$warning' })<{ $warning?: boolean }>(({ theme, $warning }) => ({
+  width: 36,
+  height: 36,
+  display: 'grid',
+  placeItems: 'center',
+  borderRadius: '50%',
+  backgroundColor: $warning ? theme.vars.palette.warning.main : theme.vars.palette.water.main,
+  color: $warning ? theme.vars.palette.warning.contrastText : theme.vars.palette.water.contrastText,
+  '& svg': { width: 19, height: 19 },
+}));
 export const ActionText = styled('span')(({ theme }) => ({
   display: 'grid',
   gap: theme.spacing(0.25),

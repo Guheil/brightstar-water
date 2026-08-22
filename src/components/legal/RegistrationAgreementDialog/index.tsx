@@ -35,10 +35,14 @@ import type { LegalDocumentId, RegistrationAgreementDialogProps } from './interf
 const READING_END_TOLERANCE_PX = 4;
 
 export default function RegistrationAgreementDialog({
+  acceptLabel = 'Agree and create account',
+  description = 'Please review the Terms of Use and Privacy Policy before creating your account. Each checkbox becomes available after you reach the end of its document.',
   onAccept,
   onClose,
   open,
+  title = 'Review before creating your account',
   working = false,
+  workingLabel = 'Creating account…',
 }: RegistrationAgreementDialogProps) {
   const [activeDocument, setActiveDocument] = useState<LegalDocumentId>('terms');
   const [termsRead, setTermsRead] = useState(false);
@@ -78,9 +82,9 @@ export default function RegistrationAgreementDialog({
       open={open}
     >
       <AgreementTitle id="registration-agreement-title">
-        <TitleText>Review before creating your account</TitleText>
+        <TitleText>{title}</TitleText>
         <IntroText id="registration-agreement-description">
-          Please review the Terms of Use and Privacy Policy before creating your account. Each checkbox becomes available after you reach the end of its document.
+          {description}
         </IntroText>
       </AgreementTitle>
 
@@ -192,7 +196,7 @@ export default function RegistrationAgreementDialog({
       <AgreementActions>
         <CancelButton disabled={working} onClick={handleClose} type="button">Cancel</CancelButton>
         <AcceptButton disabled={!canAccept} onClick={onAccept} type="button" variant="contained">
-          {working ? 'Creating account…' : 'Agree and create account'}
+          {working ? workingLabel : acceptLabel}
         </AcceptButton>
       </AgreementActions>
     </AgreementDialog>

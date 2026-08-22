@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '@/store';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 import {
   deleteProductState,
   quickUpdateProduct,
@@ -9,6 +10,7 @@ import {
 describe('Admin CRUD-style controls', () => {
   beforeEach(() => {
     useAppStore.getState().commands.resetAppState();
+    hydrateCatalogFixtures();
   });
 
   it('applies a small product update without replacing unrelated catalog fields', () => {

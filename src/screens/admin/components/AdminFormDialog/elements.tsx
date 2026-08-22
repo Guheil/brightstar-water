@@ -43,12 +43,19 @@ export const CancelButton = styled(Button)(({ theme }) => ({
   color: theme.vars.palette.text.primary,
 }));
 
-export const SubmitButton = styled(Button)(({ theme }) => ({
+export const SubmitButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== '$tone',
+})<{ $tone: 'primary' | 'danger' }>(({ theme, $tone }) => ({
   minHeight: theme.spacing(5.5),
-  backgroundColor: theme.vars.palette.primary.main,
-  color: theme.vars.palette.primary.contrastText,
+  backgroundColor:
+    $tone === 'danger' ? theme.vars.palette.error.main : theme.vars.palette.primary.main,
+  color:
+    $tone === 'danger'
+      ? theme.vars.palette.error.contrastText
+      : theme.vars.palette.primary.contrastText,
 
   '&:hover': {
-    backgroundColor: theme.vars.palette.primary.dark,
+    backgroundColor:
+      $tone === 'danger' ? theme.vars.palette.error.dark : theme.vars.palette.primary.dark,
   },
 }));

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { IBM_Plex_Sans, IBM_Plex_Serif } from 'next/font/google';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import AuthSessionSync from '@/components/providers/AuthSessionSync';
+import CatalogSync from '@/components/providers/CatalogSync';
 import { MUIStyleProvider } from '@/theme';
 import './globals.css';
 
@@ -45,7 +46,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <AppRouterCacheProvider>
           <MUIStyleProvider>
-            <AuthSessionSync>{children}</AuthSessionSync>
+            <AuthSessionSync><CatalogSync>{children}</CatalogSync></AuthSessionSync>
           </MUIStyleProvider>
         </AppRouterCacheProvider>
       </body>

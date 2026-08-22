@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '@/store';
 import { authenticateCustomerFixture } from '@/test-utils/auth';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 
 const CUSTOMER_ID = 'customer-01';
 const ADMIN_ID = 'user-admin-01';
@@ -25,6 +26,7 @@ describe('frontend order workflow', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
+    hydrateCatalogFixtures();
     authenticateCustomerFixture(AT);
   });
 

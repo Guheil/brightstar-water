@@ -30,29 +30,28 @@ export const createManagedAccountSchema = z
     phone: optionalPhilippinePhone,
     role: z.enum(['customer', 'admin', 'deliverer']),
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (value.role === 'customer' && !value.phone) {
-      context.addIssue({
-        code: 'custom',
-        message: 'A contact number is required for Customer accounts.',
-        path: ['phone'],
-      });
-    }
-  });
+  .strict();
 
-export const updateCustomerProfileSchema = z
+export const updateManagedProfileSchema = z
   .object({
     fullName: plainName,
-    phone: z
-      .string()
-      .trim()
-      .regex(/^09\d{9}$/, 'Use a Philippine mobile number in 09XXXXXXXXX format.'),
+    phone: optionalPhilippinePhone,
     status: z.enum(['active', 'inactive']),
   })
   .strict();
 
-export const customerIdSchema = z.string().uuid();
+export const deleteManagedAccountSchema = z
+  .object({
+    confirmationEmail: email.optional(),
+    currentPassword: z
+      .string()
+      .min(1, 'Enter your current administrator password.')
+      .max(72, 'The password is too long.'),
+  })
+  .strict();
+
+export const managedAccountIdSchema = z.string().uuid();
 
 export type CreateManagedAccountPayload = z.infer<typeof createManagedAccountSchema>;
-export type UpdateCustomerProfilePayload = z.infer<typeof updateCustomerProfileSchema>;
+export type DeleteManagedAccountPayload = z.infer<typeof deleteManagedAccountSchema>;
+export type UpdateManagedProfilePayload = z.infer<typeof updateManagedProfileSchema>;

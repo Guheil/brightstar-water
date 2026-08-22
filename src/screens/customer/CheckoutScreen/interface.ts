@@ -1,4 +1,4 @@
-import type { DeliverySchedule, PaymentMethod } from '@/types';
+import type { PaymentMethod } from '@/types';
 
 export type CheckoutStage =
   | 'location'
@@ -10,10 +10,6 @@ export type CheckoutStage =
 export interface CheckoutStageDefinition {
   id: CheckoutStage;
   label: string;
-}
-
-export interface ScheduleOption extends DeliverySchedule {
-  id: string;
 }
 
 export interface StepVisualProps {
@@ -31,12 +27,12 @@ export interface PaymentChoice {
   description: string;
 }
 
-export interface DeliveryFormState {
-  recipientName: string;
-  phone: string;
-  addressLine: string;
-  area: string;
-  municipality: string;
-  province: string;
-  deliveryNote: string;
+export type CheckoutPlacementPhase =
+  | 'creating_order'
+  | 'refreshing_order_data'
+  | 'opening_confirmation';
+
+export interface CheckoutPlacementProgress {
+  label: string;
+  description: string;
 }

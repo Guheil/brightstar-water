@@ -8,6 +8,7 @@ export type AdminNavigationIcon =
   | 'products'
   | 'customers'
   | 'accounts'
+  | 'history'
   | 'loyalty';
 
 export interface AdminNavigationItem {

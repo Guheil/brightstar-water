@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { getAuditRequestContext } from '@/lib/audit/requestContext';
 import { getAuthenticatedProfile } from '@/lib/auth/server';
 import { createManagedAccountSchema } from '@/lib/admin/validation';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -33,9 +34,11 @@ export async function POST(request: NextRequest) {
   }
 
   const actor = await getAuthenticatedProfile();
-  if (!actor || actor.role !== 'admin' || actor.status !== 'active') {
+  if (!actor || actor.role !== 'admin' || actor.status !== 'active' || actor.onboarding_stage !== 'complete') {
     return NextResponse.json({ error: 'Not authorized.' }, { status: 403, headers: PRIVATE_NO_STORE });
   }
+
+  const auditContext = getAuditRequestContext(request);
 
   const body = await readLimitedJson(request);
   if (!body.ok) {
@@ -96,6 +99,31 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, fullName, password, phone, role } = parsed.data;
+
+    const recordCreationFailure = async (
+      reasonCode: 'auth_rejected' | 'profile_provision_failed' | 'cleanup_failed',
+      targetId: string | null,
+    ) => {
+      const { error } = await adminClient.rpc('record_admin_account_creation_failed', {
+        p_actor_id: actor.id,
+        p_target_id: targetId,
+        p_target_email: email,
+        p_target_name: fullName,
+        p_target_role: role,
+        p_request_id: auditContext.requestId,
+        p_reason_code: reasonCode,
+        p_client_ip: auditContext.clientIp,
+        p_user_agent: auditContext.userAgent,
+      });
+      if (error) {
+        console.error('Failed to record an unsuccessful account creation.', {
+          code: error.code,
+          reasonCode,
+          requestId: auditContext.requestId,
+        });
+      }
+    };
+
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -103,6 +131,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError || !authData.user) {
+      await recordCreationFailure('auth_rejected', null);
       console.error('Supabase Auth rejected an Admin account creation request.', {
         code: authError?.code,
         status: authError?.status,
@@ -128,12 +157,16 @@ export async function POST(request: NextRequest) {
         p_phone: phone,
         p_role: role,
         p_user_id: createdUserId,
+        p_request_id: auditContext.requestId,
+        p_client_ip: auditContext.clientIp,
+        p_user_agent: auditContext.userAgent,
       },
     );
 
     const profile = Array.isArray(profileData) ? profileData[0] : profileData;
     if (profileError || !profile) {
       const cleanup = await adminClient.auth.admin.deleteUser(createdUserId);
+      await recordCreationFailure(cleanup.error ? 'cleanup_failed' : 'profile_provision_failed', createdUserId);
       if (cleanup.error) {
         console.error('Failed to clean up an orphaned Auth user after profile provisioning failed.', {
           userId: createdUserId,

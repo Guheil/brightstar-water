@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { selectCartItemCount, selectCartItems, useAppStore } from '../../../store';
 import { authenticateCustomerFixture } from '@/test-utils/auth';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 
 describe('cross-route cart state', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
+    hydrateCatalogFixtures();
     authenticateCustomerFixture();
   });
 
@@ -49,4 +51,20 @@ describe('cross-route cart state', () => {
     expect(selectCartItems(useAppStore.getState())).toEqual([]);
     expect(useAppStore.getState().cart.lastPlacedOrderId).toBe(placed.value.id);
   });
+  it('can restore the saved customer cart after a logout and fresh authenticated session', () => {
+    const commands = useAppStore.getState().commands;
+    const added = commands.addCartItem('product-water-pump', 2);
+    expect(added.ok).toBe(true);
+    const persisted = structuredClone(selectCartItems(useAppStore.getState()));
+
+    commands.signOut();
+    expect(selectCartItems(useAppStore.getState())).toEqual([]);
+
+    authenticateCustomerFixture();
+    commands.syncCustomerCart('customer-01', persisted);
+
+    expect(selectCartItems(useAppStore.getState())).toEqual(persisted);
+    expect(selectCartItemCount(useAppStore.getState())).toBe(2);
+  });
+
 });

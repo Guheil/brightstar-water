@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   createManagedAccountSchema,
-  updateCustomerProfileSchema,
+  deleteManagedAccountSchema,
+  updateManagedProfileSchema,
 } from './validation';
 
 describe('Admin account validation', () => {
-  it('allows Admin and Deliverer accounts without a phone number', () => {
-    for (const role of ['admin', 'deliverer'] as const) {
+  it('allows first-login accounts to be provisioned without a phone number', () => {
+    for (const role of ['customer', 'admin', 'deliverer'] as const) {
       const result = createManagedAccountSchema.safeParse({
         email: `${role}@example.com`,
         fullName: `${role} Account`,
@@ -16,26 +17,6 @@ describe('Admin account validation', () => {
       });
       expect(result.success).toBe(true);
     }
-  });
-
-  it('requires a valid Philippine mobile number for Customer accounts', () => {
-    const missing = createManagedAccountSchema.safeParse({
-      email: 'customer@example.com',
-      fullName: 'Customer Account',
-      password: 'correct-horse-battery-staple',
-      phone: '',
-      role: 'customer',
-    });
-    const valid = createManagedAccountSchema.safeParse({
-      email: 'customer@example.com',
-      fullName: 'Customer Account',
-      password: 'correct-horse-battery-staple',
-      phone: '09171234567',
-      role: 'customer',
-    });
-
-    expect(missing.success).toBe(false);
-    expect(valid.success).toBe(true);
   });
 
   it('rejects role injection, HTML-like names, and unknown fields', () => {
@@ -67,23 +48,44 @@ describe('Admin account validation', () => {
     expect(massAssignment.success).toBe(false);
   });
 
-  it('only permits customer profile updates with a valid phone and known status', () => {
-    expect(updateCustomerProfileSchema.safeParse({
-      fullName: 'Customer Name',
+  it('validates shared account profile updates without allowing role or email changes', () => {
+    expect(updateManagedProfileSchema.safeParse({
+      fullName: 'Managed Account',
       phone: '09171234567',
       status: 'inactive',
     }).success).toBe(true);
 
-    expect(updateCustomerProfileSchema.safeParse({
-      fullName: 'Customer Name',
+    expect(updateManagedProfileSchema.safeParse({
+      fullName: 'Managed Account',
       phone: '',
       status: 'active',
+    }).success).toBe(true);
+
+    expect(updateManagedProfileSchema.safeParse({
+      fullName: 'Managed Account',
+      phone: '09171234567',
+      status: 'active',
+      role: 'admin',
+    }).success).toBe(false);
+  });
+
+  it('requires a bounded current password for destructive deletion requests', () => {
+    expect(deleteManagedAccountSchema.safeParse({
+      currentPassword: 'current-password',
+    }).success).toBe(true);
+
+    expect(deleteManagedAccountSchema.safeParse({
+      confirmationEmail: 'owner@example.com',
+      currentPassword: 'current-password',
+    }).success).toBe(true);
+
+    expect(deleteManagedAccountSchema.safeParse({
+      currentPassword: '',
     }).success).toBe(false);
 
-    expect(updateCustomerProfileSchema.safeParse({
-      fullName: 'Customer Name',
-      phone: '09171234567',
-      status: 'deleted',
+    expect(deleteManagedAccountSchema.safeParse({
+      currentPassword: 'current-password',
+      targetRole: 'admin',
     }).success).toBe(false);
   });
 });

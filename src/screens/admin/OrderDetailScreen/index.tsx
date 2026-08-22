@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
+import LoadingState from '@/components/ui/LoadingState';
 import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
+import { fetchPublicCatalog } from '@/lib/catalog/client';
+import {
+  adminAssignDelivery, adminConfirmOrder, adminPrepareOrder, adminResolveCancellation,
+  adminUpdateRefund, adminVerifyPayment, fetchAdminPaymentProof, fetchOperationalOrderDetail,
+} from '@/lib/orders/client';
 import { useAppStore } from '@/store';
 import type { RefundStatus } from '@/types';
-import { canRequestRefund, formatPhp } from '@/utils';
+import { canRequestRefund, formatPhp, getEstimatedScheduleText, getPreferredScheduleText } from '@/utils';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
-import { ADMIN_ACTOR_ID, formatDateTime, getStatusTone, humanize } from '../utils';
+import { formatDateTime, getStatusTone, humanize } from '../utils';
 import {
   ActionButton,
   ActionCopy,
@@ -75,12 +81,42 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     state.deliveries.records.find((item) => item.orderId === orderId),
   );
   const deliverers = useAppStore((state) => state.deliveries.deliverers);
-  const commands = useAppStore((state) => state.commands);
+  const mergeOperationalSnapshot = useAppStore((state) => state.commands.mergeOperationalSnapshot);
+  const syncCatalogSnapshot = useAppStore((state) => state.commands.syncCatalogSnapshot);
   const [selectedDeliverer, setSelectedDeliverer] = useState('');
   const [reference, setReference] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [paymentProof, setPaymentProof] = useState<{ paymentId: string; url: string } | null>(null);
+  const [checkedOrderId, setCheckedOrderId] = useState<string | null>(null);
+  const detailChecked = Boolean(order) || checkedOrderId === orderId;
+  const paymentProofUrl = paymentProof?.paymentId === payment?.id
+    ? paymentProof?.url ?? ''
+    : '';
+
+  useEffect(() => {
+    if (order) return;
+    const controller = new AbortController();
+    void fetchOperationalOrderDetail(orderId, controller.signal)
+      .then((snapshot) => mergeOperationalSnapshot(snapshot))
+      .catch(() => undefined)
+      .finally(() => { if (!controller.signal.aborted) setCheckedOrderId(orderId); });
+    return () => controller.abort();
+  }, [mergeOperationalSnapshot, order, orderId]);
+
+
+  useEffect(() => {
+    let active = true;
+    const paymentId = payment?.id;
+    if (!paymentId || !payment.proofAvailable) return () => { active = false; };
+    void fetchAdminPaymentProof(paymentId)
+      .then((url) => { if (active) setPaymentProof({ paymentId, url }); })
+      .catch(() => { if (active) setPaymentProof(null); });
+    return () => { active = false; };
+  }, [payment?.id, payment?.proofAvailable]);
+
+  if (!order && !detailChecked) return <LoadingState label="Loading order" description="Retrieving the latest order state." />;
 
   if (!order) {
     return (
@@ -92,88 +128,36 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
     );
   }
 
-  const reportResult = (
-    result: { ok: true } | { ok: false; error: { message: string } },
-    successTitle: string,
-  ) => {
-    setFeedback(
-      result.ok
-        ? { tone: 'success', title: successTitle, message: 'Order information updated.' }
-        : { tone: 'error', title: 'Update failed', message: result.error.message },
-    );
-  };
-
-  const executePendingAction = () => {
+  const executePendingAction = async () => {
     if (!pendingAction) return;
-
-    switch (pendingAction.kind) {
-      case 'confirm_order':
-        reportResult(commands.confirmOrder(order.id, ADMIN_ACTOR_ID), 'Order confirmed');
-        break;
-      case 'prepare_order':
-        reportResult(
-          commands.markOrderPreparing(order.id, ADMIN_ACTOR_ID),
-          'Preparation started',
-        );
-        break;
-      case 'assign': {
-        const effectiveDeliverer = selectedDeliverer || delivery?.delivererId;
-        if (!effectiveDeliverer) {
-          setFeedback({
-            tone: 'error',
-            title: 'Choose a deliverer',
-            message: 'Select an available deliverer before assigning this order.',
-          });
+    try {
+      switch (pendingAction.kind) {
+        case 'confirm_order': await adminConfirmOrder(order.id); break;
+        case 'prepare_order': await adminPrepareOrder(order.id); break;
+        case 'assign': {
+          const effectiveDeliverer = selectedDeliverer || delivery?.delivererId;
+          if (!effectiveDeliverer) {
+            setFeedback({ tone: 'error', title: 'Choose a deliverer', message: 'Select an available deliverer before assigning this order.' });
+            setPendingAction(null);
+            return;
+          }
+          await adminAssignDelivery(order.id, effectiveDeliverer);
           break;
         }
-        reportResult(
-          commands.assignDelivery(order.id, effectiveDeliverer, ADMIN_ACTOR_ID),
-          delivery?.delivererId ? 'Delivery reassigned' : 'Delivery assigned',
-        );
-        break;
+        case 'verify_payment': await adminVerifyPayment(order.id, reference); break;
+        case 'approve_cancellation': await adminResolveCancellation(order.id, 'approve', reviewNote); break;
+        case 'reject_cancellation': await adminResolveCancellation(order.id, 'reject', reviewNote); break;
+        case 'refund': await adminUpdateRefund(order.id, pendingAction.target, reviewNote); break;
       }
-      case 'verify_payment':
-        reportResult(
-          commands.verifyPayment(order.id, ADMIN_ACTOR_ID, reference),
-          'Payment verified',
-        );
-        break;
-      case 'approve_cancellation':
-        reportResult(
-          commands.resolveCancellation(
-            order.id,
-            ADMIN_ACTOR_ID,
-            'approve',
-            reviewNote,
-          ),
-          'Cancellation approved',
-        );
-        break;
-      case 'reject_cancellation':
-        reportResult(
-          commands.resolveCancellation(
-            order.id,
-            ADMIN_ACTOR_ID,
-            'reject',
-            reviewNote,
-          ),
-          'Cancellation rejected',
-        );
-        break;
-      case 'refund':
-        reportResult(
-          commands.updateRefund(
-            order.id,
-            ADMIN_ACTOR_ID,
-            pendingAction.target,
-            reviewNote,
-          ),
-          `Refund ${humanize(pendingAction.target).toLowerCase()}`,
-        );
-        break;
+      const [operations, catalog] = await Promise.all([fetchOperationalOrderDetail(order.id), fetchPublicCatalog()]);
+      mergeOperationalSnapshot(operations);
+      syncCatalogSnapshot(catalog);
+      setFeedback({ tone: 'success', title: 'Order updated', message: 'Order information updated.' });
+    } catch (error) {
+      setFeedback({ tone: 'error', title: 'Update failed', message: error instanceof Error ? error.message : 'The order could not be updated.' });
+    } finally {
+      setPendingAction(null);
     }
-
-    setPendingAction(null);
   };
 
   const cancellationRequested = order.cancellation?.status === 'requested';
@@ -215,7 +199,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <DetailTerm>Customer</DetailTerm>
               <DetailValue>
                 {customer ? (
-                  <InlineLink href={`/admin/customers/${customer.id}`}>
+                  <InlineLink href={`/admin/accounts/${customer.id}`}>
                     {customer.displayName}
                   </InlineLink>
                 ) : (
@@ -226,10 +210,10 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <DetailValue>{customer?.phonePlaceholder ?? 'Not available'}</DetailValue>
               <DetailTerm>Placed</DetailTerm>
               <DetailValue>{formatDateTime(order.placedAt)}</DetailValue>
-              <DetailTerm>Delivery schedule</DetailTerm>
-              <DetailValue>
-                {order.deliverySchedule.date} · {order.deliverySchedule.windowLabel}
-              </DetailValue>
+              <DetailTerm>Estimated arrival</DetailTerm>
+              <DetailValue>{getEstimatedScheduleText(order.deliverySchedule)}</DetailValue>
+              <DetailTerm>Customer preference</DetailTerm>
+              <DetailValue>{getPreferredScheduleText(order.deliverySchedule) ?? 'Earliest available'}</DetailValue>
               <DetailTerm>Customer note</DetailTerm>
               <DetailValue>{order.customerNote ?? 'No customer note.'}</DetailValue>
               <DetailTerm>Inventory state</DetailTerm>
@@ -429,13 +413,13 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             <ActionPanel>
               <ActionTitle>GCash verification</ActionTitle>
               <ActionCopy>Review the customer’s payment screenshot, then record the payment reference if it is visible.</ActionCopy>
-              {payment.proofImageDataUrl ? (
+              {paymentProofUrl ? (
                 <>
                   <PaymentProofImage
                     alt="Customer GCash payment screenshot"
-                    src={payment.proofImageDataUrl}
+                    src={paymentProofUrl}
                   />
-                  <ActionCopy>{payment.proofFileName ?? 'Payment screenshot'}</ActionCopy>
+                  <ActionCopy>Payment screenshot</ActionCopy>
                 </>
               ) : (
                 <ActionCopy>No payment screenshot was attached to this order.</ActionCopy>
@@ -605,7 +589,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
         confirmLabel={pendingAction?.label ?? 'Confirm'}
         description={pendingAction?.description ?? ''}
         onClose={() => setPendingAction(null)}
-        onConfirm={executePendingAction}
+        onConfirm={() => void executePendingAction()}
         open={Boolean(pendingAction)}
         title={pendingAction?.title ?? 'Confirm update'}
       />

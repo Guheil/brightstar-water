@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { STOREFRONT_MEDIA } from '@/config';
-import { PRODUCT_DATA } from '@/data';
+import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
 import type { MrjeProductPreview } from './interface';
 import {
@@ -85,18 +85,19 @@ import {
   ViewAllLink,
 } from './elements';
 
-const products: readonly MrjeProductPreview[] = PRODUCT_DATA.filter(
-  (product) => product.category === 'gas',
-).map((product) => ({
-  id: product.id,
-  imageAlt: product.imageAlt,
-  imageSrc: product.imageSrc,
-  name: product.name,
-  shortDescription: product.shortDescription,
-  price: formatPhp(product.priceCentavos),
-}));
-
 export default function MrjeHomeScreen() {
+  const catalogProducts = useAppStore((state) => state.catalog.products);
+  const products: readonly MrjeProductPreview[] = catalogProducts
+    .filter((product) => product.category === 'gas' && product.isActive)
+    .slice(0, 4)
+    .map((product) => ({
+      id: product.id,
+      imageAlt: product.imageAlt,
+      imageSrc: product.imageSrc,
+      name: product.name,
+      shortDescription: product.shortDescription,
+      price: formatPhp(product.priceCentavos),
+    }));
   const rootRef = useRef<HTMLDivElement>(null);
 
   useGSAP(

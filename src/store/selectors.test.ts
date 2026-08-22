@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { selectProductsWithAvailability } from './selectors';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 import { useAppStore } from './store';
 
 describe('selectProductsWithAvailability', () => {
+  beforeEach(() => {
+    useAppStore.getState().commands.resetAppState();
+    hydrateCatalogFixtures();
+  });
   it('returns the same snapshot while catalog and inventory references are unchanged', () => {
     const state = useAppStore.getState();
 
@@ -18,6 +23,7 @@ describe('selectProductsWithAvailability', () => {
     const nextState = {
       ...originalState,
       catalog: {
+        ...originalState.catalog,
         products: originalState.catalog.products.map((product, index) =>
           index === 0 ? { ...product, updatedAt: '2026-08-16T00:00:00.000Z' } : product,
         ),

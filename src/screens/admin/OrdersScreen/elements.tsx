@@ -72,3 +72,12 @@ export const ResultCount = styled('p')(({ theme }) => ({
 }));
 
 export const ResultPagination = styled(Pagination)(() => ({}));
+
+export const LoadMoreButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(5.5),
+  paddingInline: theme.spacing(2.5),
+  border: `1px solid ${theme.vars.palette.divider}`,
+  color: theme.vars.palette.text.primary,
+  backgroundColor: theme.vars.palette.background.paper,
+  '&:hover': { backgroundColor: theme.vars.palette.action.hover },
+}));

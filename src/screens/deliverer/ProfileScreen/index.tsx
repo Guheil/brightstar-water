@@ -7,7 +7,7 @@ import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog';
 import { signOutCurrentUser } from '@/lib/auth/client';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
-import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
+import { getActiveDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
 import {
   Details,
   Label,
@@ -26,6 +26,7 @@ import {
 } from './elements';
 
 export default function ProfileScreen() {
+  const currentDelivererId = useAppStore(getActiveDelivererId);
   const router = useRouter();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const profile = useAppStore((state) =>

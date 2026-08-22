@@ -3,6 +3,8 @@
 import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { useAppStore } from '@/store';
+import { formatPhp } from '@/utils';
 import type {
   HomeCategory,
   HomeDeliveryZone,
@@ -86,36 +88,6 @@ const categories: HomeCategory[] = [
   },
 ];
 
-const featuredProducts: HomeProduct[] = [
-  {
-    id: 'product-gas-11kg',
-    name: '11 kg LPG cylinder',
-    detail: 'Household cylinder refill or exchange',
-    price: '₱980',
-    image: '/images/product-lpg-11kg.webp',
-    imageAlt: 'Orange 11-kilogram LPG cylinder',
-    tone: 'gas',
-  },
-  {
-    id: 'product-water-refill',
-    name: '5-gallon water refill',
-    detail: 'Purified water for your existing container',
-    price: '₱45',
-    image: '/images/product-water-5gal.webp',
-    imageAlt: 'Five-gallon purified water container',
-    tone: 'water',
-  },
-  {
-    id: 'product-water-bottles',
-    name: '1-liter water pack',
-    detail: 'Six bottles for home or small events',
-    price: '₱150',
-    image: '/images/product-water-bottles.webp',
-    imageAlt: 'Six clear one-liter purified water bottles',
-    tone: 'water',
-  },
-];
-
 const deliveryZones: HomeDeliveryZone[] = [
   { distance: '≤ 3 km', fee: 'Free' },
   { distance: '≤ 6 km', fee: '₱30' },
@@ -123,6 +95,20 @@ const deliveryZones: HomeDeliveryZone[] = [
 ];
 
 export default function HomeScreen() {
+  const catalogProducts = useAppStore((state) => state.catalog.products);
+  const featuredProducts: HomeProduct[] = catalogProducts
+    .filter((product) => product.isActive)
+    .sort((left, right) => Number(right.isFeatured) - Number(left.isFeatured) || left.sortOrder - right.sortOrder)
+    .slice(0, 3)
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      detail: product.shortDescription,
+      price: formatPhp(product.priceCentavos),
+      image: product.imageSrc,
+      imageAlt: product.imageAlt,
+      tone: product.category,
+    }));
   const rootRef = useRef<HTMLDivElement>(null);
 
   useGSAP(

@@ -21,3 +21,9 @@ export type { StatusTextProps, StatusTone } from './StatusText/interface';
 
 export { default as LogoutConfirmDialog } from './LogoutConfirmDialog';
 export type { LogoutConfirmDialogProps } from './LogoutConfirmDialog/interface';
+
+export { default as AddToCartConfirmDialog } from './AddToCartConfirmDialog';
+export type { AddToCartConfirmDialogProps } from './AddToCartConfirmDialog/interface';
+
+export { default as CartAddedToast } from './CartAddedToast';
+export type { CartAddedToastProps } from './CartAddedToast/interface';

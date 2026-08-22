@@ -8,7 +8,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Notice from '@/components/ui/Notice';
 import { loadCurrentAppSession, signOutCurrentUser } from '@/lib/auth/client';
+import { fetchCustomerCart } from '@/lib/cart/client';
 import { ROLE_DESTINATIONS } from '@/lib/auth/session';
+import { profileRequiresOnboarding } from '@/lib/auth/types';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
 import { resolveSafeNextPath } from '@/utils';
@@ -33,6 +35,8 @@ const loginSchema = z.object({
 export default function LoginScreen({ nextPath }: LoginScreenProps) {
   const router = useRouter();
   const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
+  const syncCustomerCart = useAppStore((state) => state.commands.syncCustomerCart);
+  const markCustomerCartFailed = useAppStore((state) => state.commands.markCustomerCartFailed);
   const clearAuthSession = useAppStore((state) => state.commands.signOut);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -63,6 +67,13 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
     }
 
     const current = await loadCurrentAppSession(supabase);
+    if (current.profile && profileRequiresOnboarding(current.profile)) {
+      clearAuthSession();
+      router.replace('/onboarding');
+      router.refresh();
+      return;
+    }
+
     if (!current.session) {
       await signOutCurrentUser();
       clearAuthSession();
@@ -75,6 +86,14 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
     }
 
     syncAuthSession({ session: current.session, phone: current.profile?.phone });
+    if (current.session.user.role === 'customer' && current.session.user.customerId) {
+      const customerId = current.session.user.customerId;
+      try {
+        syncCustomerCart(customerId, await fetchCustomerCart());
+      } catch {
+        markCustomerCartFailed(customerId, 'Your saved cart could not be loaded. New changes will retry automatically.');
+      }
+    }
     const destination = current.session.user.role === 'customer'
       ? resolveSafeNextPath(nextPath, ROLE_DESTINATIONS.customer)
       : ROLE_DESTINATIONS[current.session.user.role];

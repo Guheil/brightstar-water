@@ -124,11 +124,6 @@ export const AddButton = styled(Button)(({ theme }) => ({
   minHeight: theme.spacing(6),
 }));
 
-export const Feedback = styled(Typography)(({ theme }) => ({
-  ...theme.typography.body2,
-  minHeight: theme.spacing(3),
-  color: theme.vars.palette.success.dark,
-}));
 
 export const DeliveryNote = styled(Box)(({ theme }) => ({
   display: 'grid',

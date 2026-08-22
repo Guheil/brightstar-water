@@ -44,6 +44,7 @@ export function updateCustomerState(
   };
   useAppStore.setState((current) => ({
     customers: {
+      ...current.customers,
       records: current.customers.records.map((item) =>
         item.id === customerId ? updatedCustomer : item,
       ),

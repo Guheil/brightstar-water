@@ -1,10 +1,10 @@
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
 
 export const LogoutDialog = styled(Dialog)(({ theme }) => ({
@@ -14,6 +14,13 @@ export const LogoutDialog = styled(Dialog)(({ theme }) => ({
     margin: theme.spacing(2),
     borderRadius: theme.radii.control,
     boxShadow: theme.shadows[8],
+    willChange: 'transform',
+  },
+  '& .MuiDialog-container[data-dialog-motion-state="exited"] .MuiDialog-paper': {
+    visibility: 'hidden',
+  },
+  '& .MuiDialog-container[data-dialog-motion-state="entering"] .MuiDialog-paper, & .MuiDialog-container[data-dialog-motion-state="exiting"] .MuiDialog-paper': {
+    overflow: 'hidden',
   },
 }));
 
@@ -33,8 +40,9 @@ export const WarningMark = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: theme.radii.control,
-  backgroundColor: theme.vars.palette.warning.light,
-  color: theme.vars.palette.warning.dark,
+  backgroundColor: theme.vars.palette.warning.main,
+  color: theme.vars.palette.warning.contrastText,
+  willChange: 'transform, opacity',
 
   '& svg': {
     width: theme.spacing(2.5),
@@ -48,6 +56,7 @@ export const TitleText = styled('span')(({ theme }) => ({
 
 export const LogoutDialogContent = styled(DialogContent)(({ theme }) => ({
   padding: theme.spacing(0, 3, 3),
+  willChange: 'opacity',
 }));
 
 export const LogoutDialogText = styled(DialogContentText)(({ theme }) => ({
@@ -61,6 +70,7 @@ export const LogoutDialogActions = styled(DialogActions)(({ theme }) => ({
   borderTopWidth: theme.spacing(0.125),
   borderTopStyle: 'solid',
   borderTopColor: theme.vars.palette.divider,
+  willChange: 'opacity',
 
   [theme.breakpoints.down('sm')]: {
     '& > :not(style) ~ :not(style)': {

@@ -3,7 +3,7 @@
 import { CircleCheckBig } from 'lucide-react';
 import { EmptyState } from '@/components';
 import { useAppStore } from '@/store';
-import { formatPhp } from '@/utils';
+import { formatPhp, getEstimatedScheduleText, getPreferredScheduleText } from '@/utils';
 import { useCustomerCart } from '../_shared/CustomerAreaShell';
 import {
   Actions,
@@ -31,6 +31,7 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
     state.payments.records.find((item) => item.orderId === orderId),
   );
   const { lastPlacedOrderId } = useCustomerCart();
+  const preferredSchedule = order ? getPreferredScheduleText(order.deliverySchedule) : null;
 
   if (!order) {
     return (
@@ -59,7 +60,8 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
         <ReferencePanel>
           <ReferenceItem><dt>Order reference</dt><dd>{order.reference}</dd></ReferenceItem>
           <ReferenceItem><dt>Total</dt><dd>{formatPhp(order.totals.totalCentavos)}</dd></ReferenceItem>
-          <ReferenceItem><dt>Delivery date</dt><dd>{order.deliverySchedule.date}</dd></ReferenceItem>
+          <ReferenceItem><dt>Estimated arrival</dt><dd>{getEstimatedScheduleText(order.deliverySchedule)}</dd></ReferenceItem>
+          <ReferenceItem><dt>Delivery preference</dt><dd>{preferredSchedule ?? 'Earliest available'}</dd></ReferenceItem>
           <ReferenceItem>
             <dt>Payment state</dt>
             <dd>{payment?.status.replaceAll('_', ' ') ?? 'Not available'}</dd>

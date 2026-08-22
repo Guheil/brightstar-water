@@ -1,18 +1,30 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import type { ProfileStatus, SupabaseProfile } from '@/lib/auth/types';
+import type {
+  OnboardingStage,
+  ProfileStatus,
+  SupabaseProfile,
+} from '@/lib/auth/types';
 import type { UserRole } from '@/types';
 import type {
   AdminProfileListFilters,
   AdminProfileListResult,
 } from './types';
-import { customerIdSchema } from './validation';
+import { managedAccountIdSchema } from './validation';
 
 export const ADMIN_PROFILE_PAGE_SIZE = 25;
 
 const ROLE_VALUES: readonly UserRole[] = ['customer', 'admin', 'deliverer'];
 const STATUS_VALUES: readonly ProfileStatus[] = ['active', 'inactive'];
+const SETUP_VALUES: readonly OnboardingStage[] = [
+  'password_required',
+  'profile_required',
+  'complete',
+];
+
+const PROFILE_SELECT =
+  'id,email,full_name,phone,role,status,account_origin,onboarding_stage,onboarding_password_changed_at,onboarding_completed_at,created_at,updated_at';
 
 export function sanitizeAdminSearchQuery(value: unknown): string {
   if (typeof value !== 'string') return '';
@@ -28,6 +40,7 @@ export function parseAdminProfileFilters(
   const pageRaw = Array.isArray(input.page) ? input.page[0] : input.page;
   const roleRaw = Array.isArray(input.role) ? input.role[0] : input.role;
   const statusRaw = Array.isArray(input.status) ? input.status[0] : input.status;
+  const setupRaw = Array.isArray(input.setup) ? input.setup[0] : input.setup;
   const queryRaw = Array.isArray(input.q) ? input.q[0] : input.q;
   const parsedPage = Number.parseInt(pageRaw ?? '1', 10);
 
@@ -35,6 +48,9 @@ export function parseAdminProfileFilters(
     page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
     query: sanitizeAdminSearchQuery(queryRaw),
     role: ROLE_VALUES.includes(roleRaw as UserRole) ? (roleRaw as UserRole) : undefined,
+    setup: SETUP_VALUES.includes(setupRaw as OnboardingStage)
+      ? (setupRaw as OnboardingStage)
+      : undefined,
     status: STATUS_VALUES.includes(statusRaw as ProfileStatus)
       ? (statusRaw as ProfileStatus)
       : undefined,
@@ -55,6 +71,19 @@ async function countProfiles(role?: UserRole, status?: ProfileStatus): Promise<n
   return count ?? 0;
 }
 
+async function countActiveReadyAdmins(): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'admin')
+    .eq('status', 'active')
+    .eq('onboarding_stage', 'complete');
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function listManagedProfiles(
   filters: AdminProfileListFilters,
 ): Promise<AdminProfileListResult> {
@@ -63,69 +92,25 @@ export async function listManagedProfiles(
   let countQuery = supabase.from('profiles').select('id', { count: 'exact', head: true });
   if (filters.role) countQuery = countQuery.eq('role', filters.role);
   if (filters.status) countQuery = countQuery.eq('status', filters.status);
+  if (filters.setup) countQuery = countQuery.eq('onboarding_stage', filters.setup);
   if (filters.query) countQuery = countQuery.or(safeSearchFilter(filters.query));
 
-  const [countResult, customerCount, adminCount, delivererCount, activeCount, inactiveCount] =
-    await Promise.all([
-      countQuery,
-      countProfiles('customer'),
-      countProfiles('admin'),
-      countProfiles('deliverer'),
-      countProfiles(undefined, 'active'),
-      countProfiles(undefined, 'inactive'),
-    ]);
-
-  if (countResult.error) throw countResult.error;
-
-  const totalCount = countResult.count ?? 0;
-  const pageCount = Math.max(1, Math.ceil(totalCount / ADMIN_PROFILE_PAGE_SIZE));
-  const page = Math.min(filters.page, pageCount);
-  const offset = (page - 1) * ADMIN_PROFILE_PAGE_SIZE;
-  const end = offset + ADMIN_PROFILE_PAGE_SIZE - 1;
-
-  let listQuery = supabase
-    .from('profiles')
-    .select('id,email,full_name,phone,role,status,created_at,updated_at')
-    .order('created_at', { ascending: false })
-    .range(offset, end);
-
-  if (filters.role) listQuery = listQuery.eq('role', filters.role);
-  if (filters.status) listQuery = listQuery.eq('status', filters.status);
-  if (filters.query) listQuery = listQuery.or(safeSearchFilter(filters.query));
-
-  const { data, error } = await listQuery;
-  if (error) throw error;
-
-  return {
-    activeCount,
-    adminCount,
+  const [
+    countResult,
     customerCount,
+    adminCount,
     delivererCount,
+    activeCount,
     inactiveCount,
-    page,
-    pageCount,
-    profiles: (data ?? []) as SupabaseProfile[],
-    totalCount,
-  };
-}
-
-export async function listCustomers(
-  filters: Omit<AdminProfileListFilters, 'role'>,
-): Promise<AdminProfileListResult> {
-  const supabase = await createClient();
-
-  let countQuery = supabase
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .eq('role', 'customer');
-  if (filters.status) countQuery = countQuery.eq('status', filters.status);
-  if (filters.query) countQuery = countQuery.or(safeSearchFilter(filters.query));
-
-  const [countResult, activeCount, inactiveCount, customerCount] = await Promise.all([
+    activeAdminCount,
+  ] = await Promise.all([
     countQuery,
-    countProfiles('customer', 'active'),
-    countProfiles('customer', 'inactive'),
     countProfiles('customer'),
+    countProfiles('admin'),
+    countProfiles('deliverer'),
+    countProfiles(undefined, 'active'),
+    countProfiles(undefined, 'inactive'),
+    countActiveReadyAdmins(),
   ]);
 
   if (countResult.error) throw countResult.error;
@@ -138,21 +123,24 @@ export async function listCustomers(
 
   let listQuery = supabase
     .from('profiles')
-    .select('id,email,full_name,phone,role,status,created_at,updated_at')
-    .eq('role', 'customer')
+    .select(PROFILE_SELECT)
     .order('created_at', { ascending: false })
     .range(offset, end);
+
+  if (filters.role) listQuery = listQuery.eq('role', filters.role);
   if (filters.status) listQuery = listQuery.eq('status', filters.status);
+  if (filters.setup) listQuery = listQuery.eq('onboarding_stage', filters.setup);
   if (filters.query) listQuery = listQuery.or(safeSearchFilter(filters.query));
 
   const { data, error } = await listQuery;
   if (error) throw error;
 
   return {
+    activeAdminCount,
     activeCount,
-    adminCount: 0,
+    adminCount,
     customerCount,
-    delivererCount: 0,
+    delivererCount,
     inactiveCount,
     page,
     pageCount,
@@ -161,16 +149,15 @@ export async function listCustomers(
   };
 }
 
-export async function getCustomerProfile(customerId: string): Promise<SupabaseProfile | null> {
-  const parsedId = customerIdSchema.safeParse(customerId);
+export async function getManagedProfile(accountId: string): Promise<SupabaseProfile | null> {
+  const parsedId = managedAccountIdSchema.safeParse(accountId);
   if (!parsedId.success) return null;
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,email,full_name,phone,role,status,created_at,updated_at')
+    .select(PROFILE_SELECT)
     .eq('id', parsedId.data)
-    .eq('role', 'customer')
     .maybeSingle();
 
   if (error) throw error;

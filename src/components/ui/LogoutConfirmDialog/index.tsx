@@ -1,4 +1,8 @@
+'use client';
+
 import { LogOut } from 'lucide-react';
+import DialogMotionTransition from '@/components/ui/DialogMotionTransition';
+import { dialogMotion } from '@/theme/transitions';
 import {
   CancelButton,
   ConfirmButton,
@@ -26,19 +30,21 @@ export default function LogoutConfirmDialog({
       aria-labelledby="logout-confirm-title"
       onClose={onClose}
       open={open}
+      slots={{ transition: DialogMotionTransition }}
+      transitionDuration={{ enter: dialogMotion.enterDuration, exit: dialogMotion.exitDuration }}
     >
       <LogoutDialogTitle id="logout-confirm-title">
-        <WarningMark aria-hidden="true">
+        <WarningMark aria-hidden="true" data-modal-icon>
           <LogOut />
         </WarningMark>
-        <TitleText>{title}</TitleText>
+        <TitleText data-modal-title-text>{title}</TitleText>
       </LogoutDialogTitle>
-      <LogoutDialogContent>
+      <LogoutDialogContent data-modal-body>
         <LogoutDialogText id="logout-confirm-description">
           {description}
         </LogoutDialogText>
       </LogoutDialogContent>
-      <LogoutDialogActions>
+      <LogoutDialogActions data-modal-actions>
         <CancelButton autoFocus onClick={onClose}>Cancel</CancelButton>
         <ConfirmButton onClick={onConfirm}>{confirmLabel}</ConfirmButton>
       </LogoutDialogActions>

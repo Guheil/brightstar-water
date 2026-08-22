@@ -7,4 +7,6 @@ export interface DeliveryPinChange extends DeliveryCoordinate {
 export interface DeliveryPinMapProps {
   initialCoordinate?: DeliveryCoordinate;
   onChange: (location: DeliveryPinChange) => void;
+  allowCurrentLocation?: boolean;
+  reportInitial?: boolean;
 }

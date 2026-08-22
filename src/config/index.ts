@@ -10,4 +10,5 @@ export * from './brands';
 export * from './storefrontMedia';
 
 export * from './deliveryMapConfig';
+export * from './deliveryTimingConfig';
 export * from './legal';

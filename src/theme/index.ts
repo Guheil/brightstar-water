@@ -9,7 +9,7 @@ export { radii, shape } from "./shape";
 export type { RadiusTokens } from "./shape";
 export { shadows } from "./shadows";
 export { spacing } from "./spacing";
-export { transitions } from "./transitions";
+export { dialogMotion, transitionDurations, transitions } from "./transitions";
 export {
   displayFontFamily,
   fontVariables,

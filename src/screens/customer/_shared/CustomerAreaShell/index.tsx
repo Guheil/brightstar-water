@@ -25,7 +25,8 @@ const FOOTER_GROUPS = [
     title: 'Account',
     links: [
       { href: '/customer/account', label: 'Account overview' },
-      { href: '/customer/profile', label: 'Profile and addresses' },
+      { href: '/customer/profile', label: 'Profile details' },
+      { href: '/customer/addresses', label: 'Saved delivery addresses' },
       { href: '/customer/loyalty', label: 'Loyalty points' },
     ],
   },

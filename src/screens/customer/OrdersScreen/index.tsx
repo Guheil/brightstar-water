@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { fetchOlderOperationalPage } from '@/lib/orders/client';
+import type { OperationalCursor } from '@/lib/orders/types';
 import { ClipboardList } from 'lucide-react';
 import { EmptyState, StatusText } from '@/components';
 import { useAppStore } from '@/store';
@@ -16,6 +18,7 @@ import {
   HeaderCopy,
   ItemSummary,
   Lead,
+  LoadMoreButton,
   OrderList,
   OrderRow,
   OrdersPage,
@@ -38,6 +41,10 @@ export default function OrdersScreen() {
   const [filter, setFilter] = useState<CustomerOrderFilter>('all');
   const customerId = useAppStore(getActiveCustomerId);
   const orders = useAppStore((state) => state.orders.records);
+  const mergeOperationalSnapshot = useAppStore((state) => state.commands.mergeOperationalSnapshot);
+  const [olderCursor, setOlderCursor] = useState<OperationalCursor | null>(null);
+  const [olderExhausted, setOlderExhausted] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const customerOrders = orders
     .filter((order) => order.customerId === customerId)
     .filter((order) => {
@@ -51,6 +58,25 @@ export default function OrdersScreen() {
       return true;
     })
     .sort((a, b) => b.placedAt.localeCompare(a.placedAt));
+
+  const loadOlderOrders = async () => {
+    if (loadingOlder || olderExhausted || !orders.some((order) => order.customerId === customerId)) return;
+    const allCustomerOrders = orders
+      .filter((order) => order.customerId === customerId)
+      .sort((a, b) => a.placedAt.localeCompare(b.placedAt) || a.id.localeCompare(b.id));
+    const oldest = allCustomerOrders[0];
+    if (!oldest) return;
+    const cursor = olderCursor ?? { placedAt: oldest.placedAt, id: oldest.id };
+    setLoadingOlder(true);
+    try {
+      const result = await fetchOlderOperationalPage(cursor);
+      mergeOperationalSnapshot(result.snapshot);
+      setOlderCursor(result.nextCursor);
+      if (!result.nextCursor) setOlderExhausted(true);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
 
   return (
     <OrdersPage>
@@ -108,6 +134,11 @@ export default function OrdersScreen() {
           title={filter === 'all' ? 'No orders yet' : 'No matching orders'}
         />
       )}
+      {orders.filter((order) => order.customerId === customerId).length >= 100 && !olderExhausted ? (
+        <LoadMoreButton disabled={loadingOlder} onClick={() => void loadOlderOrders()}>
+          {loadingOlder ? 'Loading older orders…' : 'Load older orders'}
+        </LoadMoreButton>
+      ) : null}
     </OrdersPage>
   );
 }

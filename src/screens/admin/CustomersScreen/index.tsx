@@ -6,7 +6,7 @@ import { useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import Notice from '@/components/ui/Notice';
 import StatusText from '@/components/ui/StatusText';
-import { updateCustomerProfileSchema } from '@/lib/admin/validation';
+import { updateManagedProfileSchema } from '@/lib/admin/validation';
 import type { ProfileStatus, SupabaseProfile } from '@/lib/auth/types';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminDataTable from '../components/AdminDataTable';
@@ -77,7 +77,7 @@ export default function CustomersScreen({ className, filters, initialData }: Cus
     customer: SupabaseProfile,
     nextValues: { fullName: string; phone: string; status: ProfileStatus },
   ) => {
-    const parsed = updateCustomerProfileSchema.safeParse(nextValues);
+    const parsed = updateManagedProfileSchema.safeParse(nextValues);
     if (!parsed.success) {
       setFormError(parsed.error.issues[0]?.message ?? 'Check the customer details and try again.');
       return false;

@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { CANCELLATION_POLICY } from '@/config';
 import type {
+  Customer,
   DeliveryAddressSnapshot,
   EntityId,
   ISODateString,
@@ -29,6 +30,7 @@ import {
   commandSuccess,
   createOrderReference,
   createSequenceId,
+  validateDeliverySchedule,
 } from '@/utils';
 import { createInitialAppData } from './initialState';
 import type { AppCommands, AppStore } from './interface';
@@ -80,6 +82,117 @@ const getAuthenticatedCustomerId = (state: AppStore): EntityId | null =>
     : null;
 
 export const useAppStore = create<AppStore>()((set, get) => {
+  const syncCatalogSnapshot: AppCommands['syncCatalogSnapshot'] = ({ products, inventory }) => {
+    set((state) => ({
+      catalog: { products, initialized: true, error: null },
+      inventory: { ...state.inventory, items: inventory },
+    }));
+  };
+
+  const markCatalogLoadFailed: AppCommands['markCatalogLoadFailed'] = (message) => {
+    set((state) => ({ catalog: { ...state.catalog, initialized: true, error: message } }));
+  };
+
+  const syncOperationalSnapshot: AppCommands['syncOperationalSnapshot'] = (input) => {
+    set((state) => {
+      const existingById = new Map<EntityId, Customer>(state.customers.records.map((customer) => [customer.id, customer]));
+      const liveCustomers = input.customers.map((customer) => {
+        const existing = existingById.get(customer.id);
+        return existing ? { ...customer, addresses: existing.addresses } : customer;
+      });
+      const liveIds = new Set(liveCustomers.map((customer) => customer.id));
+      const currentCustomerId = getAuthenticatedCustomerId(state);
+      const retained = state.customers.records.filter((customer) =>
+        !liveIds.has(customer.id) && customer.id === currentCustomerId,
+      );
+      return {
+        orders: { records: structuredClone(input.orders) },
+        deliveries: { records: structuredClone(input.deliveries), deliverers: structuredClone(input.deliverers) },
+        payments: { records: structuredClone(input.payments) },
+        loyalty: { accounts: structuredClone(input.loyaltyAccounts), activity: structuredClone(input.loyaltyActivity) },
+        customers: { ...state.customers, records: [...liveCustomers, ...retained] },
+      };
+    });
+  };
+
+  const mergeOperationalSnapshot: AppCommands['mergeOperationalSnapshot'] = (input) => {
+    const mergeBy = <T,>(current: readonly T[], incoming: readonly T[], keyOf: (value: T) => string): T[] => {
+      const map = new Map(current.map((value) => [keyOf(value), value]));
+      incoming.forEach((value) => map.set(keyOf(value), structuredClone(value)));
+      return [...map.values()];
+    };
+
+    set((state) => {
+      const incomingCustomers = input.customers.map((customer) => {
+        const existing = state.customers.records.find((item) => item.id === customer.id);
+        return existing ? { ...customer, addresses: existing.addresses } : customer;
+      });
+      return {
+        orders: { records: mergeBy(state.orders.records, input.orders, (order) => order.id) },
+        deliveries: {
+          records: mergeBy(state.deliveries.records, input.deliveries, (delivery) => delivery.id),
+          deliverers: mergeBy(state.deliveries.deliverers, input.deliverers, (deliverer) => deliverer.id),
+        },
+        payments: { records: mergeBy(state.payments.records, input.payments, (payment) => payment.id) },
+        loyalty: {
+          accounts: mergeBy(state.loyalty.accounts, input.loyaltyAccounts, (account) => account.customerId),
+          activity: mergeBy(state.loyalty.activity, input.loyaltyActivity, (activity) => activity.id),
+        },
+        customers: {
+          ...state.customers,
+          records: mergeBy(state.customers.records, incomingCustomers, (customer) => customer.id),
+        },
+      };
+    });
+  };
+
+  const syncCustomerAddresses: AppCommands['syncCustomerAddresses'] = (customerId, addresses) => {
+    set((state) => ({
+      customers: {
+        records: state.customers.records.map((customer) =>
+          customer.id === customerId ? { ...customer, addresses: structuredClone(addresses), updatedAt: new Date().toISOString() } : customer,
+        ),
+        addressesInitialized: true,
+        addressesError: null,
+      },
+    }));
+  };
+
+  const markCustomerAddressesFailed: AppCommands['markCustomerAddressesFailed'] = (message) => {
+    set((state) => ({ customers: { ...state.customers, addressesInitialized: true, addressesError: message } }));
+  };
+
+  const syncCustomerCart: AppCommands['syncCustomerCart'] = (customerId, items) => {
+    set((state) => {
+      const activeCustomerId = getAuthenticatedCustomerId(state);
+      if (!activeCustomerId || activeCustomerId !== customerId) return state;
+      return {
+        cart: {
+          items: structuredClone(items),
+          lastPlacedOrderId: state.cart.lastPlacedOrderId,
+          ownerCustomerId: customerId,
+          initialized: true,
+          error: null,
+        },
+      };
+    });
+  };
+
+  const markCustomerCartFailed: AppCommands['markCustomerCartFailed'] = (customerId, message) => {
+    set((state) => {
+      const activeCustomerId = getAuthenticatedCustomerId(state);
+      if (!activeCustomerId || activeCustomerId !== customerId) return state;
+      return {
+        cart: {
+          ...state.cart,
+          ownerCustomerId: customerId,
+          initialized: state.cart.initialized,
+          error: message,
+        },
+      };
+    });
+  };
+
   const syncAuthSession: AppCommands['syncAuthSession'] = ({ session, phone }) => {
     if (!session) {
       set((state) => ({ auth: { ...state.auth, session: null, initialized: true } }));
@@ -95,13 +208,16 @@ export const useAppStore = create<AppStore>()((set, get) => {
       }
 
       const existingCustomer = state.customers.records.find((item) => item.id === customerId);
+      const previousCustomerId = state.auth.session?.user.role === 'customer' ? state.auth.session.user.customerId : undefined;
+      const sameCustomerSession = previousCustomerId === customerId;
+      const addressesInitialized = sameCustomerSession ? state.customers.addressesInitialized : false;
       const nextCustomer = {
         id: customerId,
         displayName: session.user.displayName,
         email: session.user.email,
         phonePlaceholder: phone ?? existingCustomer?.phonePlaceholder ?? '',
         status: 'active' as const,
-        addresses: existingCustomer?.addresses ?? [],
+        addresses: addressesInitialized ? existingCustomer?.addresses ?? [] : [],
         createdAt: existingCustomer?.createdAt ?? occurredAt,
         updatedAt: occurredAt,
       };
@@ -110,9 +226,20 @@ export const useAppStore = create<AppStore>()((set, get) => {
         : [nextCustomer, ...state.customers.records];
       const hasLoyaltyAccount = state.loyalty.accounts.some((item) => item.customerId === customerId);
 
+      const cart = sameCustomerSession
+        ? state.cart
+        : {
+            items: [],
+            lastPlacedOrderId: null,
+            ownerCustomerId: customerId,
+            initialized: false,
+            error: null,
+          };
+
       return {
         auth: { ...state.auth, session, initialized: true },
-        customers: { records: customers },
+        cart,
+        customers: { records: customers, addressesInitialized, addressesError: addressesInitialized ? state.customers.addressesError : null },
         loyalty: hasLoyaltyAccount
           ? state.loyalty
           : {
@@ -129,7 +256,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
   const signOut: AppCommands['signOut'] = () => {
     set((state) => ({
       auth: { ...state.auth, session: null, initialized: true },
-      cart: { items: [], lastPlacedOrderId: null },
+      cart: { items: [], lastPlacedOrderId: null, ownerCustomerId: null, initialized: false, error: null },
+      customers: { ...state.customers, addressesInitialized: false, addressesError: null },
+      orders: { records: [] },
+      deliveries: { records: [], deliverers: [] },
+      payments: { records: [] },
+      loyalty: { accounts: [], activity: [] },
     }));
   };
 
@@ -182,7 +314,10 @@ export const useAppStore = create<AppStore>()((set, get) => {
     };
     set({
       customers: {
+        ...state.customers,
         records: state.customers.records.map((item) => item.id === customer.id ? nextCustomer : item),
+        addressesInitialized: true,
+        addressesError: null,
       },
       meta: { ...state.meta, nextAddressSequence: state.meta.nextAddressSequence + 1 },
     });
@@ -191,8 +326,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
 
   const addCartItem: AppCommands['addCartItem'] = (productId, quantity = 1) => {
     const state = get();
-    if (!getAuthenticatedCustomerId(state)) {
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId) {
       return commandFailure('not_allowed', 'Sign in or create a customer account to start an order.');
+    }
+    if (!state.cart.initialized || state.cart.ownerCustomerId !== activeCustomerId) {
+      return commandFailure('conflict', 'Your saved cart is still loading. Please try again.');
     }
     const product = state.catalog.products.find((item) => item.id === productId);
     const inventoryItem = state.inventory.items.find((item) => item.productId === productId);
@@ -229,8 +368,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
     quantity,
   ) => {
     const state = get();
-    if (!getAuthenticatedCustomerId(state)) {
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId) {
       return commandFailure('not_allowed', 'Sign in to update your cart.');
+    }
+    if (!state.cart.initialized || state.cart.ownerCustomerId !== activeCustomerId) {
+      return commandFailure('conflict', 'Your saved cart is still loading. Please try again.');
     }
     const current = state.cart.items.find((item) => item.productId === productId);
     if (!current) return commandFailure('not_found', 'Cart item not found.');
@@ -261,7 +404,9 @@ export const useAppStore = create<AppStore>()((set, get) => {
   };
 
   const removeCartItem: AppCommands['removeCartItem'] = (productId) => {
-    if (!getAuthenticatedCustomerId(get())) return;
+    const state = get();
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId || !state.cart.initialized || state.cart.ownerCustomerId !== activeCustomerId) return;
     set((state) => ({
       cart: {
         ...state.cart,
@@ -271,8 +416,10 @@ export const useAppStore = create<AppStore>()((set, get) => {
   };
 
   const clearCart: AppCommands['clearCart'] = () => {
-    if (!getAuthenticatedCustomerId(get())) return;
-    set((state) => ({ cart: { ...state.cart, items: [] } }));
+    const state = get();
+    const activeCustomerId = getAuthenticatedCustomerId(state);
+    if (!activeCustomerId || !state.cart.initialized || state.cart.ownerCustomerId !== activeCustomerId) return;
+    set((state) => ({ cart: { ...state.cart, items: [], error: null } }));
   };
 
   const setLastPlacedOrderId: AppCommands['setLastPlacedOrderId'] = (orderId) => {
@@ -357,6 +504,11 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const deliveryQuote = calculateDeliveryFee(address.distanceKm);
     if (!deliveryQuote.serviceable) {
       return commandFailure('outside_service_area', deliveryQuote.label, 'deliveryAddressId');
+    }
+
+    const scheduleError = validateDeliverySchedule(input.deliverySchedule, address.distanceKm);
+    if (scheduleError) {
+      return commandFailure('invalid_input', scheduleError, 'deliverySchedule');
     }
 
     const occurredAt = resolveTimestamp(input.placedAt);
@@ -1561,6 +1713,14 @@ export const useAppStore = create<AppStore>()((set, get) => {
     ...createInitialAppData(),
     commands: {
       syncAuthSession,
+      syncCatalogSnapshot,
+      syncOperationalSnapshot,
+      mergeOperationalSnapshot,
+      syncCustomerAddresses,
+      syncCustomerCart,
+      markCustomerCartFailed,
+      markCustomerAddressesFailed,
+      markCatalogLoadFailed,
       signOut,
       saveDeliveryAddress,
       addCartItem,

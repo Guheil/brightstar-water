@@ -5,9 +5,11 @@ import FormControl from '@mui/material/FormControl';
 import Radio from '@mui/material/Radio';
 import DelivererShell from '@/components/layout/DelivererShell';
 import Notice from '@/components/ui/Notice';
+import { delivererFailDelivery, fetchOperationalSnapshot } from '@/lib/orders/client';
 import { selectDeliveryById, selectOrderById, useAppStore } from '@/store';
 import type { DeliveryFailureReason } from '@/types';
-import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
+import { getEffectiveScheduleText } from '@/utils';
+import { delivererNavigation } from '../_shared/delivererNavigation';
 import {
   Actions,
   CancelLink,
@@ -36,7 +38,7 @@ export default function FailureReportScreen({
 }: FailureReportScreenProps) {
   const delivery = useAppStore(selectDeliveryById(deliveryId));
   const order = useAppStore(selectOrderById(delivery?.orderId ?? ''));
-  const failDelivery = useAppStore((state) => state.commands.failDelivery);
+  const syncOperationalSnapshot = useAppStore((state) => state.commands.syncOperationalSnapshot);
   const [reason, setReason] = useState<DeliveryFailureReason>('customer_unavailable');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
@@ -57,19 +59,15 @@ export default function FailureReportScreen({
     );
   }
 
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = failDelivery(
-      delivery.id,
-      currentDelivererId,
-      reason,
-      note.trim() || undefined,
-    );
-    setMessage(
-      result.ok
-        ? 'Failure recorded. Admin can now review the order.'
-        : result.error.message,
-    );
+    try {
+      await delivererFailDelivery(delivery.id, reason, note.trim() || undefined);
+      syncOperationalSnapshot(await fetchOperationalSnapshot());
+      setMessage('Failure recorded. Admin can now review the order.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The failure report could not be recorded.');
+    }
   };
 
   return (
@@ -78,7 +76,7 @@ export default function FailureReportScreen({
       navigation={delivererNavigation}
       activeHref="/deliverer/deliveries"
       headerTitle={`Report issue · ${order.reference}`}
-      headerMeta={delivery.schedule.windowLabel}
+      headerMeta={getEffectiveScheduleText(delivery.schedule)}
     >
       <Root>
         <Notice tone="warning" title="This action updates the delivery">
@@ -89,7 +87,7 @@ export default function FailureReportScreen({
           Choose the clearest operational reason. Add a short note only when it
           helps Admin decide what should happen next.
         </Intro>
-        <FailureForm onSubmit={submit}>
+        <FailureForm onSubmit={(event) => void submit(event)}>
           <FormControl component="fieldset">
             <Legend>Reason for failure</Legend>
             <ReasonGroup

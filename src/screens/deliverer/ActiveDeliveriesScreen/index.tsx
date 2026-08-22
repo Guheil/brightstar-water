@@ -5,8 +5,8 @@ import DelivererShell from '@/components/layout/DelivererShell';
 import EmptyState from '@/components/ui/EmptyState';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
-import { formatPhp } from '@/utils';
-import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
+import { formatDeliveryDate, formatPhp } from '@/utils';
+import { getActiveDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
 import {
   Address,
   Arrow,
@@ -32,6 +32,7 @@ function statusLabel(status: string) {
 }
 
 export default function ActiveDeliveriesScreen() {
+  const currentDelivererId = useAppStore(getActiveDelivererId);
   const deliveryRecords = useAppStore((state) => state.deliveries.records);
   const deliveries = useMemo(
     () =>
@@ -45,7 +46,7 @@ export default function ActiveDeliveriesScreen() {
           const dateOrder = a.schedule.date.localeCompare(b.schedule.date);
           return dateOrder || a.schedule.windowLabel.localeCompare(b.schedule.windowLabel);
         }),
-    [deliveryRecords],
+    [currentDelivererId, deliveryRecords],
   );
   const customers = useAppStore((state) => state.customers.records);
   const orders = useAppStore((state) => state.orders.records);
@@ -91,7 +92,7 @@ export default function ActiveDeliveriesScreen() {
                   <DeliveryLink href={`/deliverer/deliveries/${delivery.id}`} $tone={tone}>
                     <TimeBlock>
                       <Time>{delivery.schedule.windowLabel}</Time>
-                      <Secondary>{delivery.schedule.date}</Secondary>
+                      <Secondary>{formatDeliveryDate(delivery.schedule.date)}</Secondary>
                     </TimeBlock>
                     <Address>
                       <Primary>{customer?.displayName ?? 'Customer'}</Primary>

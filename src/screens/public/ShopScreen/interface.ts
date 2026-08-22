@@ -15,6 +15,7 @@ export interface ShopScreenProps {
 
 export interface ShopProductView {
   availableStock: number;
+  maxAddableQuantity: number;
   category: ProductCategory;
   id: string;
   imageAlt: string;

@@ -15,10 +15,14 @@ export interface LegalDocumentDefinition {
 }
 
 export interface RegistrationAgreementDialogProps {
+  acceptLabel?: string;
+  description?: string;
   onAccept: () => void | Promise<void>;
   onClose: () => void;
   open: boolean;
+  title?: string;
   working?: boolean;
+  workingLabel?: string;
 }
 
 export interface DocumentNavButtonProps {

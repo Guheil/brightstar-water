@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth/server';
 import {
-  customerIdSchema,
-  updateCustomerProfileSchema,
+  managedAccountIdSchema,
+  updateManagedProfileSchema,
 } from '@/lib/admin/validation';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeAdminRateLimit } from '@/lib/security/rateLimit';
@@ -40,12 +40,12 @@ export async function PATCH(request: NextRequest, context: CustomerRouteContext)
   }
 
   const actor = await getAuthenticatedProfile();
-  if (!actor || actor.role !== 'admin' || actor.status !== 'active') {
+  if (!actor || actor.role !== 'admin' || actor.status !== 'active' || actor.onboarding_stage !== 'complete') {
     return NextResponse.json({ error: 'Not authorized.' }, { status: 403, headers: PRIVATE_NO_STORE });
   }
 
   const { id } = await context.params;
-  const parsedId = customerIdSchema.safeParse(id);
+  const parsedId = managedAccountIdSchema.safeParse(id);
   if (!parsedId.success) {
     return NextResponse.json({ error: 'Customer not found.' }, { status: 404, headers: PRIVATE_NO_STORE });
   }
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, context: CustomerRouteContext)
 
   const json = body.value;
 
-  const parsed = updateCustomerProfileSchema.safeParse(json);
+  const parsed = updateManagedProfileSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
       {

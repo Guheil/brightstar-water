@@ -45,8 +45,13 @@ export const customerMegaMenuGroups: readonly CustomerMegaMenuGroup[] = [
         href: '/customer/loyalty',
       },
       {
+        label: 'Saved delivery addresses',
+        description: 'Manage Home, Work, and other pinned locations.',
+        href: '/customer/addresses',
+      },
+      {
         label: 'Account overview',
-        description: 'Manage profile and delivery information.',
+        description: 'Manage your customer account and profile.',
         href: '/customer/account',
       },
     ],

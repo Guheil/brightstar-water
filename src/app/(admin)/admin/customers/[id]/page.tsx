@@ -1,12 +1,12 @@
-import { getCustomerProfile } from '@/lib/admin/server';
-import CustomerDetailScreen from '@/screens/admin/CustomerDetailScreen';
+import { redirect } from 'next/navigation';
+import { managedAccountIdSchema } from '@/lib/admin/validation';
 
-interface CustomerDetailPageProps {
+interface CustomerDetailRedirectPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function CustomerDetailPage({ params }: CustomerDetailPageProps) {
+export default async function CustomerDetailRedirectPage({ params }: CustomerDetailRedirectPageProps) {
   const { id } = await params;
-  const customer = await getCustomerProfile(id);
-  return <CustomerDetailScreen customer={customer} />;
+  const parsed = managedAccountIdSchema.safeParse(id);
+  redirect(parsed.success ? `/admin/accounts/${parsed.data}` : '/admin/accounts?role=customer');
 }

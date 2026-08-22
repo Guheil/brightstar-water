@@ -7,7 +7,7 @@ import { ClipboardList, PackagePlus, SlidersHorizontal, Truck } from 'lucide-rea
 import { useShallow } from 'zustand/react/shallow';
 import StatusText from '@/components/ui/StatusText';
 import { selectAdminWorkCounts, useAppStore } from '@/store';
-import { formatPhp, getAvailableStock, isLowStock } from '@/utils';
+import { formatPhp, getAvailableStock, getEffectiveScheduleText, isLowStock } from '@/utils';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
   AttentionGrid,
@@ -192,7 +192,7 @@ export default function OverviewScreen({ className }: OverviewScreenProps) {
                     <ItemCopy>
                       <ItemTitle>{delivery.address.recipientName}</ItemTitle>
                       <ItemMeta>
-                        {delivery.schedule.date} · {delivery.schedule.windowLabel}
+                        {getEffectiveScheduleText(delivery.schedule)}
                       </ItemMeta>
                     </ItemCopy>
                     <StatusText tone={getStatusTone(delivery.status)}>

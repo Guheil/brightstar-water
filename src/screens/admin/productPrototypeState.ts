@@ -14,6 +14,7 @@ export function setPrototypeProductActive(
 ) {
   useAppStore.setState((state) => ({
     catalog: {
+      ...state.catalog,
       products: state.catalog.products.map((product) =>
         product.id === productId ? { ...product, isActive, updatedAt } : product,
       ),
@@ -36,6 +37,7 @@ export function quickUpdatePrototypeProduct(
   const updatedProduct = { ...product, ...input, updatedAt };
   useAppStore.setState((current) => ({
     catalog: {
+      ...current.catalog,
       products: current.catalog.products.map((item) =>
         item.id === productId ? updatedProduct : item,
       ),
@@ -77,6 +79,7 @@ export function deletePrototypeProduct(productId: string): CommandResult<Product
 
   useAppStore.setState((current) => ({
     catalog: {
+      ...current.catalog,
       products: current.catalog.products.filter((item) => item.id !== productId),
     },
     inventory: {
@@ -94,6 +97,7 @@ export function deletePrototypeProduct(productId: string): CommandResult<Product
 export function savePrototypeProduct(product: Product, isNew: boolean) {
   useAppStore.setState((state) => ({
     catalog: {
+      ...state.catalog,
       products: isNew
         ? [product, ...state.catalog.products]
         : state.catalog.products.map((item) => (item.id === product.id ? product : item)),

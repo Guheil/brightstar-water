@@ -1,0 +1,26 @@
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Typography from '@mui/material/Typography';
+import { styled } from '@mui/material/styles';
+import { AppLink, PageContainer } from '@/components';
+
+export const Page = styled(PageContainer)(({ theme }) => ({ paddingBlock: theme.spacing(7, 10), [theme.breakpoints.down('sm')]: { paddingBlock: theme.spacing(5, 8) } }));
+export const Header = styled('header')(({ theme }) => ({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'end', gap: theme.spacing(3), paddingBottom: theme.spacing(4), borderBottom: `1px solid ${theme.vars.palette.divider}`, [theme.breakpoints.down('sm')]: { gridTemplateColumns: '1fr', alignItems: 'start' } }));
+export const HeaderCopy = styled(Box)(({ theme }) => ({ display: 'grid', gap: theme.spacing(1.5), maxWidth: '48rem' }));
+export const BackLink = styled(AppLink)(({ theme }) => ({ width: 'fit-content', color: theme.vars.palette.water.main, fontWeight: theme.typography.fontWeightSemiBold, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }));
+export const Title = styled('h1')(({ theme }) => ({ ...theme.typography.h1, margin: 0 }));
+export const Lead = styled(Typography)(({ theme }) => ({ ...theme.typography.bodyLarge, color: theme.vars.palette.text.secondary }));
+export const AddLink = styled(AppLink)(({ theme }) => ({ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: theme.spacing(1, 2), borderRadius: theme.radii.control, backgroundColor: theme.vars.palette.primary.main, color: theme.vars.palette.primary.contrastText, fontWeight: theme.typography.fontWeightSemiBold, textDecoration: 'none', '&:hover': { backgroundColor: theme.vars.palette.primary.dark } }));
+export const List = styled('section')(({ theme }) => ({ display: 'grid', paddingTop: theme.spacing(3) }));
+export const Empty = styled(Box)(({ theme }) => ({ display: 'grid', gap: theme.spacing(2), maxWidth: '38rem', paddingBlock: theme.spacing(7) }));
+export const EmptyTitle = styled(Typography)(({ theme }) => ({ ...theme.typography.h2 }));
+export const EmptyCopy = styled(Typography)(({ theme }) => ({ ...theme.typography.body2, color: theme.vars.palette.text.secondary }));
+export const DeleteDialog = styled(Dialog)({});
+export const DeleteTitle = styled(DialogTitle)(({ theme }) => ({ ...theme.typography.h3 }));
+export const DeleteContent = styled(DialogContent)(({ theme }) => ({ ...theme.typography.body2, color: theme.vars.palette.text.secondary }));
+export const DeleteActions = styled(DialogActions)(({ theme }) => ({ padding: theme.spacing(2, 3, 3) }));
+export const DeleteButton = styled(Button)(({ theme }) => ({ borderRadius: theme.radii.control }));

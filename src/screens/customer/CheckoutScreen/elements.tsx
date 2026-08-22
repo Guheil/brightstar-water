@@ -5,6 +5,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Radio from '@mui/material/Radio';
+import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
@@ -170,6 +171,50 @@ export const ChoiceDescription = styled('span')(({ theme }) => ({
   ...theme.typography.body2,
   color: theme.vars.palette.text.secondary,
 }));
+
+
+export const EstimatePanel = styled('section')(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(1),
+  padding: theme.spacing(2.5),
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.water.main,
+  borderRadius: theme.radii.control,
+  backgroundColor: theme.vars.palette.action.focus,
+}));
+
+export const EstimateLabel = styled('span')(({ theme }) => ({
+  ...theme.typography.caption,
+  color: theme.vars.palette.text.secondary,
+  fontWeight: theme.typography.fontWeightSemiBold,
+}));
+
+export const EstimateValue = styled('strong')(({ theme }) => ({
+  ...theme.typography.h4,
+  color: theme.vars.palette.text.primary,
+}));
+
+export const SchedulePreferencePanel = styled('div')(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(2),
+  paddingTop: theme.spacing(1),
+}));
+
+export const ScheduleFields = styled('div')(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: theme.spacing(2),
+  padding: theme.spacing(2),
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
+  borderRadius: theme.radii.control,
+  [theme.breakpoints.down('sm')]: { gridTemplateColumns: '1fr' },
+}));
+
+export const ScheduleField = styled(TextField)(() => ({}));
+export const ScheduleMenuItem = styled(MenuItem)(() => ({}));
 
 export const NoteField = styled(TextField)({});
 

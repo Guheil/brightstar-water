@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { selectDelivererQueue, useAppStore } from '@/store';
 import { authenticateCustomerFixture } from '@/test-utils/auth';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 import type { CommandResult, Product } from '@/types';
 import {
   saveProductState,
@@ -18,6 +19,7 @@ describe('Admin high-impact workflows', () => {
   beforeEach(() => {
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
+    hydrateCatalogFixtures();
     authenticateCustomerFixture();
   });
 
@@ -260,6 +262,7 @@ describe('Admin high-impact workflows', () => {
 
     const commands = useAppStore.getState().commands;
     commands.resetAppState();
+    hydrateCatalogFixtures();
     authenticateCustomerFixture();
     expect(useAppStore.getState().catalog.products.some((item) => item.id === newProduct.id))
       .toBe(false);

@@ -33,7 +33,11 @@ import {
 export default function CartScreen() {
   const { items, itemCount, removeItem, updateQuantity } = useCustomerCart();
   const products = useAppStore((state) => state.catalog.products);
+  const catalogInitialized = useAppStore((state) => state.catalog.initialized);
+  const catalogError = useAppStore((state) => state.catalog.error);
   const inventory = useAppStore((state) => state.inventory.items);
+  const cartInitialized = useAppStore((state) => state.cart.initialized);
+  const cartError = useAppStore((state) => state.cart.error);
   const lines = items.flatMap((cartItem) => {
     const product = products.find((item) => item.id === cartItem.productId);
     const inventoryItem = inventory.find((item) => item.productId === cartItem.productId);
@@ -47,6 +51,46 @@ export default function CartScreen() {
       unitPriceCentavos: product.priceCentavos,
     })),
   );
+
+  if (cartError && !cartInitialized && !items.length) {
+    return (
+      <CartPage>
+        <EmptyState
+          action={<ContinueLink href="/">Return to storefronts</ContinueLink>}
+          description={cartError}
+          icon={<ShoppingBasket />}
+          title="Saved cart unavailable"
+        />
+      </CartPage>
+    );
+  }
+
+  if (!catalogInitialized || !cartInitialized) {
+    return (
+      <CartPage>
+        <EmptyState
+          description={cartInitialized
+            ? 'Current products and inventory are loading from the database.'
+            : 'Your saved cart is loading securely from your account.'}
+          icon={<ShoppingBasket />}
+          title="Loading your cart"
+        />
+      </CartPage>
+    );
+  }
+
+  if (catalogError || (cartError && !items.length)) {
+    return (
+      <CartPage>
+        <EmptyState
+          action={<ContinueLink href="/">Return to storefronts</ContinueLink>}
+          description={catalogError ?? cartError ?? 'Your cart is temporarily unavailable.'}
+          icon={<ShoppingBasket />}
+          title={catalogError ? 'Catalog unavailable' : 'Cart temporarily unavailable'}
+        />
+      </CartPage>
+    );
+  }
 
   return (
     <CartPage>

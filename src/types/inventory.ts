@@ -19,7 +19,8 @@ export type InventoryAdjustmentSource =
   | 'admin_adjustment'
   | 'order_reservation'
   | 'order_release'
-  | 'order_commit';
+  | 'order_commit'
+  | 'opening_stock';
 
 export interface InventoryAdjustment {
   id: EntityId;

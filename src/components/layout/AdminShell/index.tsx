@@ -5,6 +5,7 @@ import {
   Boxes,
   ClipboardList,
   Gift,
+  History,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -62,6 +63,7 @@ const navigationIcons: Record<AdminNavigationIcon, LucideIcon> = {
   products: Package,
   customers: Users,
   accounts: UserPlus,
+  history: History,
   loyalty: Gift,
 };
 

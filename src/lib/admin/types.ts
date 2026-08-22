@@ -1,5 +1,8 @@
-import type { SupabaseProfile } from '@/lib/auth/types';
-import type { ProfileStatus } from '@/lib/auth/types';
+import type {
+  OnboardingStage,
+  ProfileStatus,
+  SupabaseProfile,
+} from '@/lib/auth/types';
 import type { UserRole } from '@/types';
 
 export type AdminManagedProfile = SupabaseProfile;
@@ -8,10 +11,12 @@ export interface AdminProfileListFilters {
   page: number;
   query: string;
   role?: UserRole;
+  setup?: OnboardingStage;
   status?: ProfileStatus;
 }
 
 export interface AdminProfileListResult {
+  activeAdminCount: number;
   activeCount: number;
   adminCount: number;
   customerCount: number;
@@ -31,7 +36,7 @@ export interface CreateManagedAccountInput {
   role: UserRole;
 }
 
-export interface UpdateCustomerProfileInput {
+export interface UpdateManagedProfileInput {
   fullName: string;
   phone: string;
   status: ProfileStatus;

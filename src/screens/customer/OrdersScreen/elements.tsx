@@ -129,3 +129,13 @@ export const DetailLink = styled(AppLink)(({ theme }) => ({
   '&:hover': { textDecoration: 'underline' },
 }));
 
+
+export const LoadMoreButton = styled(Button)(({ theme }) => ({
+  minHeight: 44,
+  marginTop: theme.spacing(3),
+  paddingInline: theme.spacing(2.5),
+  border: `1px solid ${theme.vars.palette.divider}`,
+  color: theme.vars.palette.text.primary,
+  backgroundColor: theme.vars.palette.background.paper,
+  '&:hover': { backgroundColor: theme.vars.palette.action.hover },
+}));

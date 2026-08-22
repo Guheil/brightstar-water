@@ -16,7 +16,6 @@ const pageSources = [
   'DeliveriesScreen',
   'InventoryScreen',
   'ProductsScreen',
-  'CustomersScreen',
   'AccountsScreen',
   'LoyaltyScreen',
 ].map((name) => read(`src/screens/admin/${name}/index.tsx`));

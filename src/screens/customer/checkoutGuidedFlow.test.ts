@@ -14,8 +14,9 @@ describe('guided customer order flow', () => {
     });
   });
 
-  it('uses a dynamically loaded draggable delivery map', () => {
-    expect(checkout).toContain("dynamic(() => import('../DeliveryPinMap')");
+  it('uses saved addresses in checkout and a draggable map when an address is created', () => {
+    expect(checkout).toContain('<AddressSelector');
+    expect(checkout).toContain('<AddressEditorDialog');
     expect(map).toContain('new Marker({ draggable: true })');
     expect(map).toContain("map.on('click'");
   });
@@ -36,4 +37,28 @@ describe('guided customer order flow', () => {
     expect(authScaffold).toContain("overflow: 'hidden'");
     expect(authScaffold).toContain("overflowY: 'auto'");
   });
+  it('uses a dynamic ETA and keeps the preferred delivery schedule optional', () => {
+    expect(checkout).toContain('Estimated arrival');
+    expect(checkout).toContain('Preferred delivery schedule · Optional');
+    expect(checkout).toContain('Earliest available delivery');
+    expect(checkout).toContain('Preferred delivery date');
+    expect(checkout).toContain('Any available time');
+    expect(checkout).not.toContain('const SCHEDULES');
+    expect(checkout).not.toContain("date: '2026-08-17'");
+  });
+
+  it('puts preferred date bounds on the native input with the MUI 9 slot API', () => {
+    expect(checkout).toContain('slotProps={{ htmlInput: { min: preferredDateBounds.min, max: preferredDateBounds.max } }}');
+    expect(checkout).not.toContain('inputProps={{ min: preferredDateBounds.min, max: preferredDateBounds.max }}');
+  });
+
+  it('shows the real order-placement phases and prevents checkout navigation while the request is active', () => {
+    expect(checkout).toContain("setPlacementPhase('creating_order')");
+    expect(checkout).toContain("setPlacementPhase('refreshing_order_data')");
+    expect(checkout).toContain("setPlacementPhase('opening_confirmation')");
+    expect(checkout).toContain('<LoadingState');
+    expect(checkout).toContain('aria-busy={placing}');
+    expect(checkout).toContain('disabled={placing} onClick={previousStage}');
+  });
+
 });

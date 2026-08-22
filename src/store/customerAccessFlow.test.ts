@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useAppStore } from '@/store';
 import { authenticateCustomerFixture } from '@/test-utils/auth';
+import { hydrateCatalogFixtures } from '@/test-utils/catalog';
 import { calculateMapDistanceKm, DELIVERY_MAP_CONFIG } from '@/config';
 import { resolveSafeNextPath } from '@/utils';
 
 const AT = '2026-08-16T04:30:00.000Z';
 
 describe('customer access and registration flow', () => {
-  beforeEach(() => useAppStore.getState().commands.resetAppState());
+  beforeEach(() => {
+    useAppStore.getState().commands.resetAppState();
+    hydrateCatalogFixtures();
+  });
 
   it('starts signed out with an empty cart and blocks ordering commands', () => {
     const state = useAppStore.getState();

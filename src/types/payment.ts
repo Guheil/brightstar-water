@@ -19,6 +19,7 @@ export interface PaymentRecord {
   /** Payment verification reference recorded with the order. */
   reference?: string;
   proofImageDataUrl?: string;
+  proofAvailable?: boolean;
   proofFileName?: string;
   verifiedAt?: ISODateString;
   paidAt?: ISODateString;

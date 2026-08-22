@@ -1,4 +1,5 @@
 export * from './delivery';
+export * from './deliveryTiming';
 export * from './ids';
 export * from './inventory';
 export * from './loyalty';

@@ -4,3 +4,10 @@
 [auth.email]
 otp_length = 6
 otp_expiry = 3600
+
+# Product photos are public storefront assets. Browser clients never upload
+# directly; the protected Admin API writes validated, server-reencoded WebP files.
+[storage.buckets.product-images]
+public = true
+file_size_limit = "512KB"
+allowed_mime_types = ["image/webp"]

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Notice from '@/components/ui/Notice';
 import { LOYALTY_CONFIG } from '@/config';
+import { adminAdjustLoyalty, fetchOperationalSnapshot } from '@/lib/orders/client';
 import { useAppStore } from '@/store';
 import type { Customer } from '@/types';
 import { formatPhp } from '@/utils';
@@ -11,7 +12,7 @@ import AdminDataTable from '../components/AdminDataTable';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminMetricStrip from '../components/AdminMetricStrip';
-import { ADMIN_ACTOR_ID, formatDateTime, humanize } from '../utils';
+import { formatDateTime, humanize } from '../utils';
 import {
   ActivityItem,
   ActivityList,
@@ -35,7 +36,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
   const customers = useAppStore((state) => state.customers.records);
   const accounts = useAppStore((state) => state.loyalty.accounts);
   const activity = useAppStore((state) => state.loyalty.activity);
-  const adjustLoyalty = useAppStore((state) => state.commands.adjustLoyalty);
+  const syncOperationalSnapshot = useAppStore((state) => state.commands.syncOperationalSnapshot);
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? '');
   const [pointsDelta, setPointsDelta] = useState('');
   const [reason, setReason] = useState('');
@@ -53,7 +54,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
       key: 'customer',
       label: 'Customer',
       render: (customer) => (
-        <CustomerLink href={`/admin/customers/${customer.id}`}>
+        <CustomerLink href={`/admin/accounts/${customer.id}`}>
           {customer.displayName}
         </CustomerLink>
       ),
@@ -92,27 +93,18 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
     setConfirmOpen(true);
   };
 
-  const confirmAdjustment = () => {
-    const result = adjustLoyalty({
-      customerId,
-      pointsDelta: Number(pointsDelta),
-      reason,
-      actorId: ADMIN_ACTOR_ID,
-    });
-    setFeedback(
-      result.ok
-        ? {
-            tone: 'success',
-            title: 'Loyalty balance updated',
-            message: 'The customer balance and loyalty history were updated together.',
-          }
-        : { tone: 'error', title: 'Adjustment failed', message: result.error.message },
-    );
-    if (result.ok) {
+  const confirmAdjustment = async () => {
+    try {
+      await adminAdjustLoyalty(customerId, Number(pointsDelta), reason);
+      syncOperationalSnapshot(await fetchOperationalSnapshot());
+      setFeedback({ tone: 'success', title: 'Loyalty balance updated', message: 'The customer balance and loyalty history were updated together.' });
       setPointsDelta('');
       setReason('');
+    } catch (error) {
+      setFeedback({ tone: 'error', title: 'Adjustment failed', message: error instanceof Error ? error.message : 'The loyalty balance could not be updated.' });
+    } finally {
+      setConfirmOpen(false);
     }
-    setConfirmOpen(false);
   };
 
   return (
@@ -199,7 +191,7 @@ export default function LoyaltyScreen({ className }: LoyaltyScreenProps) {
         confirmLabel="Apply points adjustment"
         description="The customer balance will change and a reasoned loyalty activity record will be added."
         onClose={() => setConfirmOpen(false)}
-        onConfirm={confirmAdjustment}
+        onConfirm={() => void confirmAdjustment()}
         open={confirmOpen}
         title="Apply this loyalty adjustment?"
       />

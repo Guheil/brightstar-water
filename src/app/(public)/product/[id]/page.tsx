@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getProductStorefrontPath } from '@/config';
-import { PRODUCT_DATA } from '@/data';
+import { getPublicProduct } from '@/lib/catalog/server';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -8,13 +8,11 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
-  const product = PRODUCT_DATA.find(
-    (item) => item.id === id || item.slug === id,
-  );
-
-  if (!product) {
+  const record = await getPublicProduct(id);
+  if (!record) {
     redirect('/');
+    return null;
   }
-
-  redirect(getProductStorefrontPath(product.category, product.id));
+  redirect(getProductStorefrontPath(record.product.category, record.product.id));
+  return null;
 }

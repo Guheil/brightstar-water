@@ -2,15 +2,14 @@ import {
   CUSTOMER_DATA,
   DELIVERER_DATA,
   DELIVERY_DATA,
-  INVENTORY_ADJUSTMENT_DATA,
-  INVENTORY_DATA,
   LOYALTY_ACCOUNT_DATA,
   LOYALTY_ACTIVITY_DATA,
   ORDER_DATA,
   PAYMENT_DATA,
-  PRODUCT_DATA,
 } from '@/data';
 import type { AppDataState } from './interface';
+
+const includeOperationalFixtures = process.env.NODE_ENV === 'test';
 
 export const createInitialAppData = (): AppDataState => ({
   auth: {
@@ -18,26 +17,29 @@ export const createInitialAppData = (): AppDataState => ({
     accessNotice: 'Sign in with your verified account to continue.',
     initialized: false,
   },
-  catalog: { products: structuredClone(PRODUCT_DATA) },
+  catalog: { products: [], initialized: false, error: null },
   cart: {
     items: [],
     lastPlacedOrderId: null,
+    ownerCustomerId: null,
+    initialized: false,
+    error: null,
   },
-  customers: { records: structuredClone(CUSTOMER_DATA) },
-  orders: { records: structuredClone(ORDER_DATA) },
+  customers: { records: structuredClone(CUSTOMER_DATA), addressesInitialized: false, addressesError: null },
+  orders: { records: includeOperationalFixtures ? structuredClone(ORDER_DATA) : [] },
   inventory: {
-    items: structuredClone(INVENTORY_DATA),
-    adjustments: structuredClone(INVENTORY_ADJUSTMENT_DATA),
+    items: [],
+    adjustments: [],
   },
   deliveries: {
-    records: structuredClone(DELIVERY_DATA),
-    deliverers: structuredClone(DELIVERER_DATA),
+    records: includeOperationalFixtures ? structuredClone(DELIVERY_DATA) : [],
+    deliverers: includeOperationalFixtures ? structuredClone(DELIVERER_DATA) : [],
   },
   loyalty: {
-    accounts: structuredClone(LOYALTY_ACCOUNT_DATA),
-    activity: structuredClone(LOYALTY_ACTIVITY_DATA),
+    accounts: includeOperationalFixtures ? structuredClone(LOYALTY_ACCOUNT_DATA) : [],
+    activity: includeOperationalFixtures ? structuredClone(LOYALTY_ACTIVITY_DATA) : [],
   },
-  payments: { records: structuredClone(PAYMENT_DATA) },
+  payments: { records: includeOperationalFixtures ? structuredClone(PAYMENT_DATA) : [] },
   meta: {
     nextOrderSequence: 5,
     nextOrderEventSequence: 12,

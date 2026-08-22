@@ -6,8 +6,8 @@ import gsap from 'gsap';
 import DelivererShell from '@/components/layout/DelivererShell';
 import EmptyState from '@/components/ui/EmptyState';
 import { useAppStore } from '@/store';
-import { formatPhp } from '@/utils';
-import { currentDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
+import { formatDeliveryDate, formatPhp } from '@/utils';
+import { getActiveDelivererId, delivererNavigation } from '../_shared/delivererNavigation';
 import {
   Greeting,
   Hero,
@@ -39,6 +39,7 @@ import {
 import type { DelivererHomeScreenProps } from './interface';
 
 export default function DelivererHomeScreen({ className }: DelivererHomeScreenProps) {
+  const currentDelivererId = useAppStore(getActiveDelivererId);
   const rootRef = useRef<HTMLDivElement>(null);
   const deliveries = useAppStore((state) => state.deliveries.records);
   const orders = useAppStore((state) => state.orders.records);
@@ -109,7 +110,7 @@ export default function DelivererHomeScreen({ className }: DelivererHomeScreenPr
           <NextSection data-field-next>
             <NextMain>
               <SectionTitle>Next delivery</SectionTitle>
-              <Schedule>{nextDelivery.schedule.date} · {nextDelivery.schedule.windowLabel}</Schedule>
+              <Schedule>{formatDeliveryDate(nextDelivery.schedule.date)} · {nextDelivery.schedule.windowLabel}</Schedule>
               <NextCustomer>{nextCustomer?.displayName ?? nextDelivery.address.recipientName}</NextCustomer>
               <Meta>{nextDelivery.address.addressLine}, {nextDelivery.address.area}</Meta>
               <Meta>

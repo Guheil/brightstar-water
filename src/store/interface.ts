@@ -32,17 +32,39 @@ export interface SyncAuthSessionInput {
   phone?: string;
 }
 
+export interface SyncCatalogSnapshotInput {
+  products: Product[];
+  inventory: InventoryItem[];
+}
+
+export interface SyncOperationalSnapshotInput {
+  orders: Order[];
+  deliveries: Delivery[];
+  payments: PaymentRecord[];
+  deliverers: DelivererProfile[];
+  customers: Customer[];
+  loyaltyAccounts: LoyaltyAccount[];
+  loyaltyActivity: LoyaltyActivity[];
+}
+
 export interface CatalogSliceState {
   products: Product[];
+  initialized: boolean;
+  error: string | null;
 }
 
 export interface CartSliceState {
   items: CartLine[];
   lastPlacedOrderId: EntityId | null;
+  ownerCustomerId: EntityId | null;
+  initialized: boolean;
+  error: string | null;
 }
 
 export interface CustomerSliceState {
   records: Customer[];
+  addressesInitialized: boolean;
+  addressesError: string | null;
 }
 
 export interface OrderSliceState {
@@ -128,6 +150,14 @@ export interface LoyaltyAdjustmentInput {
 
 export interface AppCommands {
   syncAuthSession(input: SyncAuthSessionInput): void;
+  syncCatalogSnapshot(input: SyncCatalogSnapshotInput): void;
+  syncOperationalSnapshot(input: SyncOperationalSnapshotInput): void;
+  mergeOperationalSnapshot(input: SyncOperationalSnapshotInput): void;
+  syncCustomerAddresses(customerId: EntityId, addresses: DeliveryAddress[]): void;
+  syncCustomerCart(customerId: EntityId, items: CartLine[]): void;
+  markCustomerCartFailed(customerId: EntityId, message: string): void;
+  markCustomerAddressesFailed(message: string): void;
+  markCatalogLoadFailed(message: string): void;
   signOut(): void;
   saveDeliveryAddress(input: SaveDeliveryAddressInput): CommandResult<DeliveryAddress>;
   addCartItem(productId: EntityId, quantity?: number): CommandResult<CartLine>;

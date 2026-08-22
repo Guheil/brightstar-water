@@ -8,5 +8,6 @@ export interface AdminFormDialogProps {
   open: boolean;
   submitDisabled?: boolean;
   submitLabel: string;
+  submitTone?: 'primary' | 'danger';
   title: string;
 }

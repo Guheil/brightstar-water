@@ -7,7 +7,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import StatusText from '@/components/ui/StatusText';
 import { useAppStore } from '@/store';
 import type { Delivery } from '@/types';
-import { formatPhp } from '@/utils';
+import { formatPhp, getEffectiveScheduleText } from '@/utils';
 import AdminDataTable from '../components/AdminDataTable';
 import AdminEntityActionMenu from '../components/AdminEntityActionMenu';
 import type { AdminDataColumn } from '../components/AdminDataTable/interface';
@@ -93,7 +93,7 @@ export default function DeliveriesScreen({ className }: DeliveriesScreenProps) {
     {
       key: 'schedule',
       label: 'Schedule',
-      render: (delivery) => `${delivery.schedule.date} · ${delivery.schedule.windowLabel}`,
+      render: (delivery) => getEffectiveScheduleText(delivery.schedule),
     },
     {
       key: 'area',

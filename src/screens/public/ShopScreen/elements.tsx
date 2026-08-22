@@ -256,11 +256,6 @@ export const AddButton = styled(Button)(({ theme }) => ({
   marginTop: theme.spacing(1),
 }));
 
-export const Feedback = styled(Typography)(({ theme }) => ({
-  ...theme.typography.caption,
-  minHeight: theme.spacing(2.5),
-  color: theme.vars.palette.success.dark,
-}));
 
 export const EmptyPanel = styled(Box)(({ theme }) => ({
   paddingBlock: theme.spacing(6),

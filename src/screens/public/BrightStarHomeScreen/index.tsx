@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { STOREFRONT_MEDIA } from '@/config';
-import { PRODUCT_DATA } from '@/data';
+import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
 import type { BrightStarProductPreview } from './interface';
 import {
@@ -109,18 +109,19 @@ import {
   ShopLink,
 } from './elements';
 
-const products: readonly BrightStarProductPreview[] = PRODUCT_DATA.filter(
-  (product) => product.category === 'water',
-).map((product) => ({
-  id: product.id,
-  imageAlt: product.imageAlt,
-  imageSrc: product.imageSrc,
-  name: product.name,
-  shortDescription: product.shortDescription,
-  price: formatPhp(product.priceCentavos),
-}));
-
 export default function BrightStarHomeScreen() {
+  const catalogProducts = useAppStore((state) => state.catalog.products);
+  const products: readonly BrightStarProductPreview[] = catalogProducts
+    .filter((product) => product.category === 'water' && product.isActive)
+    .slice(0, 4)
+    .map((product) => ({
+      id: product.id,
+      imageAlt: product.imageAlt,
+      imageSrc: product.imageSrc,
+      name: product.name,
+      shortDescription: product.shortDescription,
+      price: formatPhp(product.priceCentavos),
+    }));
   const rootRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
