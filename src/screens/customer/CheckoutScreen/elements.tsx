@@ -137,8 +137,8 @@ export const ChoiceList = styled('div')(({ theme }) => ({
 }));
 
 export const ChoiceCard = styled('label', {
-  shouldForwardProp: (prop) => prop !== '$selected',
-})<ChoiceVisualProps>(({ theme, $selected }) => ({
+  shouldForwardProp: (prop) => prop !== '$selected' && prop !== '$disabled',
+})<ChoiceVisualProps>(({ theme, $selected, $disabled }) => ({
   display: 'grid',
   gridTemplateColumns: 'auto minmax(0, 1fr)',
   gap: theme.spacing(1.5),
@@ -148,8 +148,13 @@ export const ChoiceCard = styled('label', {
   borderStyle: 'solid',
   borderColor: $selected ? theme.vars.palette.water.main : theme.vars.palette.divider,
   borderRadius: theme.radii.control,
-  backgroundColor: $selected ? theme.vars.palette.action.selected : theme.vars.palette.background.paper,
-  cursor: 'pointer',
+  backgroundColor: $disabled
+    ? theme.vars.palette.action.disabledBackground
+    : $selected
+      ? theme.vars.palette.action.selected
+      : theme.vars.palette.background.paper,
+  color: $disabled ? theme.vars.palette.text.disabled : theme.vars.palette.text.primary,
+  cursor: $disabled ? 'not-allowed' : 'pointer',
 }));
 
 export const ChoiceRadio = styled(Radio)(({ theme }) => ({
@@ -218,6 +223,67 @@ export const ScheduleMenuItem = styled(MenuItem)(() => ({}));
 
 export const NoteField = styled(TextField)({});
 
+
+export const LoyaltyPanel = styled('section')(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(2),
+  padding: theme.spacing(2.5),
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
+  borderRadius: theme.radii.control,
+  backgroundColor: theme.vars.palette.background.paper,
+}));
+
+export const LoyaltyHeader = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'start',
+  justifyContent: 'space-between',
+  gap: theme.spacing(2),
+  [theme.breakpoints.down('sm')]: {
+    display: 'grid',
+  },
+}));
+
+export const LoyaltyTitle = styled('h3')(({ theme }) => ({
+  ...theme.typography.subtitle1,
+  margin: 0,
+}));
+
+export const LoyaltyBalance = styled('strong')(({ theme }) => ({
+  ...theme.typography.body2,
+  color: theme.vars.palette.primary.main,
+  whiteSpace: 'nowrap',
+}));
+
+export const LoyaltyControls = styled('div')(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  gap: theme.spacing(1.5),
+  alignItems: 'start',
+  [theme.breakpoints.down('sm')]: {
+    gridTemplateColumns: '1fr',
+  },
+}));
+
+export const LoyaltyPointsField = styled(TextField)(() => ({}));
+
+export const LoyaltyMaximumButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(7),
+  whiteSpace: 'nowrap',
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+    minHeight: theme.spacing(5.5),
+  },
+}));
+
+export const LoyaltySavings = styled('p')(({ theme }) => ({
+  ...theme.typography.body2,
+  margin: 0,
+  color: theme.vars.palette.success.main,
+  fontWeight: theme.typography.fontWeightSemiBold,
+}));
+
 export const PaymentPanel = styled('div')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'auto 1fr',
@@ -234,6 +300,58 @@ export const PaymentPanel = styled('div')(({ theme }) => ({
 export const PaymentAmount = styled(Typography)(({ theme }) => ({
   ...theme.typography.h4,
   color: theme.vars.palette.primary.main,
+}));
+
+export const PaymentRecipientList = styled('dl')(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: 'max-content minmax(0, 1fr)',
+  gap: theme.spacing(1, 2),
+  margin: 0,
+  padding: theme.spacing(2),
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
+  borderRadius: theme.radii.control,
+  ...theme.typography.body2,
+
+  '& dt': {
+    color: theme.vars.palette.text.secondary,
+  },
+  '& dd': {
+    margin: 0,
+    color: theme.vars.palette.text.primary,
+    fontWeight: theme.typography.fontWeightSemiBold,
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    gridTemplateColumns: '1fr',
+    gap: theme.spacing(0.5),
+  },
+}));
+
+
+export const PaymentAccountValue = styled('dd')(({ theme }) => ({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+}));
+
+export const CopyNumberButton = styled(Button)(({ theme }) => ({
+  minHeight: theme.spacing(4.5),
+  paddingInline: theme.spacing(1.5),
+}));
+
+export const PaymentQrImage = styled('img')(({ theme }) => ({
+  width: '100%',
+  maxWidth: theme.spacing(32),
+  aspectRatio: '1',
+  objectFit: 'contain',
+  borderRadius: theme.radii.control,
+  borderWidth: theme.spacing(0.125),
+  borderStyle: 'solid',
+  borderColor: theme.vars.palette.divider,
+  backgroundColor: theme.vars.palette.background.paper,
 }));
 
 export const UploadArea = styled(Box)(({ theme }) => ({

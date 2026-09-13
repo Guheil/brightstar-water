@@ -36,7 +36,7 @@ export function operationsRpcError(error: { message?: string; code?: string } | 
   if (/not authorized/i.test(message)) return NextResponse.json({ error: 'Not authorized.' }, { status: 403, headers: OPERATIONS_PRIVATE_HEADERS });
   if (/insufficient stock/i.test(message)) return NextResponse.json({ error: 'One or more products no longer have enough available stock.' }, { status: 409, headers: OPERATIONS_PRIVATE_HEADERS });
   if (/outside the service area/i.test(message)) return NextResponse.json({ error: 'That delivery address is outside the current service area.' }, { status: 400, headers: OPERATIONS_PRIVATE_HEADERS });
-  if (/invalid|cannot|already|required|unavailable|ready/i.test(message)) return NextResponse.json({ error: message.slice(0, 180) || 'The operation is not allowed.' }, { status: 409, headers: OPERATIONS_PRIVATE_HEADERS });
+  if (/invalid|cannot|already|required|unavailable|ready|updated|changed/i.test(message)) return NextResponse.json({ error: message.slice(0, 180) || 'The operation is not allowed.' }, { status: 409, headers: OPERATIONS_PRIVATE_HEADERS });
   return NextResponse.json({ error: 'The operation could not be completed.' }, { status: 500, headers: OPERATIONS_PRIVATE_HEADERS });
 }
 

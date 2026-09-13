@@ -31,6 +31,9 @@ export interface PlaceOrderPayload {
     preferredWindowLabel?: string;
   };
   paymentMethod: 'cod' | 'gcash';
+  gcashSettingsVersion?: number;
+  requestedLoyaltyPoints?: number;
+  loyaltyPointsAvailableSnapshot?: number;
   customerNote?: string;
   idempotencyKey: string;
 }

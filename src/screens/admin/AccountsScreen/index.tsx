@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Pencil, Plus, Power, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
@@ -29,6 +29,7 @@ import AdminMetricStrip from '../components/AdminMetricStrip';
 import AdminPageHeader from '../components/AdminPageHeader';
 import { formatDate, getStatusTone, humanize } from '../utils';
 import {
+  AccountSecurityLink,
   CreateButton,
   DeleteAccountMeta,
   DeleteAccountName,
@@ -37,6 +38,7 @@ import {
   FilterField,
   FilterOption,
   Form,
+  HeaderActions,
   FormField,
   FormOption,
   Pagination,
@@ -482,13 +484,19 @@ export default function AccountsScreen({
     <Root className={className}>
       <AdminPageHeader
         actions={
-          <CreateButton
-            onClick={() => setCreateOpen(true)}
-            startIcon={<Plus aria-hidden="true" />}
-            variant="contained"
-          >
-            Create account
-          </CreateButton>
+          <HeaderActions>
+            <AccountSecurityLink href="/admin/account">
+              <ShieldCheck aria-hidden="true" />
+              My login & security
+            </AccountSecurityLink>
+            <CreateButton
+              onClick={() => setCreateOpen(true)}
+              startIcon={<Plus aria-hidden="true" />}
+              variant="contained"
+            >
+              Create account
+            </CreateButton>
+          </HeaderActions>
         }
         description="One directory for every Customer, Deliverer, and Administrator login account."
         title="Accounts"

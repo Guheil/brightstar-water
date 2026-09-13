@@ -19,12 +19,14 @@ export interface StepVisualProps {
 
 export interface ChoiceVisualProps {
   $selected: boolean;
+  $disabled?: boolean;
 }
 
 export interface PaymentChoice {
   method: PaymentMethod;
   title: string;
   description: string;
+  disabled?: boolean;
 }
 
 export type CheckoutPlacementPhase =

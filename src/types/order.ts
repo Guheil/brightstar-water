@@ -35,7 +35,9 @@ export type OrderEventType =
   | 'inventory_reserved'
   | 'inventory_released'
   | 'inventory_committed'
-  | 'loyalty_awarded';
+  | 'loyalty_awarded'
+  | 'loyalty_redeemed'
+  | 'loyalty_restored';
 
 export interface OrderItem {
   productId: EntityId;

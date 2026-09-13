@@ -6,6 +6,7 @@ export type AdminNavigationIcon =
   | 'deliveries'
   | 'inventory'
   | 'products'
+  | 'payments'
   | 'customers'
   | 'accounts'
   | 'history'

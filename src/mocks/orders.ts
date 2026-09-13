@@ -43,6 +43,7 @@ export const ORDER_FIXTURES: Order[] = [
     loyalty: {
       qualifyingSubtotalCentavos: 99_000,
       pointsPending: 9,
+      pointsRedeemed: 0,
       pointsAwarded: 0,
       discountCentavos: 0,
     },
@@ -111,6 +112,7 @@ export const ORDER_FIXTURES: Order[] = [
     loyalty: {
       qualifyingSubtotalCentavos: 42_000,
       pointsPending: 0,
+      pointsRedeemed: 0,
       pointsAwarded: 0,
       discountCentavos: 0,
     },
@@ -178,6 +180,7 @@ export const ORDER_FIXTURES: Order[] = [
     loyalty: {
       qualifyingSubtotalCentavos: 92_000,
       pointsPending: 0,
+      pointsRedeemed: 0,
       pointsAwarded: 9,
       discountCentavos: 0,
       settledAt: '2026-08-09T06:35:00.000Z',
@@ -254,6 +257,7 @@ export const ORDER_FIXTURES: Order[] = [
     loyalty: {
       qualifyingSubtotalCentavos: 178_000,
       pointsPending: 17,
+      pointsRedeemed: 0,
       pointsAwarded: 0,
       discountCentavos: 0,
     },

@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { STOREFRONT_MEDIA } from '@/config';
+import { PAYMENT_METHOD_LABEL, STOREFRONT_MEDIA } from '@/config';
 import { useAppStore } from '@/store';
 import { formatPhp } from '@/utils';
 import type { BrightStarProductPreview } from './interface';
@@ -221,7 +221,7 @@ export default function BrightStarHomeScreen() {
               </ServiceFact>
               <ServiceFact>
                 <ServiceFactTerm>Payment</ServiceFactTerm>
-                <ServiceFactValue>COD or GCash</ServiceFactValue>
+                <ServiceFactValue>{PAYMENT_METHOD_LABEL}</ServiceFactValue>
               </ServiceFact>
             </ServiceFacts>
           </HeroCopy>
@@ -386,7 +386,7 @@ export default function BrightStarHomeScreen() {
               Payment is shown beside the information that affects the total.
             </InfoTitle>
             <InfoText>
-              Customers choose between cash on delivery and GCash after delivery details are available. GCash orders enter payment verification before fulfillment proceeds.
+              Cash on delivery is always available after the delivery details and final amount are shown. When GCash is enabled, checkout also shows the current recipient details and payment verification step.
             </InfoText>
           </div>
           <InfoGrid>
@@ -395,8 +395,8 @@ export default function BrightStarHomeScreen() {
               <InfoItemText>Review the full amount and prepare the displayed total for collection on delivery.</InfoItemText>
             </InfoItem>
             <InfoItem>
-              <InfoItemTitle>GCash payment review</InfoItemTitle>
-              <InfoItemText>The order can enter an awaiting-verification state until payment verification is completed.</InfoItemText>
+              <InfoItemTitle>GCash when available</InfoItemTitle>
+              <InfoItemText>Checkout shows the current payment destination and proof instructions whenever GCash is enabled.</InfoItemText>
             </InfoItem>
             <InfoItem>
               <InfoItemTitle>One review screen</InfoItemTitle>
@@ -498,7 +498,7 @@ export default function BrightStarHomeScreen() {
                 </ClosingFact>
                 <ClosingFact data-water-closing-fact>
                   <ClosingFactLabel>Checkout</ClosingFactLabel>
-                  <ClosingFactValue>Fee, schedule, COD or GCash shown before confirmation</ClosingFactValue>
+                  <ClosingFactValue>Fee, schedule, and {PAYMENT_METHOD_LABEL.toLowerCase()} shown before confirmation</ClosingFactValue>
                 </ClosingFact>
               </ClosingFacts>
             </ClosingPanel>

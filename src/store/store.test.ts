@@ -83,6 +83,165 @@ describe('frontend order workflow', () => {
     }
   });
 
+  it('redeems available loyalty points and calculates future earnings from net merchandise spend', () => {
+    const beforeAccount = useAppStore
+      .getState()
+      .loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!;
+
+    const placed = useAppStore.getState().commands.placeOrder({
+      customerId: CUSTOMER_ID,
+      items: [{ productId: PRODUCT_ID, quantity: 2 }],
+      deliveryAddressId: 'address-01-a',
+      deliverySchedule: { date: '2026-08-14', windowLabel: '9:00 AM–12:00 PM' },
+      paymentMethod: 'cod',
+      requestedLoyaltyPoints: 10,
+      placedAt: AT,
+    });
+
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+
+    expect(placed.value.loyalty.pointsRedeemed).toBe(10);
+    expect(placed.value.loyalty.discountCentavos).toBe(1_000);
+    expect(placed.value.loyalty.qualifyingSubtotalCentavos).toBe(69_000);
+    expect(placed.value.loyalty.pointsPending).toBe(6);
+    expect(placed.value.totals.subtotalCentavos).toBe(70_000);
+    expect(placed.value.totals.deliveryFeeCentavos).toBe(0);
+    expect(placed.value.totals.totalCentavos).toBe(69_000);
+
+    const afterAccount = useAppStore
+      .getState()
+      .loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!;
+    expect(afterAccount.pointsAvailable).toBe(beforeAccount.pointsAvailable - 10);
+    expect(
+      useAppStore.getState().loyalty.activity.some(
+        (activity) => activity.orderId === placed.value.id && activity.type === 'redeemed' && activity.points === 10,
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects loyalty redemption above the available balance without partial writes', () => {
+    const before = useAppStore.getState();
+    const beforeOrderCount = before.orders.records.length;
+    const beforeInventory = before.inventory.items.find((item) => item.productId === PRODUCT_ID)!;
+    const beforeBalance = before.loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable;
+
+    const result = useAppStore.getState().commands.placeOrder({
+      customerId: CUSTOMER_ID,
+      items: [{ productId: PRODUCT_ID, quantity: 2 }],
+      deliveryAddressId: 'address-01-a',
+      deliverySchedule: { date: '2026-08-14', windowLabel: '9:00 AM–12:00 PM' },
+      paymentMethod: 'cod',
+      requestedLoyaltyPoints: beforeBalance + 1,
+      placedAt: AT,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.field).toBe('requestedLoyaltyPoints');
+    const after = useAppStore.getState();
+    expect(after.orders.records).toHaveLength(beforeOrderCount);
+    expect(after.inventory.items.find((item) => item.productId === PRODUCT_ID)!.stockReserved).toBe(beforeInventory.stockReserved);
+    expect(after.loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable).toBe(beforeBalance);
+  });
+
+  it('restores redeemed points exactly once after an approved cancellation', () => {
+    const beforeBalance = useAppStore
+      .getState()
+      .loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable;
+    const placed = useAppStore.getState().commands.placeOrder({
+      customerId: CUSTOMER_ID,
+      items: [{ productId: PRODUCT_ID, quantity: 2 }],
+      deliveryAddressId: 'address-01-a',
+      deliverySchedule: { date: '2026-08-14', windowLabel: '9:00 AM–12:00 PM' },
+      paymentMethod: 'cod',
+      requestedLoyaltyPoints: 12,
+      placedAt: AT,
+    });
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+
+    expect(useAppStore.getState().commands.requestCancellation(
+      placed.value.id,
+      CUSTOMER_ID,
+      'No longer needed',
+      AT,
+    ).ok).toBe(true);
+
+    const resolved = useAppStore.getState().commands.resolveCancellation(
+      placed.value.id,
+      ADMIN_ID,
+      'approve',
+      'Approved',
+      AT,
+    );
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+
+    const afterBalance = useAppStore
+      .getState()
+      .loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable;
+    expect(afterBalance).toBe(beforeBalance);
+    expect(resolved.value.loyalty.redemptionRestoredAt).toBe(AT);
+    expect(
+      useAppStore.getState().loyalty.activity.filter(
+        (activity) => activity.orderId === placed.value.id && activity.type === 'restored',
+      ),
+    ).toHaveLength(1);
+
+    const secondResolution = useAppStore.getState().commands.resolveCancellation(
+      placed.value.id,
+      ADMIN_ID,
+      'approve',
+      'Duplicate attempt',
+      AT,
+    );
+    expect(secondResolution.ok).toBe(false);
+    expect(
+      useAppStore.getState().loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable,
+    ).toBe(beforeBalance);
+  });
+
+  it('restores redeemed points when an active delivery becomes terminally failed', () => {
+    const beforeBalance = useAppStore
+      .getState()
+      .loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable;
+    const placed = useAppStore.getState().commands.placeOrder({
+      customerId: CUSTOMER_ID,
+      items: [{ productId: PRODUCT_ID, quantity: 2 }],
+      deliveryAddressId: 'address-01-a',
+      deliverySchedule: { date: '2026-08-14', windowLabel: '9:00 AM–12:00 PM' },
+      paymentMethod: 'cod',
+      requestedLoyaltyPoints: 8,
+      placedAt: AT,
+    });
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+
+    expect(useAppStore.getState().commands.confirmOrder(placed.value.id, ADMIN_ID, AT).ok).toBe(true);
+    const assigned = useAppStore.getState().commands.assignDelivery(placed.value.id, DELIVERER_ID, ADMIN_ID, AT);
+    expect(assigned.ok).toBe(true);
+    if (!assigned.ok) return;
+    expect(useAppStore.getState().commands.acceptDelivery(assigned.value.id, DELIVERER_ID, AT).ok).toBe(true);
+    expect(useAppStore.getState().commands.startDelivery(assigned.value.id, DELIVERER_ID, AT).ok).toBe(true);
+
+    const failed = useAppStore.getState().commands.failDelivery(
+      assigned.value.id,
+      DELIVERER_ID,
+      'customer_unavailable',
+      'Customer could not receive the order.',
+      AT,
+    );
+    expect(failed.ok).toBe(true);
+
+    const order = useAppStore.getState().orders.records.find((item) => item.id === placed.value.id)!;
+    expect(order.status).toBe('delivery_failed');
+    expect(order.loyalty.pointsPending).toBe(0);
+    expect(order.loyalty.redemptionRestoredAt).toBe(AT);
+    expect(
+      useAppStore.getState().loyalty.accounts.find((account) => account.customerId === CUSTOMER_ID)!.pointsAvailable,
+    ).toBe(beforeBalance);
+  });
+
   it('commits inventory and loyalty only after the delivery succeeds', () => {
     const placed = placeCodOrder();
     expect(placed.ok).toBe(true);

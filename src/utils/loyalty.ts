@@ -12,7 +12,34 @@ export const calculateLoyaltyPoints = (subtotalCentavos: MoneyCentavos): number 
 export const calculateLoyaltyPesoValue = (points: number): MoneyCentavos =>
   Math.max(0, Math.trunc(points)) * LOYALTY_CONFIG.pesoValuePerPointCentavos;
 
-export const calculateLoyaltyDiscount = (requestedPoints: number): MoneyCentavos => {
+export const calculateMaxLoyaltyRedeemablePoints = (
+  availablePoints: number,
+  merchandiseSubtotalCentavos: MoneyCentavos,
+): number => {
+  if (!LOYALTY_CONFIG.redemption.enabled) return 0;
+  const normalizedAvailable = Math.max(0, Math.trunc(availablePoints));
+  const merchandiseCap = Math.max(
+    0,
+    Math.floor(merchandiseSubtotalCentavos / LOYALTY_CONFIG.pesoValuePerPointCentavos),
+  );
+  return Math.min(
+    normalizedAvailable,
+    merchandiseCap,
+    LOYALTY_CONFIG.redemption.maximumPointsPerOrder,
+  );
+};
+
+export const calculateLoyaltyDiscount = (
+  requestedPoints: number,
+  merchandiseSubtotalCentavos?: MoneyCentavos,
+): MoneyCentavos => {
   if (!LOYALTY_CONFIG.redemption.enabled || requestedPoints <= 0) return 0;
-  return calculateLoyaltyPesoValue(requestedPoints);
+  const normalizedPoints = Math.max(0, Math.trunc(requestedPoints));
+  const points = merchandiseSubtotalCentavos === undefined
+    ? normalizedPoints
+    : Math.min(
+        normalizedPoints,
+        Math.floor(merchandiseSubtotalCentavos / LOYALTY_CONFIG.pesoValuePerPointCentavos),
+      );
+  return calculateLoyaltyPesoValue(points);
 };

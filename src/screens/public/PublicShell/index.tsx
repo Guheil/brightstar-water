@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Lenis from 'lenis';
 import { usePathname } from 'next/navigation';
 import { signOutCurrentUser } from '@/lib/auth/client';
+import HelpCenter from '@/components/customer/HelpCenter';
 import CustomerFooter from '@/components/layout/CustomerFooter';
 import CustomerHeader from '@/components/layout/CustomerHeader';
 import {
@@ -159,6 +160,7 @@ export default function PublicShell({ children }: PublicShellProps) {
       <Main id="main-content" $heroUnderHeader={gateway}>
         {children}
       </Main>
+      <HelpCenter />
       <CustomerFooter
         brandName="MRJE Gas + Bright Star Water"
         summary="Two dedicated storefronts connected by one account, cart, ordering, and local delivery platform."

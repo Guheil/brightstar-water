@@ -147,7 +147,7 @@ export default function AccountScreen() {
           <SectionTitle>Loyalty snapshot</SectionTitle>
           <PointsValue>{loyalty?.pointsAvailable ?? 0} pts</PointsValue>
           <SupportingText>
-            Approximate value: {formatPhp((loyalty?.pointsAvailable ?? 0) * 100)}. Redemption is not currently available.
+            Value: {formatPhp((loyalty?.pointsAvailable ?? 0) * 100)}. Available points can be applied to merchandise during checkout.
           </SupportingText>
           <InlineLink href="/customer/loyalty">Review loyalty details</InlineLink>
         </Section>

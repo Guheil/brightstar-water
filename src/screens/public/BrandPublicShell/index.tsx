@@ -1,5 +1,6 @@
 'use client';
 
+import HelpCenter from '@/components/customer/HelpCenter';
 import CustomerFooter from '@/components/layout/CustomerFooter';
 import CustomerHeader from '@/components/layout/CustomerHeader';
 import { signOutCurrentUser } from '@/lib/auth/client';
@@ -75,6 +76,7 @@ export default function BrandPublicShell({
       <Main id="main-content" $heroUnderHeader={homeHero}>
         {children}
       </Main>
+      <HelpCenter brandKey={brand.key} />
       <CustomerFooter
         brandName={brand.brandName}
         summary={brand.footerSummary}

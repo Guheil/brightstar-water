@@ -3,6 +3,7 @@ export * from './cart';
 export * from './cancellation';
 export * from './customer';
 export * from './delivery';
+export * from './faq';
 export * from './inventory';
 export * from './loyalty';
 export * from './order';

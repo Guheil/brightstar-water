@@ -240,8 +240,12 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <TotalValue>{formatPhp(order.totals.subtotalCentavos)}</TotalValue>
               <DetailTerm>Delivery fee</DetailTerm>
               <TotalValue>{formatPhp(order.totals.deliveryFeeCentavos)}</TotalValue>
-              <DetailTerm>Loyalty discount</DetailTerm>
-              <TotalValue>{formatPhp(order.totals.loyaltyDiscountCentavos)}</TotalValue>
+              {order.totals.loyaltyDiscountCentavos > 0 ? (
+                <>
+                  <DetailTerm>Loyalty discount</DetailTerm>
+                  <TotalValue>−{formatPhp(order.totals.loyaltyDiscountCentavos)}</TotalValue>
+                </>
+              ) : null}
               <DetailTerm>Total</DetailTerm>
               <TotalValue>{formatPhp(order.totals.totalCentavos)}</TotalValue>
             </Totals>
@@ -281,7 +285,7 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               </DetailValue>
               <DetailTerm>Loyalty effect</DetailTerm>
               <DetailValue>
-                {order.loyalty.pointsAwarded} awarded · {order.loyalty.pointsPending} pending
+                {order.loyalty.pointsRedeemed} redeemed · {order.loyalty.pointsAwarded} awarded · {order.loyalty.pointsPending} pending{order.loyalty.redemptionRestoredAt ? ' · redemption restored' : ''}
               </DetailValue>
             </DetailList>
           </Section>

@@ -1,5 +1,6 @@
 import { styled } from '@mui/material/styles';
 import { PageContainer } from '@/components';
+import type { ActivityPointsProps } from './interface';
 
 export const LoyaltyPage = styled(PageContainer)(({ theme }) => ({
   paddingBlock: theme.spacing(7, 10),
@@ -91,9 +92,11 @@ export const ActivityDate = styled('span')(({ theme }) => ({
   color: theme.vars.palette.text.secondary,
 }));
 
-export const ActivityPoints = styled('strong')(({ theme }) => ({
+export const ActivityPoints = styled('strong', {
+  shouldForwardProp: (prop) => prop !== '$debit',
+})<ActivityPointsProps>(({ theme, $debit }) => ({
   ...theme.typography.subtitle1,
-  color: theme.vars.palette.success.main,
+  color: $debit ? theme.vars.palette.error.main : theme.vars.palette.success.main,
 }));
 
 export const RulePanel = styled('div')(({ theme }) => ({

@@ -1,6 +1,6 @@
 'use client';
 
-import { STOREFRONT_MEDIA } from '@/config';
+import { PAYMENT_METHOD_LABEL, STOREFRONT_MEDIA } from '@/config';
 import type {
   DeliveryInfoScreenProps,
   DeliveryZoneView,
@@ -75,9 +75,9 @@ const paymentOptions: PaymentOptionView[] = [
       'Review the final amount before confirming. Payment remains due until the delivery is completed.',
   },
   {
-    title: 'GCash',
+    title: 'GCash when available',
     description:
-      'Choose GCash at checkout to continue through payment verification before fulfillment.',
+      'When enabled, checkout shows the current recipient details and payment-proof step before fulfillment.',
   },
 ];
 
@@ -120,7 +120,7 @@ export default function DeliveryInfoScreen({
               </HeroFact>
               <HeroFact>
                 <HeroFactLabel>Payment</HeroFactLabel>
-                <HeroFactValue>COD or GCash</HeroFactValue>
+                <HeroFactValue>{PAYMENT_METHOD_LABEL}</HeroFactValue>
               </HeroFact>
             </HeroFacts>
           </HeroCopy>
@@ -222,7 +222,7 @@ export default function DeliveryInfoScreen({
           <SectionHeader>
             <SectionTitle id="payment-title">Payment stays part of the review</SectionTitle>
             <SectionIntro>
-              Cash on delivery is supported in the flow. GCash orders enter payment verification before fulfillment proceeds.
+              Cash on delivery remains available throughout the final review. When GCash is enabled, checkout adds the current recipient details and payment verification step.
             </SectionIntro>
           </SectionHeader>
           <PaymentGrid>

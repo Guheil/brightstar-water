@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EmptyState, Notice } from '@/components';
+import { updateCustomerProfile } from '@/lib/profile/client';
+import { customerProfileUpdateSchema } from '@/lib/profile/validation';
 import { useAppStore } from '@/store';
 import { getActiveCustomerId } from '../_shared/customer';
 import {
@@ -23,24 +25,33 @@ import {
   SectionTitle,
   Title,
 } from './elements';
-import type { ProfileFormValues } from './interface';
+import type { ProfileFeedback, ProfileFormValues } from './interface';
 
 export default function ProfileScreen() {
   const customerId = useAppStore(getActiveCustomerId);
   const customers = useAppStore((state) => state.customers.records);
+  const syncCustomerProfile = useAppStore((state) => state.commands.syncCustomerProfile);
   const customer = customers.find((item) => item.id === customerId);
   const initialValues = useMemo<ProfileFormValues>(
     () => ({
       displayName: customer?.displayName ?? '',
-      email: customer?.email ?? '',
       phone: customer?.phonePlaceholder ?? '',
     }),
-    [customer],
+    [customer?.displayName, customer?.phonePlaceholder],
   );
   const [values, setValues] = useState<ProfileFormValues>(initialValues);
-  const [saved, setSaved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<ProfileFeedback | null>(null);
 
-  if (!customer) {
+  useEffect(() => {
+    if (!customer) return;
+    setValues({
+      displayName: customer.displayName,
+      phone: customer.phonePlaceholder,
+    });
+  }, [customer?.displayName, customer?.id, customer?.phonePlaceholder]);
+
+  if (!customer || !customerId) {
     return (
       <ProfilePage>
         <EmptyState
@@ -52,8 +63,68 @@ export default function ProfileScreen() {
   }
 
   const update = (field: keyof ProfileFormValues, value: string) => {
-    setSaved(false);
+    setFeedback(null);
     setValues((current) => ({ ...current, [field]: value }));
+  };
+
+  const reset = () => {
+    setValues({
+      displayName: customer.displayName,
+      phone: customer.phonePlaceholder,
+    });
+    setFeedback(null);
+  };
+
+  const hasChanges = values.displayName.trim() !== customer.displayName
+    || values.phone.trim() !== customer.phonePlaceholder;
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFeedback(null);
+
+    const parsed = customerProfileUpdateSchema.safeParse({
+      fullName: values.displayName,
+      phone: values.phone,
+    });
+    if (!parsed.success) {
+      setFeedback({
+        message: parsed.error.issues[0]?.message ?? 'Check your profile details and try again.',
+        title: 'Profile not updated',
+        tone: 'error',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await updateCustomerProfile(parsed.data);
+      syncCustomerProfile({
+        customerId: result.profile.id,
+        displayName: result.profile.displayName,
+        email: result.profile.email,
+        phone: result.profile.phone,
+        updatedAt: result.profile.updatedAt,
+      });
+      setValues({
+        displayName: result.profile.displayName,
+        phone: result.profile.phone,
+      });
+      setFeedback({
+        message: 'Your latest profile details are now saved.',
+        title: 'Profile details updated',
+        tone: 'success',
+      });
+    } catch (error) {
+      setFeedback({
+        message: error instanceof Error
+          ? error.message
+          : 'Your profile could not be updated. Check your connection and try again.',
+        title: 'Profile not updated',
+        tone: 'error',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -75,37 +146,52 @@ export default function ProfileScreen() {
 
         <FormPanel>
           <SectionTitle>Edit profile details</SectionTitle>
-          {saved ? (
-            <Notice title="Profile details updated" tone="success">
-              Your latest profile details are now displayed.
+          {feedback ? (
+            <Notice title={feedback.title} tone={feedback.tone}>
+              {feedback.message}
             </Notice>
           ) : null}
-          <Form
-            onSubmit={(event) => {
-              event.preventDefault();
-              setSaved(true);
-            }}
-          >
+          <Form aria-busy={submitting} onSubmit={handleSubmit}>
             <FieldGrid>
-              <Field autoComplete="name" label="Display name" onChange={(event) => update('displayName', event.target.value)} required value={values.displayName} />
-              <Field autoComplete="tel" helperText="Enter the number to use for delivery updates." label="Contact number" onChange={(event) => update('phone', event.target.value)} required value={values.phone} />
-              <FullField autoComplete="email" label="Email" onChange={(event) => update('email', event.target.value)} required type="email" value={values.email} />
+              <Field
+                autoComplete="name"
+                disabled={submitting}
+                label="Display name"
+                onChange={(event) => update('displayName', event.target.value)}
+                required
+                value={values.displayName}
+              />
+              <Field
+                autoComplete="tel"
+                disabled={submitting}
+                helperText="Use a Philippine mobile number in 09XXXXXXXXX format."
+                label="Contact number"
+                onChange={(event) => update('phone', event.target.value)}
+                required
+                value={values.phone}
+              />
+              <FullField
+                autoComplete="email"
+                disabled
+                helperText="Used to sign in to your account."
+                label="Login email"
+                type="email"
+                value={customer.email}
+              />
             </FieldGrid>
             <Helper>
-              Review your contact details before saving.
+              Update your name or contact number, then save your changes.
             </Helper>
             <FormActions>
               <ResetButton
-                onClick={() => {
-                  setValues(initialValues);
-                  setSaved(false);
-                }}
+                disabled={submitting || !hasChanges}
+                onClick={reset}
                 type="button"
               >
                 Reset changes
               </ResetButton>
-              <SaveButton type="submit" variant="contained">
-                Save changes
+              <SaveButton disabled={submitting || !hasChanges} type="submit" variant="contained">
+                {submitting ? 'Saving…' : 'Save changes'}
               </SaveButton>
             </FormActions>
           </Form>

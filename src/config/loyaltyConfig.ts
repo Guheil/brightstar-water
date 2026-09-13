@@ -1,6 +1,7 @@
 /**
  * Loyalty points are settled after an eligible order is delivered.
- * Bonus awards and point redemption are currently unavailable.
+ * Redemption follows the thesis rule of one point equaling one peso.
+ * The bonus formula remains unavailable until its exact computation is confirmed.
  */
 export const LOYALTY_CONFIG = {
   minimumQualifyingSubtotalCentavos: 50_000,
@@ -14,9 +15,10 @@ export const LOYALTY_CONFIG = {
     points: 0,
   },
   redemption: {
-    enabled: false,
-    minimumPoints: 0,
-    maximumShareOfOrder: 0,
+    enabled: true,
+    minimumPoints: 1,
+    maximumShareOfMerchandise: 1,
+    maximumPointsPerOrder: 100_000,
   },
-  notice: 'Loyalty points are awarded after eligible orders are delivered.',
+  notice: 'Earned points settle after eligible orders are delivered. Available points can be used during checkout at ₱1 per point.',
 } as const;

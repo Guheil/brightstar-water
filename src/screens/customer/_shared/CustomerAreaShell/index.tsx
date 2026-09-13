@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import HelpCenter from '@/components/customer/HelpCenter';
 import { CustomerFooter, CustomerHeader } from '@/components';
 import { signOutCurrentUser } from '@/lib/auth/client';
 import {
@@ -89,6 +90,7 @@ export default function CustomerAreaShell({ children }: CustomerAreaShellProps) 
         logoSources={SHARED_STOREFRONT_LOGO_SOURCES}
       />
       <Main id="main-content">{children}</Main>
+      <HelpCenter />
       <CustomerFooter
         brandName="MRJE Gas + Bright Star Water"
         contactLines={[

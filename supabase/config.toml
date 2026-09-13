@@ -4,6 +4,11 @@
 [auth.email]
 otp_length = 6
 otp_expiry = 3600
+# Keep the normal client-side email-change flow strict. The thesis-only
+# login-email change route uses a server-only admin update after verifying the
+# signed-in user's current password, so fake inboxes never need confirmation.
+double_confirm_changes = true
+secure_password_change = true
 
 # Product photos are public storefront assets. Browser clients never upload
 # directly; the protected Admin API writes validated, server-reencoded WebP files.

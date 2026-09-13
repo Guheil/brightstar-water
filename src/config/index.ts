@@ -12,3 +12,6 @@ export * from './storefrontMedia';
 export * from './deliveryMapConfig';
 export * from './deliveryTimingConfig';
 export * from './legal';
+
+export * from './payment';
+export * from './faq';

@@ -2,18 +2,23 @@
 
 import { useRouter } from 'next/navigation';
 import { Smartphone, ShoppingBasket, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EmptyState, LoadingState, Notice } from '@/components';
+import { GCASH_UNAVAILABLE_MESSAGE } from '@/config';
 import AddressEditorDialog from '@/components/customer/AddressEditorDialog';
 import AddressSelector from '@/components/customer/AddressSelector';
 import { fetchPublicCatalog } from '@/lib/catalog/client';
-import { fetchOperationalSnapshot, placeCustomerOrder } from '@/lib/orders/client';
+import { fetchOperationalSnapshot, OperationsApiError, placeCustomerOrder } from '@/lib/orders/client';
+import { fetchCustomerGCashPaymentSettings } from '@/lib/payments/client';
+import type { GCashPaymentSettingsView } from '@/lib/payments/types';
 import { useAppStore } from '@/store';
 import type { PaymentMethod } from '@/types';
 import {
   calculateCartSubtotal,
   calculateDeliveryFee,
+  calculateLoyaltyDiscount,
   calculateLoyaltyPoints,
+  calculateMaxLoyaltyRedeemablePoints,
   calculateOrderTotals,
   buildDeliverySchedule,
   calculateEstimatedDelivery,
@@ -43,9 +48,21 @@ import {
   Header,
   HiddenFileInput,
   Lead,
+  LoyaltyBalance,
+  LoyaltyControls,
+  LoyaltyHeader,
+  LoyaltyMaximumButton,
+  LoyaltyPanel,
+  LoyaltyPointsField,
+  LoyaltySavings,
+  LoyaltyTitle,
   NoteField,
   PaymentAmount,
+  PaymentAccountValue,
   PaymentNoticeActions,
+  PaymentQrImage,
+  CopyNumberButton,
+  PaymentRecipientList,
   PaymentNoticeContent,
   PaymentNoticeDialog,
   PaymentNoticeTitle,
@@ -92,19 +109,6 @@ const STAGES: readonly CheckoutStageDefinition[] = [
   { id: 'review', label: 'Review' },
 ];
 
-const PAYMENT_CHOICES: readonly PaymentChoice[] = [
-  {
-    method: 'cod',
-    title: 'Cash on delivery',
-    description: 'Prepare the final amount and pay when your order arrives.',
-  },
-  {
-    method: 'gcash',
-    title: 'GCash',
-    description: 'Send the payment, upload a clear screenshot, and wait for payment review.',
-  },
-];
-
 const PLACEMENT_PROGRESS: Readonly<Record<CheckoutPlacementPhase, CheckoutPlacementProgress>> = {
   creating_order: {
     label: 'Creating your order',
@@ -128,6 +132,9 @@ export default function CheckoutScreen() {
   const { items, clearCart, setLastPlacedOrderId } = useCustomerCart();
   const customerId = useAppStore(getActiveCustomerId);
   const customers = useAppStore((state) => state.customers.records);
+  const loyaltyAccount = useAppStore((state) =>
+    state.loyalty.accounts.find((item) => item.customerId === customerId),
+  );
   const products = useAppStore((state) => state.catalog.products);
   const catalogInitialized = useAppStore((state) => state.catalog.initialized);
   const catalogError = useAppStore((state) => state.catalog.error);
@@ -153,6 +160,11 @@ export default function CheckoutScreen() {
   const [preferredDate, setPreferredDate] = useState('');
   const [preferredWindowId, setPreferredWindowId] = useState<'any' | 'morning' | 'afternoon'>('any');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [loyaltyPointsInput, setLoyaltyPointsInput] = useState('');
+  const [gcashSettings, setGCashSettings] = useState<GCashPaymentSettingsView | null>(null);
+  const [lockedGCashSettings, setLockedGCashSettings] = useState<GCashPaymentSettingsView | null>(null);
+  const [gcashLoading, setGCashLoading] = useState(false);
+  const [copiedGcashNumber, setCopiedGcashNumber] = useState(false);
   const [customerNote, setCustomerNote] = useState('');
   const [deliveryAddressId, setDeliveryAddressId] = useState('');
   const [addressEditorOpen, setAddressEditorOpen] = useState(false);
@@ -165,6 +177,26 @@ export default function CheckoutScreen() {
   const [error, setError] = useState<string | null>(null);
   const placing = placementPhase !== null;
   const placementProgress = placementPhase ? PLACEMENT_PROGRESS[placementPhase] : null;
+  const gcashAvailable = Boolean(gcashSettings?.enabled);
+
+  useEffect(() => {
+    if (!customerId || stage !== 'payment') return undefined;
+    const controller = new AbortController();
+    setGCashLoading(true);
+    setGCashSettings(null);
+    setPaymentMethod((current) => current === 'gcash' ? 'cod' : current);
+    fetchCustomerGCashPaymentSettings(controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setGCashSettings(result);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setGCashSettings(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setGCashLoading(false);
+      });
+    return () => controller.abort();
+  }, [customerId, stage]);
 
   const fallbackDeliveryAddressId = customer?.addresses.find((address) => address.isDefault)?.id
     ?? customer?.addresses[0]?.id
@@ -206,13 +238,59 @@ export default function CheckoutScreen() {
       unitPriceCentavos: product.priceCentavos,
     })),
   );
+  const availableLoyaltyPoints = loyaltyAccount?.pointsAvailable ?? 0;
+  const maxRedeemableLoyaltyPoints = calculateMaxLoyaltyRedeemablePoints(
+    availableLoyaltyPoints,
+    subtotal,
+  );
+  const requestedLoyaltyPoints = loyaltyPointsInput ? Number(loyaltyPointsInput) : 0;
+  const loyaltyPointsValid = Number.isInteger(requestedLoyaltyPoints)
+    && requestedLoyaltyPoints >= 0
+    && requestedLoyaltyPoints <= maxRedeemableLoyaltyPoints;
+  const loyaltyDiscountCentavos = loyaltyPointsValid
+    ? calculateLoyaltyDiscount(requestedLoyaltyPoints, subtotal)
+    : 0;
+  const loyaltyQualifyingSubtotalCentavos = Math.max(0, subtotal - loyaltyDiscountCentavos);
   const totals = calculateOrderTotals(
     subtotal,
     deliveryQuote?.serviceable ? deliveryQuote.feeCentavos : 0,
+    loyaltyDiscountCentavos,
   );
-  const pointsPending = calculateLoyaltyPoints(subtotal);
+  const pointsPending = calculateLoyaltyPoints(loyaltyQualifyingSubtotalCentavos);
+  const hasPaymentDue = totals.totalCentavos > 0;
+  const gcashPaymentAvailable = gcashAvailable && hasPaymentDue;
+  const paymentChoices = useMemo<readonly PaymentChoice[]>(() => [
+    {
+      method: 'cod',
+      title: hasPaymentDue ? 'Cash on delivery' : 'No payment due',
+      description: hasPaymentDue
+        ? 'Prepare the final amount and pay when your order arrives.'
+        : 'Your loyalty discount covers the merchandise and no delivery fee is due.',
+    },
+    {
+      method: 'gcash',
+      title: 'GCash',
+      description: !hasPaymentDue
+        ? 'No GCash payment is needed because the payable total is ₱0.00.'
+        : gcashLoading
+          ? 'Checking the current GCash payment details.'
+          : gcashPaymentAvailable
+            ? 'Send the payment, upload a clear screenshot, and wait for payment review.'
+            : GCASH_UNAVAILABLE_MESSAGE,
+      disabled: !hasPaymentDue || gcashLoading || !gcashPaymentAvailable,
+    },
+  ], [gcashLoading, gcashPaymentAvailable, hasPaymentDue]);
   const stageIndex = STAGES.findIndex((item) => item.id === stage);
   const locationComplete = Boolean(selectedAddress && deliveryQuote?.serviceable);
+
+  useEffect(() => {
+    if (hasPaymentDue || paymentMethod !== 'gcash') return;
+    setPaymentMethod('cod');
+    setLockedGCashSettings(null);
+    setProofImageDataUrl('');
+    setProofFileName('');
+    setProofFile(null);
+  }, [hasPaymentDue, paymentMethod]);
 
   if (!catalogInitialized) {
     return (
@@ -278,6 +356,15 @@ export default function CheckoutScreen() {
       return;
     }
     if (stage === 'payment') {
+      if (!loyaltyPointsValid) {
+        setError(`Use between 0 and ${maxRedeemableLoyaltyPoints} loyalty points for this order.`);
+        return;
+      }
+      if (paymentMethod === 'gcash' && !gcashPaymentAvailable) {
+        setError(GCASH_UNAVAILABLE_MESSAGE);
+        setPaymentMethod('cod');
+        return;
+      }
       if (paymentMethod === 'gcash') {
         setPaymentNoticeOpen(true);
       } else {
@@ -337,6 +424,16 @@ export default function CheckoutScreen() {
       setError('Confirm your delivery location before placing the order.');
       return;
     }
+    if (!loyaltyPointsValid) {
+      setError(`Use between 0 and ${maxRedeemableLoyaltyPoints} loyalty points for this order.`);
+      setStage('payment');
+      return;
+    }
+    if (paymentMethod === 'gcash' && (!lockedGCashSettings?.enabled || !hasPaymentDue)) {
+      setError(hasPaymentDue ? GCASH_UNAVAILABLE_MESSAGE : 'No payment is due. Continue with the zero-balance order instead.');
+      setStage('payment');
+      return;
+    }
     if (paymentMethod === 'gcash' && !proofFile) {
       setError('Upload your GCash payment screenshot before placing the order.');
       return;
@@ -355,6 +452,15 @@ export default function CheckoutScreen() {
         deliveryAddressId: selectedDeliveryAddressId,
         deliverySchedule: selectedSchedule,
         paymentMethod,
+        ...(paymentMethod === 'gcash' && lockedGCashSettings
+          ? { gcashSettingsVersion: lockedGCashSettings.version }
+          : {}),
+        ...(requestedLoyaltyPoints > 0
+          ? {
+              requestedLoyaltyPoints,
+              loyaltyPointsAvailableSnapshot: availableLoyaltyPoints,
+            }
+          : {}),
         ...(customerNote.trim() ? { customerNote: customerNote.trim() } : {}),
         idempotencyKey: stableKey,
       }, paymentMethod === 'gcash' ? proofFile : null);
@@ -371,7 +477,40 @@ export default function CheckoutScreen() {
       setPlacementPhase('opening_confirmation');
       router.push(`/customer/orders/${result.orderId}/confirmation`);
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : 'The order could not be placed.');
+      const message = submissionError instanceof Error ? submissionError.message : 'The order could not be placed.';
+      if (
+        paymentMethod === 'gcash'
+        && submissionError instanceof OperationsApiError
+        && submissionError.status === 409
+        && /GCash payment details were updated/i.test(message)
+      ) {
+        setLockedGCashSettings(null);
+        setGCashSettings(null);
+        setPaymentMethod('cod');
+        setProofImageDataUrl('');
+        setProofFileName('');
+        setProofFile(null);
+        setStage('payment');
+      }
+      if (
+        submissionError instanceof OperationsApiError
+        && submissionError.status === 409
+        && /Loyalty balance changed|Loyalty points cannot exceed/i.test(message)
+      ) {
+        setLoyaltyPointsInput('');
+        setLockedGCashSettings(null);
+        setProofImageDataUrl('');
+        setProofFileName('');
+        setProofFile(null);
+        setStage('payment');
+        try {
+          const operations = await fetchOperationalSnapshot();
+          syncOperationalSnapshot(operations);
+        } catch {
+          // Keep the server error visible. The customer can refresh if the snapshot retry fails.
+        }
+      }
+      setError(message);
       setPlacementPhase(null);
     }
   };
@@ -508,7 +647,7 @@ export default function CheckoutScreen() {
               </SchedulePreferencePanel>
 
               <Notice tone="info">
-                Estimated arrival begins after the order is confirmed. GCash orders may require payment verification before processing.
+                Estimated arrival begins after the order is confirmed. Available payment methods are shown on the next step.
               </Notice>
 
               <NoteField
@@ -524,18 +663,94 @@ export default function CheckoutScreen() {
           {stage === 'payment' ? (
             <>
               <StageTitle>Choose how you want to pay</StageTitle>
-              <StageDescription>Your payment details are reviewed on the next step.</StageDescription>
+              <StageDescription>Apply any available loyalty points first, then choose the payment method for the remaining total.</StageDescription>
+              <LoyaltyPanel aria-labelledby="checkout-loyalty-title">
+                <LoyaltyHeader>
+                  <div>
+                    <LoyaltyTitle id="checkout-loyalty-title">Use loyalty points</LoyaltyTitle>
+                    <StageDescription>1 point = ₱1. Points reduce merchandise only and do not reduce the delivery fee.</StageDescription>
+                  </div>
+                  <LoyaltyBalance>{availableLoyaltyPoints} points available</LoyaltyBalance>
+                </LoyaltyHeader>
+                {maxRedeemableLoyaltyPoints > 0 ? (
+                  <>
+                    <LoyaltyControls>
+                      <LoyaltyPointsField
+                        error={!loyaltyPointsValid}
+                        helperText={loyaltyPointsValid
+                          ? `Use up to ${maxRedeemableLoyaltyPoints} points on this order.`
+                          : `Enter a whole number from 0 to ${maxRedeemableLoyaltyPoints}.`}
+                        label="Points to use"
+                        onChange={(event) => {
+                          const nextValue = event.target.value.replace(/\D/g, '').slice(0, 6);
+                          if (nextValue === loyaltyPointsInput) return;
+                          setLoyaltyPointsInput(nextValue);
+                          setProofImageDataUrl('');
+                          setProofFileName('');
+                          setProofFile(null);
+                        }}
+                        slotProps={{
+                          htmlInput: {
+                            inputMode: 'numeric',
+                            maxLength: 6,
+                            pattern: '[0-9]*',
+                          },
+                        }}
+                        value={loyaltyPointsInput}
+                      />
+                      <LoyaltyMaximumButton
+                        onClick={() => {
+                          const nextValue = String(maxRedeemableLoyaltyPoints);
+                          if (nextValue !== loyaltyPointsInput) {
+                            setLoyaltyPointsInput(nextValue);
+                            setProofImageDataUrl('');
+                            setProofFileName('');
+                            setProofFile(null);
+                          }
+                        }}
+                        type="button"
+                        variant="outlined"
+                      >
+                        Use maximum
+                      </LoyaltyMaximumButton>
+                    </LoyaltyControls>
+                    {loyaltyDiscountCentavos > 0 ? (
+                      <LoyaltySavings>You save {formatPhp(loyaltyDiscountCentavos)} on merchandise.</LoyaltySavings>
+                    ) : null}
+                  </>
+                ) : (
+                  <StageDescription>You do not have redeemable points for this order yet.</StageDescription>
+                )}
+              </LoyaltyPanel>
+              {!hasPaymentDue ? (
+                <Notice tone="info">Your payable total is ₱0.00. No GCash transfer is needed for this order.</Notice>
+              ) : null}
               <ChoiceList role="radiogroup" aria-label="Payment method">
-                {PAYMENT_CHOICES.map((choice) => (
-                  <ChoiceCard key={choice.method} $selected={choice.method === paymentMethod}>
+                {paymentChoices.map((choice) => (
+                  <ChoiceCard
+                    aria-disabled={choice.disabled || undefined}
+                    key={choice.method}
+                    $disabled={choice.disabled}
+                    $selected={choice.method === paymentMethod}
+                  >
                     <ChoiceRadio
                       checked={choice.method === paymentMethod}
+                      disabled={choice.disabled}
                       name="payment-method"
-                      onChange={() => setPaymentMethod(choice.method)}
+                      onChange={() => {
+                        if (choice.disabled) return;
+                        setPaymentMethod(choice.method);
+                        if (choice.method === 'cod') {
+                          setLockedGCashSettings(null);
+                          setProofImageDataUrl('');
+                          setProofFileName('');
+                          setProofFile(null);
+                        }
+                      }}
                       value={choice.method}
                     />
                     <ChoiceCopy>
-                      <ChoiceTitle>{choice.title}</ChoiceTitle>
+                      <ChoiceTitle>{choice.title}{choice.disabled ? ' · Unavailable' : ''}</ChoiceTitle>
                       <ChoiceDescription>{choice.description}</ChoiceDescription>
                     </ChoiceCopy>
                   </ChoiceCard>
@@ -546,23 +761,27 @@ export default function CheckoutScreen() {
 
           {stage === 'payment_details' && paymentMethod === 'cod' ? (
             <>
-              <StageTitle>Prepare for cash on delivery</StageTitle>
-              <StageDescription>You can pay when your order arrives at the pinned delivery location.</StageDescription>
+              <StageTitle>{hasPaymentDue ? 'Prepare for cash on delivery' : 'No payment due'}</StageTitle>
+              <StageDescription>
+                {hasPaymentDue
+                  ? 'You can pay when your order arrives at the pinned delivery location.'
+                  : 'Your loyalty discount covers the merchandise and no delivery fee is due.'}
+              </StageDescription>
               <PaymentPanel>
                 <WalletCards aria-hidden="true" />
                 <div>
-                  <StageDescription>Amount to prepare</StageDescription>
+                  <StageDescription>{hasPaymentDue ? 'Amount to prepare' : 'Amount due'}</StageDescription>
                   <PaymentAmount>{formatPhp(totals.totalCentavos)}</PaymentAmount>
                 </div>
               </PaymentPanel>
-              <Notice tone="info">Please have the displayed amount ready when the delivery arrives.</Notice>
+              <Notice tone="info">{hasPaymentDue ? 'Please have the displayed amount ready when the delivery arrives.' : 'Nothing needs to be collected for this order.'}</Notice>
             </>
           ) : null}
 
-          {stage === 'payment_details' && paymentMethod === 'gcash' ? (
+          {stage === 'payment_details' && paymentMethod === 'gcash' && lockedGCashSettings?.enabled ? (
             <>
               <StageTitle>Complete your GCash payment</StageTitle>
-              <StageDescription>Send the exact total, then upload a clear screenshot so the payment can be reviewed.</StageDescription>
+              <StageDescription>Send the exact total to the account below, then upload a clear screenshot so the payment can be reviewed.</StageDescription>
               <PaymentPanel>
                 <Smartphone aria-hidden="true" />
                 <div>
@@ -570,6 +789,37 @@ export default function CheckoutScreen() {
                   <PaymentAmount>{formatPhp(totals.totalCentavos)}</PaymentAmount>
                 </div>
               </PaymentPanel>
+              <PaymentRecipientList aria-label="GCash recipient details">
+                <dt>Recipient</dt>
+                <dd>{lockedGCashSettings.recipientName}</dd>
+                {lockedGCashSettings.accountNumber ? (
+                  <>
+                    <dt>GCash number</dt>
+                    <PaymentAccountValue>
+                      <span>{lockedGCashSettings.accountNumber}</span>
+                      <CopyNumberButton
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(lockedGCashSettings.accountNumber);
+                            setCopiedGcashNumber(true);
+                            globalThis.setTimeout(() => setCopiedGcashNumber(false), 1800);
+                          } catch {
+                            setError('Copy is not available in this browser. You can still enter the displayed number manually.');
+                          }
+                        }}
+                        size="small"
+                        type="button"
+                        variant="text"
+                      >
+                        {copiedGcashNumber ? 'Copied' : 'Copy'}
+                      </CopyNumberButton>
+                    </PaymentAccountValue>
+                  </>
+                ) : null}
+              </PaymentRecipientList>
+              {lockedGCashSettings.qrImageUrl ? (
+                <PaymentQrImage alt="GCash payment QR code" src={lockedGCashSettings.qrImageUrl} />
+              ) : null}
               <UploadArea>
                 <StageDescription>Upload a PNG, JPG, or WebP screenshot up to 5 MB.</StageDescription>
                 <UploadButton component="label" variant="outlined">
@@ -632,8 +882,14 @@ export default function CheckoutScreen() {
                 </ReviewItem>
                 <ReviewItem>
                   <ReviewLabel>Payment</ReviewLabel>
-                  <ReviewValue>{paymentMethod === 'cod' ? 'Cash on delivery' : 'GCash, screenshot submitted'}</ReviewValue>
+                  <ReviewValue>{!hasPaymentDue ? 'No payment due' : paymentMethod === 'cod' ? 'Cash on delivery' : 'GCash, screenshot submitted'}</ReviewValue>
                 </ReviewItem>
+                {requestedLoyaltyPoints > 0 ? (
+                  <ReviewItem>
+                    <ReviewLabel>Loyalty points</ReviewLabel>
+                    <ReviewValue>{requestedLoyaltyPoints} points · −{formatPhp(loyaltyDiscountCentavos)}</ReviewValue>
+                  </ReviewItem>
+                ) : null}
               </ReviewList>
             </>
           ) : null}
@@ -669,10 +925,13 @@ export default function CheckoutScreen() {
           <SummaryList>
             <SummaryRow><dt>Subtotal</dt><dd>{formatPhp(totals.subtotalCentavos)}</dd></SummaryRow>
             <SummaryRow><dt>Delivery</dt><dd>{deliveryQuote?.serviceable ? formatPhp(totals.deliveryFeeCentavos) : 'Select address'}</dd></SummaryRow>
+            {totals.loyaltyDiscountCentavos > 0 ? (
+              <SummaryRow><dt>Loyalty discount</dt><dd>−{formatPhp(totals.loyaltyDiscountCentavos)}</dd></SummaryRow>
+            ) : null}
             <SummaryTotal><dt>Total</dt><dd>{formatPhp(totals.totalCentavos)}</dd></SummaryTotal>
           </SummaryList>
           {deliveryQuote ? <Notice tone={deliveryQuote.serviceable ? 'info' : 'warning'}>{deliveryQuote.label}</Notice> : null}
-          <FinePrint>Estimated loyalty after delivery: {pointsPending} points.</FinePrint>
+          <FinePrint>Estimated loyalty after delivery: {pointsPending} points based on the merchandise amount paid after redemption.</FinePrint>
         </SummaryPanel>
       </CheckoutLayout>
 
@@ -692,7 +951,7 @@ export default function CheckoutScreen() {
         aria-describedby="gcash-payment-notice-description"
         aria-labelledby="gcash-payment-notice-title"
         onClose={() => setPaymentNoticeOpen(false)}
-        open={paymentNoticeOpen}
+        open={paymentNoticeOpen && gcashPaymentAvailable}
       >
         <PaymentNoticeTitle id="gcash-payment-notice-title">Before sending your payment</PaymentNoticeTitle>
         <PaymentNoticeContent id="gcash-payment-notice-description">
@@ -702,6 +961,19 @@ export default function CheckoutScreen() {
           <SecondaryButton onClick={() => setPaymentNoticeOpen(false)}>Go back</SecondaryButton>
           <PrimaryButton
             onClick={() => {
+              if (!gcashSettings?.enabled || !hasPaymentDue) {
+                setPaymentNoticeOpen(false);
+                setPaymentMethod('cod');
+                setError(GCASH_UNAVAILABLE_MESSAGE);
+                return;
+              }
+              if (lockedGCashSettings && lockedGCashSettings.version !== gcashSettings.version) {
+                setProofImageDataUrl('');
+                setProofFileName('');
+                setProofFile(null);
+              }
+              setCopiedGcashNumber(false);
+              setLockedGCashSettings(gcashSettings);
               setPaymentNoticeOpen(false);
               setStage('payment_details');
             }}

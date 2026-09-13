@@ -35,10 +35,11 @@ import type { LoyaltyRuleRow } from './interface';
 const RULES: readonly LoyaltyRuleRow[] = [
   { term: 'Qualification', value: 'At least ₱500 merchandise subtotal' },
   { term: 'Earning', value: '1 point for each complete ₱100 of qualifying subtotal' },
-  { term: 'Value', value: '1 point displays as ₱1' },
-  { term: 'Settlement', value: 'After a successful delivery' },
-  { term: 'Bonus', value: 'Not currently available' },
-  { term: 'Redemption', value: 'Not currently available' },
+  { term: 'Value', value: '1 point = ₱1' },
+  { term: 'Settlement', value: 'Earned points settle after a successful delivery' },
+  { term: 'Redemption', value: 'Use available points during checkout, up to the merchandise subtotal' },
+  { term: 'Delivery fee', value: 'Loyalty points do not reduce the delivery fee' },
+  { term: 'Bonus', value: 'Pending exact business-rule confirmation' },
 ];
 
 export default function LoyaltyScreen() {
@@ -68,13 +69,13 @@ export default function LoyaltyScreen() {
         <HeroCopy>
           <Title>Loyalty points</Title>
           <Lead>
-            Understand what has settled, what remains pending, and how points are earned.
+            See your available balance, pending earnings, and points used or restored from orders.
           </Lead>
         </HeroCopy>
         <BalancePanel>
           <BalanceLabel>Available balance</BalanceLabel>
           <BalanceValue>{points} points</BalanceValue>
-          <BalanceEquivalent>Displayed value: {formatPhp(calculateLoyaltyPesoValue(points))}</BalanceEquivalent>
+          <BalanceEquivalent>Redeemable value: {formatPhp(calculateLoyaltyPesoValue(points))}</BalanceEquivalent>
         </BalancePanel>
       </Hero>
 
@@ -89,15 +90,15 @@ export default function LoyaltyScreen() {
                     <ActivityDescription>{item.description}</ActivityDescription>
                     <ActivityDate>{item.createdAt.slice(0, 10)} · {item.type.replaceAll('_', ' ')}</ActivityDate>
                   </ActivityCopy>
-                  <ActivityPoints>
-                    {item.type === 'manual_debit' ? '−' : '+'}{item.points}
+                  <ActivityPoints $debit={item.type === 'manual_debit' || item.type === 'redeemed'}>
+                    {item.type === 'manual_debit' || item.type === 'redeemed' ? '−' : '+'}{item.points}
                   </ActivityPoints>
                 </ActivityRow>
               ))}
             </ActivityList>
           ) : (
             <EmptyState
-              description="Points activity appears after delivery or an account adjustment."
+              description="Points activity appears after delivery, checkout redemption, restoration, or an account adjustment."
               title="No loyalty activity yet"
             />
           )}

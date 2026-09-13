@@ -30,6 +30,8 @@ describe('calm operations workspace redesign', () => {
   it('renders every admin navigation item with a valid icon mapping', () => {
     expect(routeShell).toContain("icon: 'accounts'");
     expect(shellIndex).toContain('accounts: UserPlus');
+    expect(routeShell).toContain("icon: 'payments'");
+    expect(shellIndex).toContain('payments: WalletCards');
     expect(shellIndex).toContain('navigationIcons[item.icon] ?? Users');
     expect(shellIndex).not.toContain('UserCog');
   });

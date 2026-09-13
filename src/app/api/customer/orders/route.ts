@@ -3,6 +3,7 @@ import { getAuditRequestContext } from '@/lib/audit/requestContext';
 import { getOperationsApiContext, hasMultipart, OPERATIONS_PRIVATE_HEADERS, operationsRpcError } from '@/lib/orders/apiServer';
 import { OrderEvidenceError, removeOrderEvidence, uploadOrderEvidence } from '@/lib/orders/evidenceServer';
 import { placeOrderSchema } from '@/lib/orders/validation';
+import { GCASH_UNAVAILABLE_MESSAGE, loadGCashPaymentSettingsRow, toCustomerGCashPaymentSettingsView } from '@/lib/payments/server';
 import { isSameOriginMutation } from '@/lib/security/request';
 
 const MAX_FORM_BYTES = 6 * 1024 * 1024;
@@ -25,6 +26,30 @@ export async function POST(request: NextRequest) {
   const parsed = placeOrderSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Check the order details.' }, { status: 400, headers: OPERATIONS_PRIVATE_HEADERS });
 
+  if (parsed.data.paymentMethod === 'gcash') {
+    try {
+      const settings = await loadGCashPaymentSettingsRow(context.adminClient);
+      const customerView = await toCustomerGCashPaymentSettingsView(context.adminClient, settings);
+      if (!customerView.enabled) {
+        return NextResponse.json(
+          { error: GCASH_UNAVAILABLE_MESSAGE },
+          { status: 409, headers: OPERATIONS_PRIVATE_HEADERS },
+        );
+      }
+      if (Number(settings.version) !== parsed.data.gcashSettingsVersion) {
+        return NextResponse.json(
+          { error: 'GCash payment details were updated. Review the current payment information before continuing.' },
+          { status: 409, headers: OPERATIONS_PRIVATE_HEADERS },
+        );
+      }
+    } catch {
+      return NextResponse.json(
+        { error: GCASH_UNAVAILABLE_MESSAGE },
+        { status: 503, headers: OPERATIONS_PRIVATE_HEADERS },
+      );
+    }
+  }
+
   const proofValue = form.get('proof');
   const proof = proofValue instanceof File && proofValue.size > 0 ? proofValue : null;
   if (parsed.data.paymentMethod === 'gcash' && !proof) return NextResponse.json({ error: 'Upload your GCash payment screenshot.' }, { status: 400, headers: OPERATIONS_PRIVATE_HEADERS });
@@ -34,13 +59,16 @@ export async function POST(request: NextRequest) {
   try {
     if (proof) proofPath = await uploadOrderEvidence(context.adminClient, context.actor.id, 'payments', proof);
     const audit = getAuditRequestContext(request);
-    const { data, error } = await context.adminClient.rpc('customer_place_order', {
+    const { data, error } = await context.adminClient.rpc('customer_place_order_with_payment_settings', {
       p_actor_id: context.actor.id,
       p_items: parsed.data.items,
       p_address_id: parsed.data.deliveryAddressId,
       p_schedule: parsed.data.deliverySchedule,
       p_payment_method: parsed.data.paymentMethod,
       p_payment_proof_path: proofPath,
+      p_gcash_settings_version: parsed.data.gcashSettingsVersion ?? null,
+      p_requested_loyalty_points: parsed.data.requestedLoyaltyPoints ?? 0,
+      p_loyalty_points_available_snapshot: parsed.data.loyaltyPointsAvailableSnapshot ?? null,
       p_customer_note: parsed.data.customerNote ?? null,
       p_idempotency_key: parsed.data.idempotencyKey,
       p_request_id: audit.requestId,

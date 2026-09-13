@@ -14,6 +14,7 @@ const navigation = [
   { label: 'Deliveries', href: '/admin/deliveries', icon: 'deliveries' as const },
   { label: 'Inventory', href: '/admin/inventory', icon: 'inventory' as const },
   { label: 'Products', href: '/admin/products', icon: 'products' as const },
+  { label: 'Payment settings', href: '/admin/payment-settings', icon: 'payments' as const },
   { label: 'Accounts', href: '/admin/accounts', icon: 'accounts' as const },
   { label: 'Activity History', href: '/admin/activity-history', icon: 'history' as const },
   { label: 'Loyalty', href: '/admin/loyalty', icon: 'loyalty' as const },
@@ -25,10 +26,11 @@ const sectionDescriptions: Readonly<Record<string, string>> = {
   deliveries: 'Assign drivers, monitor progress, and resolve delivery issues.',
   inventory: 'Monitor available, reserved, and low-stock quantities.',
   products: 'Control the MRJE Gas and Bright Star Water product catalog.',
+  'payment-settings': 'Manage the GCash payment destination customers see during checkout.',
   accounts: 'Manage Customer, Deliverer, and Administrator accounts from one directory.',
   'activity-history': 'Review important system actions and trace what changed, who did it, and whether it succeeded.',
   loyalty: 'Track balances, activity, and administrative adjustments.',
-  account: 'Review the current administrator session and account details.',
+  account: 'Review your administrator profile and manage login security.',
 };
 
 export default function AdminRouteShell({ children }: AdminRouteShellProps) {

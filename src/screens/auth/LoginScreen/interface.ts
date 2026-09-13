@@ -1,4 +1,5 @@
 export interface LoginScreenProps {
+  emailChanged?: boolean;
   nextPath?: string;
 }
 

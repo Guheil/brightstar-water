@@ -2,23 +2,192 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  CancellationRequest, Customer, DelivererProfile, Delivery, DeliveryFailureReason,
-  Order, OrderEvent, OrderItem, PaymentRecord, RefundRecord,
+  CancellationRequest, CancellationStatus, Customer, CustomerAccountStatus, DelivererProfile,
+  Delivery, DeliveryFailureReason, DeliveryScheduleMode, DeliveryStatus, InventoryReservationStatus,
+  LoyaltyActivityType, Order, OrderEvent, OrderEventType, OrderItem, OrderStatus, PaymentMethod,
+  PaymentRecord, PaymentStatus, ProductCategory, ProductUnit, RefundRecord, RefundStatus, UserRole,
 } from '@/types';
 import type { SupabaseProfile } from '@/lib/auth/types';
 import type { OperationalSnapshot } from './types';
 
-// The generated Supabase schema does not yet include the operational tables. These mappers
-// convert their database rows into the application's explicit domain types at this boundary.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyRow = Record<string, any>;
+// The generated Supabase schema does not yet include the operational tables. Keep the
+// untyped database boundary explicit here instead of leaking `any` through the domain mappers.
+interface ScheduleRow {
+  schedule_date: string;
+  schedule_window_label: string;
+  schedule_mode: DeliveryScheduleMode;
+  estimated_date: string | null;
+  estimated_window_label: string | null;
+  preferred_date: string | null;
+  preferred_window_label: string | null;
+}
+
+interface OrderItemRow {
+  id: string;
+  order_id: string;
+  product_id: string;
+  sku: string;
+  name: string;
+  category: ProductCategory;
+  unit: ProductUnit;
+  unit_price_centavos: number | string;
+  quantity: number | string;
+  line_total_centavos: number | string;
+}
+
+interface OrderEventRow {
+  id: string;
+  order_id: string;
+  event_type: OrderEventType;
+  label: string;
+  description: string | null;
+  actor_role: UserRole | 'system';
+  actor_id: string | null;
+  occurred_at: string;
+}
+
+interface CancellationRow {
+  id: string;
+  order_id: string;
+  status: CancellationStatus;
+  reason: string;
+  requested_at: string;
+  requested_by: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  review_note: string | null;
+}
+
+interface RefundRow {
+  id: string;
+  order_id: string;
+  payment_id: string;
+  amount_centavos: number | string;
+  status: RefundStatus;
+  reason: string;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+  resolution_note: string | null;
+}
+
+interface PaymentRow {
+  id: string;
+  order_id: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amount_centavos: number | string;
+  reference: string | null;
+  proof_path: string | null;
+  verified_at: string | null;
+  paid_at: string | null;
+  updated_at: string;
+}
+
+interface DeliveryRow extends ScheduleRow {
+  id: string;
+  order_id: string;
+  customer_id: string;
+  deliverer_id: string | null;
+  status: DeliveryStatus;
+  recipient_name: string;
+  phone: string;
+  address_line: string;
+  area: string;
+  municipality: string;
+  province: string;
+  distance_meters: number | string;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  delivery_note: string | null;
+  payment_method: PaymentMethod;
+  amount_to_collect_centavos: number | string;
+  assigned_at: string | null;
+  accepted_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  failure_reason: DeliveryFailureReason | null;
+  failure_note: string | null;
+  failure_reported_at: string | null;
+  failure_reported_by: string | null;
+  completion_recorded_at: string | null;
+  completion_cash_centavos: number | string | null;
+  completion_note: string | null;
+  completion_proof_path: string | null;
+  completion_recorded_by: string | null;
+  updated_at: string;
+}
+
+interface ProfileRow {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  status: CustomerAccountStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DelivererProfileRow {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  status: 'active' | 'inactive';
+}
+
+interface LoyaltyAccountRow {
+  customer_id: string;
+  points_available: number | string;
+  updated_at: string;
+}
+
+interface LoyaltyActivityRow {
+  id: string;
+  customer_id: string;
+  activity_type: LoyaltyActivityType;
+  points: number | string;
+  description: string;
+  order_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+interface OrderRow extends ScheduleRow {
+  id: string;
+  reference: string;
+  customer_id: string;
+  status: OrderStatus;
+  subtotal_centavos: number | string;
+  delivery_fee_centavos: number | string;
+  loyalty_discount_centavos: number | string;
+  total_centavos: number | string;
+  payment_method: PaymentMethod;
+  delivery_address_id: string | null;
+  customer_note: string | null;
+  loyalty_qualifying_subtotal_centavos: number | string;
+  loyalty_points_pending: number | string;
+  loyalty_points_awarded: number | string;
+  loyalty_points_redeemed: number | string;
+  loyalty_redeemed_at: string | null;
+  loyalty_redemption_restored_at: string | null;
+  loyalty_settled_at: string | null;
+  inventory_reservation_status: InventoryReservationStatus;
+  placed_at: string;
+  updated_at: string;
+}
+
+interface DeliveryLookupRow {
+  order_id: string;
+}
+
 const n = (value: unknown) => Number(value ?? 0);
 
-function scheduleOf(row: AnyRow) {
+function scheduleOf(row: ScheduleRow) {
   return {
     date: String(row.schedule_date),
     windowLabel: String(row.schedule_window_label),
-    mode: row.schedule_mode as 'earliest_available' | 'preferred',
+    mode: row.schedule_mode,
     ...(row.estimated_date ? { estimatedDate: String(row.estimated_date) } : {}),
     ...(row.estimated_window_label ? { estimatedWindowLabel: String(row.estimated_window_label) } : {}),
     ...(row.preferred_date ? { preferredDate: String(row.preferred_date) } : {}),
@@ -26,7 +195,7 @@ function scheduleOf(row: AnyRow) {
   };
 }
 
-function mapItem(row: AnyRow): OrderItem {
+function mapItem(row: OrderItemRow): OrderItem {
   return {
     productId: row.product_id,
     sku: row.sku,
@@ -39,7 +208,7 @@ function mapItem(row: AnyRow): OrderItem {
   };
 }
 
-function mapEvent(row: AnyRow): OrderEvent {
+function mapEvent(row: OrderEventRow): OrderEvent {
   return {
     id: row.id,
     orderId: row.order_id,
@@ -52,7 +221,7 @@ function mapEvent(row: AnyRow): OrderEvent {
   };
 }
 
-function mapCancellation(row: AnyRow): CancellationRequest {
+function mapCancellation(row: CancellationRow): CancellationRequest {
   return {
     id: row.id, orderId: row.order_id, status: row.status, reason: row.reason,
     requestedAt: row.requested_at, requestedBy: row.requested_by,
@@ -62,7 +231,7 @@ function mapCancellation(row: AnyRow): CancellationRequest {
   };
 }
 
-function mapRefund(row: AnyRow): RefundRecord {
+function mapRefund(row: RefundRow): RefundRecord {
   return {
     id: row.id, orderId: row.order_id, paymentId: row.payment_id,
     amountCentavos: n(row.amount_centavos), status: row.status, reason: row.reason,
@@ -72,7 +241,7 @@ function mapRefund(row: AnyRow): RefundRecord {
   };
 }
 
-function mapPayment(row: AnyRow): PaymentRecord {
+function mapPayment(row: PaymentRow): PaymentRecord {
   return {
     id: row.id, orderId: row.order_id, method: row.method, status: row.status,
     amountCentavos: n(row.amount_centavos),
@@ -84,14 +253,14 @@ function mapPayment(row: AnyRow): PaymentRecord {
   };
 }
 
-function mapDelivery(row: AnyRow): Delivery {
-  const failure = row.failure_reason ? {
-    reason: row.failure_reason as DeliveryFailureReason,
+function mapDelivery(row: DeliveryRow): Delivery {
+  const failure = row.failure_reason && row.failure_reported_at && row.failure_reported_by ? {
+    reason: row.failure_reason,
     ...(row.failure_note ? { note: row.failure_note } : {}),
     reportedAt: row.failure_reported_at,
     reportedBy: row.failure_reported_by,
   } : undefined;
-  const completionEvidence = row.completion_recorded_at ? {
+  const completionEvidence = row.completion_recorded_at && row.completion_recorded_by ? {
     ...(row.completion_cash_centavos != null ? { cashReceivedCentavos: n(row.completion_cash_centavos) } : {}),
     ...(row.completion_note ? { note: row.completion_note } : {}),
     ...(row.completion_proof_path ? { proofAvailable: true } : {}),
@@ -121,7 +290,7 @@ function mapDelivery(row: AnyRow): Delivery {
   };
 }
 
-function mapCustomer(profile: AnyRow): Customer {
+function mapCustomer(profile: ProfileRow): Customer {
   return {
     id: profile.id, displayName: profile.full_name, email: profile.email,
     phonePlaceholder: profile.phone ?? '', status: profile.status,
@@ -129,35 +298,35 @@ function mapCustomer(profile: AnyRow): Customer {
   };
 }
 
-function mapDeliverer(profile: AnyRow): DelivererProfile {
+function mapDeliverer(profile: DelivererProfileRow): DelivererProfile {
   return {
     id: profile.id, displayName: profile.full_name, email: profile.email,
     phonePlaceholder: profile.phone ?? '', status: profile.status === 'active' ? 'available' : 'off_duty',
   };
 }
 
-async function must<T>(promise: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> {
+async function mustRows<T>(promise: PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
   const { data, error } = await promise;
   if (error) throw error;
-  return (data ?? []) as T;
+  return data ?? [];
 }
 
 async function hydrateOperationalSnapshot(
   client: SupabaseClient,
   profileClient: SupabaseClient,
   actor: SupabaseProfile,
-  orderRows: AnyRow[],
+  orderRows: OrderRow[],
 ): Promise<OperationalSnapshot> {
   const orderIds = orderRows.map((row) => row.id);
   if (!orderIds.length) return emptySnapshot(actor, profileClient);
 
   const [itemRows, paymentRows, deliveryRows, eventRows, cancellationRows, refundRows] = await Promise.all([
-    must<AnyRow[]>(client.from('order_items').select('*').in('order_id', orderIds).order('id')),
-    must<AnyRow[]>(client.from('payments').select('*').in('order_id', orderIds)),
-    must<AnyRow[]>(client.from('deliveries').select('*').in('order_id', orderIds)),
-    must<AnyRow[]>(client.from('order_events').select('*').in('order_id', orderIds).order('occurred_at').order('id')),
-    must<AnyRow[]>(client.from('order_cancellations').select('*').in('order_id', orderIds)),
-    must<AnyRow[]>(client.from('refunds').select('*').in('order_id', orderIds)),
+    mustRows<OrderItemRow>(client.from('order_items').select('*').in('order_id', orderIds).order('id')),
+    mustRows<PaymentRow>(client.from('payments').select('*').in('order_id', orderIds)),
+    mustRows<DeliveryRow>(client.from('deliveries').select('*').in('order_id', orderIds)),
+    mustRows<OrderEventRow>(client.from('order_events').select('*').in('order_id', orderIds).order('occurred_at').order('id')),
+    mustRows<CancellationRow>(client.from('order_cancellations').select('*').in('order_id', orderIds)),
+    mustRows<RefundRow>(client.from('refunds').select('*').in('order_id', orderIds)),
   ]);
 
   const itemsByOrder = new Map<string, OrderItem[]>();
@@ -191,7 +360,10 @@ async function hydrateOperationalSnapshot(
       qualifyingSubtotalCentavos: n(row.loyalty_qualifying_subtotal_centavos),
       pointsPending: n(row.loyalty_points_pending),
       pointsAwarded: n(row.loyalty_points_awarded),
+      pointsRedeemed: n(row.loyalty_points_redeemed),
       discountCentavos: n(row.loyalty_discount_centavos),
+      ...(row.loyalty_redeemed_at ? { redeemedAt: row.loyalty_redeemed_at } : {}),
+      ...(row.loyalty_redemption_restored_at ? { redemptionRestoredAt: row.loyalty_redemption_restored_at } : {}),
       ...(row.loyalty_settled_at ? { settledAt: row.loyalty_settled_at } : {}),
     },
     inventoryReservationStatus: row.inventory_reservation_status,
@@ -205,25 +377,25 @@ async function hydrateOperationalSnapshot(
   const customerIds = [...new Set(orderRows.map((row) => row.customer_id))];
   const [profileRows, delivererProfiles, loyaltyAccounts, loyaltyActivity] = await Promise.all([
     actor.role === 'customer'
-      ? [actor]
+      ? Promise.resolve<ProfileRow[]>([actor])
       : actor.role === 'admin' && customerIds.length
-        ? must<AnyRow[]>(profileClient.from('profiles').select('id,email,full_name,phone,status,created_at,updated_at').in('id', customerIds))
-      : Promise.resolve([]),
+        ? mustRows<ProfileRow>(profileClient.from('profiles').select('id,email,full_name,phone,status,created_at,updated_at').in('id', customerIds))
+      : Promise.resolve<ProfileRow[]>([]),
     actor.role === 'admin'
-      ? must<AnyRow[]>(profileClient.from('profiles').select('id,email,full_name,phone,status').eq('role', 'deliverer').eq('onboarding_stage', 'complete').order('full_name').limit(500))
-      : Promise.resolve(actor.role === 'deliverer'
+      ? mustRows<DelivererProfileRow>(profileClient.from('profiles').select('id,email,full_name,phone,status').eq('role', 'deliverer').eq('onboarding_stage', 'complete').order('full_name').limit(500))
+      : Promise.resolve<DelivererProfileRow[]>(actor.role === 'deliverer'
         ? [{ id: actor.id, email: actor.email, full_name: actor.full_name, phone: actor.phone, status: actor.status }]
         : []),
     actor.role === 'customer'
-      ? must<AnyRow[]>(client.from('loyalty_accounts').select('*').eq('customer_id', actor.id))
+      ? mustRows<LoyaltyAccountRow>(client.from('loyalty_accounts').select('*').eq('customer_id', actor.id))
       : customerIds.length
-        ? must<AnyRow[]>(client.from('loyalty_accounts').select('*').in('customer_id', customerIds).limit(500))
-        : Promise.resolve([]),
+        ? mustRows<LoyaltyAccountRow>(client.from('loyalty_accounts').select('*').in('customer_id', customerIds).limit(500))
+        : Promise.resolve<LoyaltyAccountRow[]>([]),
     actor.role === 'customer'
-      ? must<AnyRow[]>(client.from('loyalty_activity').select('*').eq('customer_id', actor.id).order('created_at', { ascending: false }).limit(200))
+      ? mustRows<LoyaltyActivityRow>(client.from('loyalty_activity').select('*').eq('customer_id', actor.id).order('created_at', { ascending: false }).limit(200))
       : customerIds.length
-        ? must<AnyRow[]>(client.from('loyalty_activity').select('*').in('customer_id', customerIds).order('created_at', { ascending: false }).limit(500))
-        : Promise.resolve([]),
+        ? mustRows<LoyaltyActivityRow>(client.from('loyalty_activity').select('*').in('customer_id', customerIds).order('created_at', { ascending: false }).limit(500))
+        : Promise.resolve<LoyaltyActivityRow[]>([]),
   ]);
 
   return {
@@ -268,7 +440,7 @@ export async function loadOperationalSnapshot(
       .order('id', { ascending: false })
       .limit(INITIAL_ORDER_LIMIT);
   }
-  return hydrateOperationalSnapshot(client, profileClient, actor, await must<AnyRow[]>(orderQuery));
+  return hydrateOperationalSnapshot(client, profileClient, actor, await mustRows<OrderRow>(orderQuery));
 }
 
 export interface OperationalCursor {
@@ -307,7 +479,7 @@ export async function loadOperationalOrderPage(
       .limit(safeLimit + 1);
   }
 
-  const rows = await must<AnyRow[]>(orderQuery);
+  const rows = await mustRows<OrderRow>(orderQuery);
   const hasMore = rows.length > safeLimit;
   const visibleRows = rows.slice(0, safeLimit);
   const last = visibleRows.at(-1);
@@ -319,10 +491,10 @@ export async function loadOperationalOrderPage(
 
 async function emptySnapshot(actor: SupabaseProfile, profileClient?: SupabaseClient): Promise<OperationalSnapshot> {
   if (actor.role === 'admin' && profileClient) {
-    const deliverers = await must<AnyRow[]>(profileClient.from('profiles').select('id,email,full_name,phone,status').eq('role','deliverer').eq('onboarding_stage','complete').order('full_name').limit(500));
+    const deliverers = await mustRows<DelivererProfileRow>(profileClient.from('profiles').select('id,email,full_name,phone,status').eq('role','deliverer').eq('onboarding_stage','complete').order('full_name').limit(500));
     return { orders: [], deliveries: [], payments: [], deliverers: deliverers.map(mapDeliverer), customers: [], loyaltyAccounts: [], loyaltyActivity: [] };
   }
-  const deliverers = actor.role === 'deliverer' ? [mapDeliverer(actor as unknown as AnyRow)] : [];
+  const deliverers = actor.role === 'deliverer' ? [mapDeliverer(actor)] : [];
   return { orders: [], deliveries: [], payments: [], deliverers, customers: [], loyaltyAccounts: [], loyaltyActivity: [] };
 }
 
@@ -341,7 +513,7 @@ export async function loadOperationalOrderDetail(
       .eq('deliveries.deliverer_id', actor.id)
       .limit(1);
   }
-  const rows = await must<AnyRow[]>(query);
+  const rows = await mustRows<OrderRow>(query);
   if (!rows.length) return null;
   return hydrateOperationalSnapshot(client, profileClient, actor, rows);
 }
@@ -355,7 +527,7 @@ export async function loadOperationalDeliveryDetail(
   let query = client.from('deliveries').select('order_id').eq('id', deliveryId).limit(1);
   if (actor.role === 'customer') query = query.eq('customer_id', actor.id);
   if (actor.role === 'deliverer') query = query.eq('deliverer_id', actor.id);
-  const deliveries = await must<AnyRow[]>(query);
+  const deliveries = await mustRows<DeliveryLookupRow>(query);
   const orderId = deliveries[0]?.order_id;
   if (!orderId) return null;
   return loadOperationalOrderDetail(client, profileClient, actor, String(orderId));

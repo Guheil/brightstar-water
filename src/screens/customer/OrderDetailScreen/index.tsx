@@ -232,6 +232,9 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
               <DefinitionRow><dt>Payment state</dt><dd>{payment?.status.replaceAll('_', ' ') ?? 'Unavailable'}</dd></DefinitionRow>
               <DefinitionRow><dt>Subtotal</dt><dd>{formatPhp(order.totals.subtotalCentavos)}</dd></DefinitionRow>
               <DefinitionRow><dt>Delivery</dt><dd>{formatPhp(order.totals.deliveryFeeCentavos)}</dd></DefinitionRow>
+              {order.totals.loyaltyDiscountCentavos > 0 ? (
+                <DefinitionRow><dt>Loyalty discount</dt><dd>−{formatPhp(order.totals.loyaltyDiscountCentavos)}</dd></DefinitionRow>
+              ) : null}
               <DefinitionTotal><dt>Total</dt><dd>{formatPhp(order.totals.totalCentavos)}</dd></DefinitionTotal>
             </DefinitionList>
           </Panel>
@@ -247,9 +250,11 @@ export default function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
           <Panel>
             <SectionTitle>Loyalty effect</SectionTitle>
+            <AddressText>{order.loyalty.pointsRedeemed} points redeemed</AddressText>
             <AddressText>{order.loyalty.pointsPending} points pending</AddressText>
             <AddressText>{order.loyalty.pointsAwarded} points awarded</AddressText>
-            <AddressText>Points settle after successful delivery. Redemption remains disabled.</AddressText>
+            {order.loyalty.redemptionRestoredAt ? <AddressText>Redeemed points were restored after the order ended.</AddressText> : null}
+            <AddressText>1 point = ₱1. Earned points settle after successful delivery.</AddressText>
           </Panel>
         </SideColumn>
       </ContentGrid>

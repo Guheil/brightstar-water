@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateDeliveryFee,
+  calculateLoyaltyDiscount,
+  calculateMaxLoyaltyRedeemablePoints,
   calculateLoyaltyPoints,
   calculateLoyaltyPesoValue,
 } from '@/utils';
@@ -31,8 +33,20 @@ describe('provisional loyalty calculation', () => {
     expect(calculateLoyaltyPoints(59_999)).toBe(5);
   });
 
-  it('values one point at one peso while redemption stays separately gated', () => {
+  it('values one point at one peso', () => {
     expect(calculateLoyaltyPesoValue(5)).toBe(500);
     expect(calculateLoyaltyPesoValue(-2)).toBe(0);
+  });
+
+  it('caps redemption by both the available balance and merchandise subtotal', () => {
+    expect(calculateMaxLoyaltyRedeemablePoints(84, 92_000)).toBe(84);
+    expect(calculateMaxLoyaltyRedeemablePoints(84, 5_000)).toBe(50);
+    expect(calculateMaxLoyaltyRedeemablePoints(-2, 92_000)).toBe(0);
+  });
+
+  it('converts redeemed points to a merchandise-only peso discount', () => {
+    expect(calculateLoyaltyDiscount(50, 92_000)).toBe(5_000);
+    expect(calculateLoyaltyDiscount(100, 5_000)).toBe(5_000);
+    expect(calculateLoyaltyDiscount(0, 92_000)).toBe(0);
   });
 });

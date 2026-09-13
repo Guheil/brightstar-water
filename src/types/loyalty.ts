@@ -1,6 +1,6 @@
 import type { EntityId, ISODateString, MoneyCentavos } from './shared';
 
-export type LoyaltyActivityType = 'earned' | 'manual_credit' | 'manual_debit';
+export type LoyaltyActivityType = 'earned' | 'redeemed' | 'restored' | 'manual_credit' | 'manual_debit';
 
 export interface LoyaltyActivity {
   id: EntityId;
@@ -23,7 +23,10 @@ export interface LoyaltyEffect {
   qualifyingSubtotalCentavos: MoneyCentavos;
   pointsPending: number;
   pointsAwarded: number;
+  pointsRedeemed: number;
   discountCentavos: MoneyCentavos;
+  redeemedAt?: ISODateString;
+  redemptionRestoredAt?: ISODateString;
   settledAt?: ISODateString;
 }
 

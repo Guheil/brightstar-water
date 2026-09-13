@@ -32,6 +32,15 @@ export interface SyncAuthSessionInput {
   phone?: string;
 }
 
+
+export interface SyncCustomerProfileInput {
+  customerId: EntityId;
+  displayName: string;
+  email: string;
+  phone: string;
+  updatedAt: ISODateString;
+}
+
 export interface SyncCatalogSnapshotInput {
   products: Product[];
   inventory: InventoryItem[];
@@ -154,6 +163,7 @@ export interface AppCommands {
   syncOperationalSnapshot(input: SyncOperationalSnapshotInput): void;
   mergeOperationalSnapshot(input: SyncOperationalSnapshotInput): void;
   syncCustomerAddresses(customerId: EntityId, addresses: DeliveryAddress[]): void;
+  syncCustomerProfile(input: SyncCustomerProfileInput): void;
   syncCustomerCart(customerId: EntityId, items: CartLine[]): void;
   markCustomerCartFailed(customerId: EntityId, message: string): void;
   markCustomerAddressesFailed(message: string): void;

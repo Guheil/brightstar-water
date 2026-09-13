@@ -347,9 +347,7 @@ export default function MrjeHomeScreen() {
       <InfoSection aria-labelledby="mrje-payment-title">
         <InfoContainer>
           <div>
-            <InfoTitle id="mrje-payment-title">
-              Two payment paths, one clear order review.
-            </InfoTitle>
+            <InfoTitle id="mrje-payment-title">Payment stays clear through the final order review.</InfoTitle>
             <InfoText>
               Payment selection happens after delivery information is known, so
               customers can review the full amount rather than committing to an
@@ -364,9 +362,9 @@ export default function MrjeHomeScreen() {
               </InfoItemText>
             </InfoItem>
             <InfoItem>
-              <InfoItemTitle>GCash payment review</InfoItemTitle>
+              <InfoItemTitle>GCash when available</InfoItemTitle>
               <InfoItemText>
-                GCash orders enter an awaiting-verification state before fulfillment proceeds.
+                Checkout shows the current payment destination and verification step whenever GCash is enabled.
               </InfoItemText>
             </InfoItem>
             <InfoItem>

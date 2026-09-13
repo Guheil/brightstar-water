@@ -20,6 +20,7 @@ import {
   calculateLineTotal,
   calculateLoyaltyDiscount,
   calculateLoyaltyPoints,
+  calculateMaxLoyaltyRedeemablePoints,
   calculateOrderTotals,
   canCancelOrder,
   canRequestRefund,
@@ -142,6 +143,51 @@ export const useAppStore = create<AppStore>()((set, get) => {
           ...state.customers,
           records: mergeBy(state.customers.records, incomingCustomers, (customer) => customer.id),
         },
+      };
+    });
+  };
+
+  const syncCustomerProfile: AppCommands['syncCustomerProfile'] = ({
+    customerId,
+    displayName,
+    email,
+    phone,
+    updatedAt,
+  }) => {
+    set((state) => {
+      const activeCustomerId = getAuthenticatedCustomerId(state);
+      if (!activeCustomerId || activeCustomerId !== customerId) return state;
+
+      const records = state.customers.records.map((customer) =>
+        customer.id === customerId
+          ? {
+              ...customer,
+              displayName,
+              email,
+              phonePlaceholder: phone,
+              updatedAt,
+            }
+          : customer,
+      );
+
+      const session = state.auth.session;
+      const auth = session?.user.customerId === customerId
+        ? {
+            ...state.auth,
+            session: {
+              ...session,
+              user: {
+                ...session.user,
+                displayName,
+                email,
+              },
+            },
+          }
+        : state.auth;
+
+      return {
+        auth,
+        customers: { ...state.customers, records },
       };
     });
   };
@@ -457,14 +503,6 @@ export const useAppStore = create<AppStore>()((set, get) => {
       }
     }
 
-    if ((input.requestedLoyaltyPoints ?? 0) > 0) {
-      return commandFailure(
-        'not_allowed',
-        'Loyalty point redemption is currently unavailable.',
-        'requestedLoyaltyPoints',
-      );
-    }
-
     const quantities = new Map<EntityId, number>();
     for (const item of input.items) {
       if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
@@ -517,15 +555,36 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const paymentId = createSequenceId('payment', sequence);
     const deliveryId = createSequenceId('delivery', sequence);
     const subtotalCentavos = calculateCartSubtotal(orderItems);
-    const loyaltyDiscountCentavos = calculateLoyaltyDiscount(
-      input.requestedLoyaltyPoints ?? 0,
+    const requestedLoyaltyPoints = input.requestedLoyaltyPoints ?? 0;
+    if (!Number.isInteger(requestedLoyaltyPoints) || requestedLoyaltyPoints < 0) {
+      return commandFailure('invalid_input', 'Loyalty points must be a non-negative whole number.', 'requestedLoyaltyPoints');
+    }
+    const loyaltyAccount = state.loyalty.accounts.find((item) => item.customerId === customer.id);
+    const maxRedeemableLoyaltyPoints = calculateMaxLoyaltyRedeemablePoints(
+      loyaltyAccount?.pointsAvailable ?? 0,
+      subtotalCentavos,
     );
+    if (requestedLoyaltyPoints > maxRedeemableLoyaltyPoints) {
+      return commandFailure(
+        'invalid_input',
+        `Use no more than ${maxRedeemableLoyaltyPoints} loyalty points on this order.`,
+        'requestedLoyaltyPoints',
+      );
+    }
+    const loyaltyDiscountCentavos = calculateLoyaltyDiscount(
+      requestedLoyaltyPoints,
+      subtotalCentavos,
+    );
+    const qualifyingSubtotalCentavos = Math.max(0, subtotalCentavos - loyaltyDiscountCentavos);
     const totals = calculateOrderTotals(
       subtotalCentavos,
       deliveryQuote.feeCentavos,
       loyaltyDiscountCentavos,
     );
-    const pointsPending = calculateLoyaltyPoints(subtotalCentavos);
+    if (input.paymentMethod === 'gcash' && totals.totalCentavos === 0) {
+      return commandFailure('invalid_input', 'GCash is not needed when loyalty points cover the full payable amount.', 'paymentMethod');
+    }
+    const pointsPending = calculateLoyaltyPoints(qualifyingSubtotalCentavos);
     const placedEvent = createOrderEvent(
       state.meta.nextOrderEventSequence,
       orderId,
@@ -560,13 +619,30 @@ export const useAppStore = create<AppStore>()((set, get) => {
       deliverySchedule: input.deliverySchedule,
       ...(input.customerNote && cleanPlainText(input.customerNote) ? { customerNote: cleanPlainText(input.customerNote) } : {}),
       loyalty: {
-        qualifyingSubtotalCentavos: subtotalCentavos,
+        qualifyingSubtotalCentavos,
         pointsPending,
         pointsAwarded: 0,
+        pointsRedeemed: requestedLoyaltyPoints,
+        ...(requestedLoyaltyPoints > 0 ? { redeemedAt: occurredAt } : {}),
         discountCentavos: loyaltyDiscountCentavos,
       },
       inventoryReservationStatus: 'reserved',
-      events: [placedEvent, reservationEvent],
+      events: [
+        placedEvent,
+        reservationEvent,
+        ...(requestedLoyaltyPoints > 0
+          ? [createOrderEvent(
+              state.meta.nextOrderEventSequence + 2,
+              orderId,
+              'loyalty_redeemed',
+              `${requestedLoyaltyPoints} loyalty points redeemed`,
+              'customer',
+              occurredAt,
+              customer.id,
+              'Loyalty discount applied before payment.',
+            )]
+          : []),
+      ],
       placedAt: occurredAt,
       updatedAt: occurredAt,
     };
@@ -621,6 +697,28 @@ export const useAppStore = create<AppStore>()((set, get) => {
       return adjustment;
     });
 
+    const nextLoyaltyAccounts = requestedLoyaltyPoints > 0 && loyaltyAccount
+      ? state.loyalty.accounts.map((account) =>
+          account.customerId === customer.id
+            ? { ...account, pointsAvailable: account.pointsAvailable - requestedLoyaltyPoints, updatedAt: occurredAt }
+            : account,
+        )
+      : state.loyalty.accounts;
+    const nextLoyaltyActivity = requestedLoyaltyPoints > 0
+      ? [
+          {
+            id: createSequenceId('loyalty-event', state.meta.nextLoyaltyEventSequence),
+            customerId: customer.id,
+            type: 'redeemed' as const,
+            points: requestedLoyaltyPoints,
+            description: `${requestedLoyaltyPoints} points redeemed on ${order.reference}.`,
+            orderId: order.id,
+            createdAt: occurredAt,
+          },
+          ...state.loyalty.activity,
+        ]
+      : state.loyalty.activity;
+
     set({
       orders: { records: [order, ...state.orders.records] },
       payments: { records: [payment, ...state.payments.records] },
@@ -629,11 +727,13 @@ export const useAppStore = create<AppStore>()((set, get) => {
         items: nextInventoryItems,
         adjustments: [...reservationAdjustments.reverse(), ...state.inventory.adjustments],
       },
+      loyalty: { accounts: nextLoyaltyAccounts, activity: nextLoyaltyActivity },
       meta: {
         ...state.meta,
         nextOrderSequence: sequence + 1,
-        nextOrderEventSequence: state.meta.nextOrderEventSequence + 2,
+        nextOrderEventSequence: state.meta.nextOrderEventSequence + 2 + (requestedLoyaltyPoints > 0 ? 1 : 0),
         nextInventoryEventSequence: inventorySequence,
+        nextLoyaltyEventSequence: state.meta.nextLoyaltyEventSequence + (requestedLoyaltyPoints > 0 ? 1 : 0),
       },
     });
 
@@ -1154,8 +1254,9 @@ export const useAppStore = create<AppStore>()((set, get) => {
     }
 
     const occurredAt = resolveTimestamp(at);
+    let eventSequence = state.meta.nextOrderEventSequence;
     const event = createOrderEvent(
-      state.meta.nextOrderEventSequence,
+      eventSequence++,
       order.id,
       'delivery_failed',
       'Delivery attempt failed',
@@ -1164,6 +1265,19 @@ export const useAppStore = create<AppStore>()((set, get) => {
       delivererId,
       note?.trim() || 'The failed delivery requires Admin review.',
     );
+    const restoreRedemption = order.loyalty.pointsRedeemed > 0 && !order.loyalty.redemptionRestoredAt;
+    const loyaltyRestoreEvent = restoreRedemption
+      ? createOrderEvent(
+          eventSequence++,
+          order.id,
+          'loyalty_restored',
+          `${order.loyalty.pointsRedeemed} loyalty points restored`,
+          'system',
+          occurredAt,
+          undefined,
+          `Restored after failed delivery of ${order.reference}.`,
+        )
+      : null;
     const nextDelivery = {
       ...delivery,
       status: 'failed' as const,
@@ -1178,9 +1292,36 @@ export const useAppStore = create<AppStore>()((set, get) => {
     const nextOrder: Order = {
       ...order,
       status: 'delivery_failed',
-      events: [...order.events, event],
+      loyalty: {
+        ...order.loyalty,
+        pointsPending: 0,
+        ...(restoreRedemption ? { redemptionRestoredAt: occurredAt } : {}),
+      },
+      events: [...order.events, event, ...(loyaltyRestoreEvent ? [loyaltyRestoreEvent] : [])],
       updatedAt: occurredAt,
     };
+    const existingLoyaltyAccount = state.loyalty.accounts.find((item) => item.customerId === order.customerId);
+    const restoredLoyaltyAccounts = restoreRedemption
+      ? existingLoyaltyAccount
+        ? state.loyalty.accounts.map((account) =>
+            account.customerId === order.customerId
+              ? { ...account, pointsAvailable: account.pointsAvailable + order.loyalty.pointsRedeemed, updatedAt: occurredAt }
+              : account,
+          )
+        : [{ customerId: order.customerId, pointsAvailable: order.loyalty.pointsRedeemed, updatedAt: occurredAt }, ...state.loyalty.accounts]
+      : state.loyalty.accounts;
+    const restoredLoyaltyActivity = restoreRedemption
+      ? [{
+          id: createSequenceId('loyalty-event', state.meta.nextLoyaltyEventSequence),
+          customerId: order.customerId,
+          type: 'restored' as const,
+          points: order.loyalty.pointsRedeemed,
+          description: `${order.loyalty.pointsRedeemed} points restored from ${order.reference}.`,
+          orderId: order.id,
+          reason: `Restored after failed delivery of ${order.reference}.`,
+          createdAt: occurredAt,
+        }, ...state.loyalty.activity]
+      : state.loyalty.activity;
 
     set({
       orders: {
@@ -1192,7 +1333,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
           item.id === delivery.id ? nextDelivery : item,
         ),
       },
-      meta: { ...state.meta, nextOrderEventSequence: state.meta.nextOrderEventSequence + 1 },
+      loyalty: { accounts: restoredLoyaltyAccounts, activity: restoredLoyaltyActivity },
+      meta: {
+        ...state.meta,
+        nextOrderEventSequence: eventSequence,
+        nextLoyaltyEventSequence: state.meta.nextLoyaltyEventSequence + (restoreRedemption ? 1 : 0),
+      },
     });
     return commandSuccess(nextDelivery);
   };
@@ -1364,16 +1510,34 @@ export const useAppStore = create<AppStore>()((set, get) => {
           occurredAt,
         )
       : null;
+    const restoreRedemption = order.loyalty.pointsRedeemed > 0 && !order.loyalty.redemptionRestoredAt;
+    const loyaltyRestoreEvent = restoreRedemption
+      ? createOrderEvent(
+          eventSequence++,
+          order.id,
+          'loyalty_restored',
+          `${order.loyalty.pointsRedeemed} loyalty points restored`,
+          'system',
+          occurredAt,
+          undefined,
+          `Restored after approved cancellation of ${order.reference}.`,
+        )
+      : null;
     const nextOrder: Order = {
       ...order,
       status: 'cancelled',
       cancellation: nextCancellation,
       inventoryReservationStatus: shouldRelease ? 'released' : order.inventoryReservationStatus,
-      loyalty: { ...order.loyalty, pointsPending: 0 },
+      loyalty: {
+        ...order.loyalty,
+        pointsPending: 0,
+        ...(restoreRedemption ? { redemptionRestoredAt: occurredAt } : {}),
+      },
       events: [
         ...order.events,
         reviewEvent,
         ...(inventoryReleaseEvent ? [inventoryReleaseEvent] : []),
+        ...(loyaltyRestoreEvent ? [loyaltyRestoreEvent] : []),
       ],
       updatedAt: occurredAt,
     };
@@ -1395,6 +1559,28 @@ export const useAppStore = create<AppStore>()((set, get) => {
       payment && ['collection_due', 'awaiting_verification'].includes(payment.status)
         ? { ...payment, status: 'cancelled' as const, updatedAt: occurredAt }
         : payment;
+    const existingLoyaltyAccount = state.loyalty.accounts.find((item) => item.customerId === order.customerId);
+    const restoredLoyaltyAccounts = restoreRedemption
+      ? existingLoyaltyAccount
+        ? state.loyalty.accounts.map((account) =>
+            account.customerId === order.customerId
+              ? { ...account, pointsAvailable: account.pointsAvailable + order.loyalty.pointsRedeemed, updatedAt: occurredAt }
+              : account,
+          )
+        : [{ customerId: order.customerId, pointsAvailable: order.loyalty.pointsRedeemed, updatedAt: occurredAt }, ...state.loyalty.accounts]
+      : state.loyalty.accounts;
+    const restoredLoyaltyActivity = restoreRedemption
+      ? [{
+          id: createSequenceId('loyalty-event', state.meta.nextLoyaltyEventSequence),
+          customerId: order.customerId,
+          type: 'restored' as const,
+          points: order.loyalty.pointsRedeemed,
+          description: `${order.loyalty.pointsRedeemed} points restored from ${order.reference}.`,
+          orderId: order.id,
+          reason: `Restored after approved cancellation of ${order.reference}.`,
+          createdAt: occurredAt,
+        }, ...state.loyalty.activity]
+      : state.loyalty.activity;
 
     set({
       orders: {
@@ -1422,10 +1608,12 @@ export const useAppStore = create<AppStore>()((set, get) => {
           ...state.inventory.adjustments,
         ],
       },
+      loyalty: { accounts: restoredLoyaltyAccounts, activity: restoredLoyaltyActivity },
       meta: {
         ...state.meta,
         nextOrderEventSequence: eventSequence,
         nextInventoryEventSequence: inventorySequence,
+        nextLoyaltyEventSequence: state.meta.nextLoyaltyEventSequence + (restoreRedemption ? 1 : 0),
       },
     });
     return commandSuccess(nextOrder);
@@ -1717,6 +1905,7 @@ export const useAppStore = create<AppStore>()((set, get) => {
       syncOperationalSnapshot,
       mergeOperationalSnapshot,
       syncCustomerAddresses,
+      syncCustomerProfile,
       syncCustomerCart,
       markCustomerCartFailed,
       markCustomerAddressesFailed,

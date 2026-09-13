@@ -32,7 +32,7 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Enter your password.').max(72, 'The password is too long.'),
 });
 
-export default function LoginScreen({ nextPath }: LoginScreenProps) {
+export default function LoginScreen({ emailChanged = false, nextPath }: LoginScreenProps) {
   const router = useRouter();
   const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
   const syncCustomerCart = useAppStore((state) => state.commands.syncCustomerCart);
@@ -108,6 +108,14 @@ export default function LoginScreen({ nextPath }: LoginScreenProps) {
       title="Sign in"
     >
       <Form aria-busy={isSubmitting} aria-label="Account sign in" noValidate onSubmit={onSubmit}>
+        {emailChanged ? (
+          <ErrorRegion>
+            <Notice title="Login email changed" tone="success">
+              Sign in again using your new login email and the same password.
+            </Notice>
+          </ErrorRegion>
+        ) : null}
+
         {submissionError ? (
           <ErrorRegion>
             <Notice title="Sign-in failed" tone="error">

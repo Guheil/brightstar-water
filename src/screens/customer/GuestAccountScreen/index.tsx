@@ -83,7 +83,7 @@ const JOURNEY: readonly GuestAccountJourneyStep[] = [
   },
   {
     title: 'Choose payment',
-    description: 'Continue with Cash on Delivery or GCash and review the final amount before placing the order.',
+    description: 'Choose from the payment methods currently available at checkout and review the final amount before placing the order.',
   },
   {
     title: 'Track the order',

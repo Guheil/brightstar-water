@@ -7,10 +7,10 @@ export const metadata: Metadata = {
 };
 
 interface LoginPageProps {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ emailChanged?: string; next?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { next } = await searchParams;
-  return <LoginScreen nextPath={next} />;
+  const { emailChanged, next } = await searchParams;
+  return <LoginScreen emailChanged={emailChanged === '1'} nextPath={next} />;
 }

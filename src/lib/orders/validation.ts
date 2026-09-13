@@ -32,9 +32,26 @@ export const placeOrderSchema = z.object({
   deliveryAddressId: entityUuidSchema,
   deliverySchedule: orderScheduleSchema,
   paymentMethod: z.enum(['cod', 'gcash']),
+  gcashSettingsVersion: z.number().int().min(1).optional(),
+  requestedLoyaltyPoints: z.number().int().min(0).max(100_000).optional(),
+  loyaltyPointsAvailableSnapshot: z.number().int().min(0).max(100_000_000).optional(),
   customerNote: plainText(500).optional(),
   idempotencyKey: entityUuidSchema,
-}).strict();
+}).strict().superRefine((value, ctx) => {
+  if (value.paymentMethod === 'gcash' && value.gcashSettingsVersion === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['gcashSettingsVersion'], message: 'Current GCash payment details are required.' });
+  }
+  if (value.paymentMethod === 'cod' && value.gcashSettingsVersion !== undefined) {
+    ctx.addIssue({ code: 'custom', path: ['gcashSettingsVersion'], message: 'GCash payment details do not apply to cash on delivery.' });
+  }
+  const requestedPoints = value.requestedLoyaltyPoints ?? 0;
+  if (requestedPoints > 0 && value.loyaltyPointsAvailableSnapshot === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['loyaltyPointsAvailableSnapshot'], message: 'Current loyalty balance is required when redeeming points.' });
+  }
+  if (requestedPoints === 0 && value.loyaltyPointsAvailableSnapshot !== undefined) {
+    ctx.addIssue({ code: 'custom', path: ['loyaltyPointsAvailableSnapshot'], message: 'A loyalty balance snapshot only applies when redeeming points.' });
+  }
+});
 
 export const cancellationRequestSchema = z.object({ reason: plainText(500, 4) }).strict();
 export const assignmentSchema = z.object({ delivererId: entityUuidSchema }).strict();

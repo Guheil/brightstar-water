@@ -25,7 +25,11 @@ export const createInitialAppData = (): AppDataState => ({
     initialized: false,
     error: null,
   },
-  customers: { records: structuredClone(CUSTOMER_DATA), addressesInitialized: false, addressesError: null },
+  customers: {
+    records: includeOperationalFixtures ? structuredClone(CUSTOMER_DATA) : [],
+    addressesInitialized: false,
+    addressesError: null,
+  },
   orders: { records: includeOperationalFixtures ? structuredClone(ORDER_DATA) : [] },
   inventory: {
     items: [],

@@ -59,6 +59,9 @@ export default function OrderConfirmationScreen({ orderId }: OrderConfirmationSc
         </HeadingGroup>
         <ReferencePanel>
           <ReferenceItem><dt>Order reference</dt><dd>{order.reference}</dd></ReferenceItem>
+          {order.totals.loyaltyDiscountCentavos > 0 ? (
+            <ReferenceItem><dt>Loyalty discount</dt><dd>−{formatPhp(order.totals.loyaltyDiscountCentavos)}</dd></ReferenceItem>
+          ) : null}
           <ReferenceItem><dt>Total</dt><dd>{formatPhp(order.totals.totalCentavos)}</dd></ReferenceItem>
           <ReferenceItem><dt>Estimated arrival</dt><dd>{getEstimatedScheduleText(order.deliverySchedule)}</dd></ReferenceItem>
           <ReferenceItem><dt>Delivery preference</dt><dd>{preferredSchedule ?? 'Earliest available'}</dd></ReferenceItem>

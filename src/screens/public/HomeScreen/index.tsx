@@ -286,8 +286,7 @@ export default function HomeScreen() {
             <DetailRow>
               <DetailTitle>Payment</DetailTitle>
               <DetailText>
-                Choose cash on delivery or GCash. GCash orders move to payment
-                verification before fulfillment.
+                Cash on delivery is available. When GCash is enabled, checkout shows the current payment destination and verification steps before order confirmation.
               </DetailText>
             </DetailRow>
             <DetailRow>
