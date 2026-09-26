@@ -15,6 +15,11 @@ import RegistrationAgreementDialog from '@/components/legal/RegistrationAgreemen
 import Notice from '@/components/ui/Notice';
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/config';
 import { loadCurrentAppSession } from '@/lib/auth/client';
+import {
+  emailAddressSchema,
+  newPasswordSchema,
+  passwordConfirmationSchema,
+} from '@/lib/auth/passwordPolicy';
 import { fetchCustomerCart } from '@/lib/cart/client';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/store';
@@ -60,13 +65,13 @@ const registerSchema = z
       .min(2, 'Enter your name.')
       .max(60, 'Keep your name under 60 characters.')
       .regex(safeName, 'Remove unsupported characters from your name.'),
-    email: z.string().trim().email('Enter a valid email address.').max(254),
+    email: emailAddressSchema,
     phone: z.string().trim().refine(
       (value) => /^09[0-9]{9}$/.test(normalizePhone(value)),
       'Enter a valid Philippine mobile number.',
     ),
-    password: z.string().min(8, 'Use at least 8 characters.').max(72, 'Keep your password under 72 characters.'),
-    confirmPassword: z.string(),
+    password: newPasswordSchema,
+    confirmPassword: passwordConfirmationSchema,
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: 'The passwords do not match.',
@@ -341,7 +346,7 @@ export default function RegisterScreen({ nextPath }: RegisterScreenProps) {
       {stage === 'security' ? (
         <Form aria-label="Create account password" noValidate onSubmit={(event) => event.preventDefault()}>
           <StepTitle>Create your password</StepTitle>
-          <StepText>Use at least 8 characters and avoid reusing a password from another account.</StepText>
+          <StepText>Use at least 15 characters and avoid reusing a password from another account.</StepText>
           <Field
             autoComplete="new-password"
             error={Boolean(errors.password)}

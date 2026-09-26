@@ -7,20 +7,26 @@ export function hasJsonContentType(request: NextRequest): boolean {
   return contentType.startsWith('application/json');
 }
 
-export function isRequestBodyWithinLimit(request: NextRequest): boolean {
+export function isRequestBodyWithinLimit(
+  request: NextRequest,
+  maxBytes = MAX_JSON_BODY_BYTES,
+): boolean {
   const rawLength = request.headers.get('content-length');
   if (!rawLength) return true;
 
   const length = Number(rawLength);
-  return Number.isFinite(length) && length >= 0 && length <= MAX_JSON_BODY_BYTES;
+  return Number.isFinite(length) && length >= 0 && length <= maxBytes;
 }
 
-export async function readLimitedJson(request: NextRequest): Promise<
+export async function readLimitedJson(
+  request: NextRequest,
+  maxBytes = MAX_JSON_BODY_BYTES,
+): Promise<
   | { ok: true; value: unknown }
   | { ok: false; reason: 'invalid' | 'too_large' }
 > {
   const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > MAX_JSON_BODY_BYTES) {
+  if (new TextEncoder().encode(raw).byteLength > maxBytes) {
     return { ok: false, reason: 'too_large' };
   }
 

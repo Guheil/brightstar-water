@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { loadCurrentAppSession } from '@/lib/auth/client';
 import { fetchCustomerAddresses } from '@/lib/addresses/client';
 import { fetchCustomerCart, replaceCustomerCart } from '@/lib/cart/client';
@@ -11,6 +12,8 @@ import { AuthSessionBoundary } from './elements';
 import type { AuthSessionSyncProps } from './interface';
 
 export default function AuthSessionSync({ children }: AuthSessionSyncProps) {
+  const pathname = usePathname();
+  const isRecoveryRoute = pathname === '/reset-password';
   const supabase = useMemo(() => createClient(), []);
   const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
   const clearAuthSession = useAppStore((state) => state.commands.signOut);
@@ -29,6 +32,14 @@ export default function AuthSessionSync({ children }: AuthSessionSyncProps) {
   );
 
   useEffect(() => {
+    if (isRecoveryRoute) {
+      // A recovery session intentionally lives in a separate HttpOnly cookie.
+      // Do not hydrate an ordinary app session or issue operational requests
+      // while the reset form is mounted, even if a stale normal session exists.
+      clearAuthSession();
+      return;
+    }
+
     let active = true;
 
     const sync = async () => {
@@ -121,9 +132,10 @@ export default function AuthSessionSync({ children }: AuthSessionSyncProps) {
       document.removeEventListener('visibilitychange', handleVisibility);
       subscription.subscription.unsubscribe();
     };
-  }, [clearAuthSession, markCustomerAddressesFailed, markCustomerCartFailed, supabase, syncAuthSession, syncCustomerAddresses, syncCustomerCart, syncOperationalSnapshot]);
+  }, [clearAuthSession, isRecoveryRoute, markCustomerAddressesFailed, markCustomerCartFailed, supabase, syncAuthSession, syncCustomerAddresses, syncCustomerCart, syncOperationalSnapshot]);
 
   useEffect(() => {
+    if (isRecoveryRoute) return;
     if (!activeCustomerId || !cartInitialized || cartOwnerCustomerId !== activeCustomerId) return;
 
     const snapshot = cartItems.map((item) => ({ ...item }));
@@ -149,7 +161,7 @@ export default function AuthSessionSync({ children }: AuthSessionSyncProps) {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [activeCustomerId, cartInitialized, cartItems, cartOwnerCustomerId, markCustomerCartFailed, syncCustomerCart]);
+  }, [activeCustomerId, cartInitialized, cartItems, cartOwnerCustomerId, isRecoveryRoute, markCustomerCartFailed, syncCustomerCart]);
 
   return <AuthSessionBoundary>{children}</AuthSessionBoundary>;
 }

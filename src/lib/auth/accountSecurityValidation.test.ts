@@ -46,6 +46,12 @@ describe('account security validation', () => {
       currentPassword: 'CurrentPassword123!',
       newPassword: 'short',
     }).success).toBe(false);
+
+    expect(accountPasswordChangeSchema.safeParse({
+      confirmPassword: 'FourteenChars!',
+      currentPassword: 'CurrentPassword123!',
+      newPassword: 'FourteenChars!',
+    }).success).toBe(false);
   });
 
   it('rejects reusing the current password', () => {

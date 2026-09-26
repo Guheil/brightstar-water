@@ -1,34 +1,23 @@
 import { z } from 'zod';
-
-const accountEmail = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .email('Enter a valid email address.')
-  .max(254, 'Keep the email address under 254 characters.');
-
-const currentPassword = z
-  .string()
-  .min(1, 'Enter your current password.')
-  .max(72, 'The password is too long.');
-
-const newPassword = z
-  .string()
-  .min(8, 'Use at least 8 characters for the new password.')
-  .max(72, 'Keep the new password under 72 characters.');
+import {
+  currentPasswordSchema,
+  emailAddressSchema,
+  newPasswordSchema,
+  passwordConfirmationSchema,
+} from './passwordPolicy';
 
 export const accountEmailChangeSchema = z
   .object({
-    currentPassword,
-    newEmail: accountEmail,
+    currentPassword: currentPasswordSchema,
+    newEmail: emailAddressSchema,
   })
   .strict();
 
 export const accountPasswordChangeSchema = z
   .object({
-    confirmPassword: z.string().max(72, 'The password is too long.'),
-    currentPassword,
-    newPassword,
+    confirmPassword: passwordConfirmationSchema,
+    currentPassword: currentPasswordSchema,
+    newPassword: newPasswordSchema,
   })
   .strict()
   .superRefine((value, context) => {

@@ -359,7 +359,7 @@ export default function OnboardingScreen({ profile }: OnboardingScreenProps) {
                     <Field
                       autoComplete="new-password"
                       error={Boolean(passwordForm.formState.errors.newPassword)}
-                      helperText={passwordForm.formState.errors.newPassword?.message ?? 'Use at least 8 characters and do not reuse the temporary password.'}
+                      helperText={passwordForm.formState.errors.newPassword?.message ?? 'Use at least 15 characters and do not reuse the temporary password.'}
                       label="New password"
                       type={showNewPassword ? 'text' : 'password'}
                       slotProps={{

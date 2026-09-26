@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { emailAddressSchema, newPasswordSchema } from '@/lib/auth/passwordPolicy';
 
 const plainName = z
   .string()
@@ -7,12 +8,7 @@ const plainName = z
   .max(60, 'Keep the name under 60 characters.')
   .regex(/^[^<>\u0000-\u001F\u007F]+$/, 'Enter a valid plain-text name.');
 
-const email = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .email('Enter a valid email address.')
-  .max(254, 'Keep the email address under 254 characters.');
+const email = emailAddressSchema;
 
 const optionalPhilippinePhone = z
   .string()
@@ -23,10 +19,7 @@ export const createManagedAccountSchema = z
   .object({
     email,
     fullName: plainName,
-    password: z
-      .string()
-      .min(8, 'Use at least 8 characters.')
-      .max(72, 'Keep the password under 72 characters.'),
+    password: newPasswordSchema,
     phone: optionalPhilippinePhone,
     role: z.enum(['customer', 'admin', 'deliverer']),
   })

@@ -39,9 +39,12 @@ describe('customer profile persistence and static-data boundary', () => {
     expect(profileScreen).not.toContain("update('email'");
   });
 
-  it('removes the simulated password-recovery route and legacy local runtime services', () => {
-    expect(existsSync(resolve(process.cwd(), 'src/app/(auth)/forgot-password/page.tsx'))).toBe(false);
-    expect(existsSync(resolve(process.cwd(), 'src/screens/auth/ForgotPasswordScreen'))).toBe(false);
+  it('replaces simulated recovery with the secure server-backed recovery flow and removes legacy local services', () => {
+    expect(existsSync(resolve(process.cwd(), 'src/app/(auth)/forgot-password/page.tsx'))).toBe(true);
+    expect(existsSync(resolve(process.cwd(), 'src/screens/auth/ForgotPasswordScreen'))).toBe(true);
+    expect(read('src/screens/auth/ForgotPasswordScreen/index.tsx')).toContain("fetch('/api/auth/password-recovery/request'");
+    expect(read('src/screens/auth/ForgotPasswordScreen/index.tsx')).not.toContain("endsWith('.test')");
+    expect(read('src/screens/auth/ForgotPasswordScreen/index.tsx')).not.toContain('setTimeout(resolve, 280)');
     expect(existsSync(resolve(process.cwd(), 'src/services/local'))).toBe(false);
     expect(existsSync(resolve(process.cwd(), 'src/screens/admin/customerPrototypeState.ts'))).toBe(false);
     expect(existsSync(resolve(process.cwd(), 'src/screens/admin/productPrototypeState.ts'))).toBe(false);

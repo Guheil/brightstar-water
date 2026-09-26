@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Notice from '@/components/ui/Notice';
 import { loadCurrentAppSession, signOutCurrentUser } from '@/lib/auth/client';
+import { emailAddressSchema } from '@/lib/auth/passwordPolicy';
 import { fetchCustomerCart } from '@/lib/cart/client';
 import { ROLE_DESTINATIONS } from '@/lib/auth/session';
 import { profileRequiresOnboarding } from '@/lib/auth/types';
@@ -28,11 +29,16 @@ import {
 } from './elements';
 
 const loginSchema = z.object({
-  email: z.string().trim().email('Enter a valid email address.').max(254),
+  email: emailAddressSchema,
   password: z.string().min(1, 'Enter your password.').max(72, 'The password is too long.'),
 });
 
-export default function LoginScreen({ emailChanged = false, nextPath }: LoginScreenProps) {
+export default function LoginScreen({
+  emailChanged = false,
+  nextPath,
+  passwordReset = false,
+  recoveryNotice = false,
+}: LoginScreenProps) {
   const router = useRouter();
   const syncAuthSession = useAppStore((state) => state.commands.syncAuthSession);
   const syncCustomerCart = useAppStore((state) => state.commands.syncCustomerCart);
@@ -116,6 +122,15 @@ export default function LoginScreen({ emailChanged = false, nextPath }: LoginScr
           </ErrorRegion>
         ) : null}
 
+        {passwordReset ? (
+          <ErrorRegion>
+            <Notice title="Password reset" tone="success">
+              Your password has been updated. Sign in with your new password.
+              {recoveryNotice ? ' We also ended the recovery session locally; sign in again to continue.' : ''}
+            </Notice>
+          </ErrorRegion>
+        ) : null}
+
         {submissionError ? (
           <ErrorRegion>
             <Notice title="Sign-in failed" tone="error">
@@ -165,6 +180,7 @@ export default function LoginScreen({ emailChanged = false, nextPath }: LoginScr
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </SubmitButton>
         <FormLinks>
+          <TextLink href="/forgot-password">Forgot password?</TextLink>
           <TextLink href={`/register?next=${encodeURIComponent(resolveSafeNextPath(nextPath, '/customer/account'))}`}>
             Create a customer account
           </TextLink>

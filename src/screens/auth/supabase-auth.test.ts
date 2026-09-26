@@ -54,7 +54,7 @@ describe('Supabase authentication Phase 1 architecture', () => {
     expect(migration).toContain('using ((select auth.uid()) = id)');
   });
 
-  it('does not ship a privileged Supabase key in application source', () => {
+  it('does not ship privileged Supabase credentials to browser-accessible configuration', () => {
     const config = read('src/lib/supabase/config.ts');
     const envExample = read('.env.example');
 
@@ -62,6 +62,8 @@ describe('Supabase authentication Phase 1 architecture', () => {
     expect(envExample).toContain('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
     expect(config).not.toContain('SERVICE_ROLE');
     expect(envExample).not.toContain('SERVICE_ROLE');
-    expect(envExample).not.toContain('SECRET_KEY');
+    expect(envExample).toContain('SUPABASE_SECRET_KEY');
+    expect(envExample).toContain('PASSWORD_RECOVERY_INTENT_SECRET');
+    expect(config).not.toContain('SUPABASE_SECRET_KEY');
   });
 });

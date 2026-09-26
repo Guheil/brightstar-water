@@ -272,7 +272,7 @@ export default function AccountScreen({ className }: AccountScreenProps) {
         <SectionCopy>
           <SectionTitle>Change password</SectionTitle>
           <SectionDescription>
-            Enter the password you use now, then choose a different password with at least 8 characters.
+            Enter the password you use now, then choose a different password with at least 15 characters.
           </SectionDescription>
         </SectionCopy>
 
@@ -294,7 +294,7 @@ export default function AccountScreen({ className }: AccountScreenProps) {
           <FormField
             autoComplete="new-password"
             disabled={passwordSubmitting}
-            helperText="Use at least 8 characters."
+            helperText="Use at least 15 characters."
             label="New password"
             onChange={(event) => setNewPassword(event.target.value)}
             required

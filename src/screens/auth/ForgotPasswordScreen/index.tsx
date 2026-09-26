@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import TextField from '@mui/material/TextField';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import Notice from '@/components/ui/Notice';
+import { passwordRecoveryRequestSchema } from '@/lib/auth/passwordRecoveryValidation';
 import AuthScaffold from '../AuthScaffold';
 import type { ForgotPasswordFormValues } from './interface';
 import {
@@ -16,31 +16,38 @@ import {
   TextLink,
 } from './elements';
 
-const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .email('Enter a valid email address.')
-    .refine(
-      (value) => value.toLocaleLowerCase().endsWith('.test'),
-      'This email address is not eligible for password recovery.',
-    ),
-});
-
 export default function ForgotPasswordScreen() {
   const [requested, setRequested] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
   } = useForm<ForgotPasswordFormValues>({
     defaultValues: { email: '' },
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(passwordRecoveryRequestSchema),
   });
 
-  const onSubmit = handleSubmit(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 280));
-    setRequested(true);
+  const onSubmit = handleSubmit(async (values) => {
+    setRequestError(null);
+    try {
+      const response = await fetch('/api/auth/password-recovery/request', {
+        body: JSON.stringify({ email: values.email }),
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setRequestError(result?.error ?? 'Password recovery could not be started right now.');
+        return;
+      }
+
+      setRequested(true);
+    } catch {
+      setRequestError('Password recovery could not be started right now. Check your connection and try again.');
+    }
   });
 
   return (
@@ -51,7 +58,7 @@ export default function ForgotPasswordScreen() {
       {requested ? (
         <SuccessRegion>
           <Notice title="Recovery request received" tone="success">
-            Your request has been accepted. Return to sign in when you are ready.
+            If an account matches that email address, recovery instructions will arrive shortly.
           </Notice>
           <TextLink href="/login">Return to sign in</TextLink>
         </SuccessRegion>
@@ -62,12 +69,18 @@ export default function ForgotPasswordScreen() {
           noValidate
           onSubmit={onSubmit}
         >
+          {requestError ? (
+            <Notice title="Password recovery could not start" tone="error">
+              {requestError}
+            </Notice>
+          ) : null}
           <TextField
-            autoComplete="off"
+            autoComplete="email"
             error={Boolean(errors.email)}
             fullWidth
             helperText={errors.email?.message ?? 'Enter the email address for your account.'}
             label="Email"
+            slotProps={{ htmlInput: { autoCapitalize: 'none', maxLength: 254, spellCheck: false } }}
             type="email"
             {...register('email')}
           />

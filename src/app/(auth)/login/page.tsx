@@ -7,10 +7,17 @@ export const metadata: Metadata = {
 };
 
 interface LoginPageProps {
-  searchParams: Promise<{ emailChanged?: string; next?: string }>;
+  searchParams: Promise<{ emailChanged?: string; next?: string; passwordReset?: string; recoveryNotice?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { emailChanged, next } = await searchParams;
-  return <LoginScreen emailChanged={emailChanged === '1'} nextPath={next} />;
+  const { emailChanged, next, passwordReset, recoveryNotice } = await searchParams;
+  return (
+    <LoginScreen
+      emailChanged={emailChanged === '1'}
+      nextPath={next}
+      passwordReset={passwordReset === '1'}
+      recoveryNotice={recoveryNotice === '1'}
+    />
+  );
 }

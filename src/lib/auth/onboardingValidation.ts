@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  currentPasswordSchema,
+  newPasswordSchema,
+  passwordConfirmationSchema,
+} from './passwordPolicy';
 
 const safeName = /^[^<>\u0000-\u001F\u007F]+$/;
 const optionalPhilippinePhone = z
@@ -8,15 +13,9 @@ const optionalPhilippinePhone = z
 
 export const onboardingPasswordSchema = z
   .object({
-    currentPassword: z
-      .string()
-      .min(1, 'Enter the temporary password you used to sign in.')
-      .max(72, 'The password is too long.'),
-    newPassword: z
-      .string()
-      .min(8, 'Use at least 8 characters.')
-      .max(72, 'Keep your password under 72 characters.'),
-    confirmPassword: z.string().max(72, 'Keep your password under 72 characters.'),
+    currentPassword: currentPasswordSchema.min(1, 'Enter the temporary password you used to sign in.'),
+    newPassword: newPasswordSchema,
+    confirmPassword: passwordConfirmationSchema,
   })
   .strict()
   .superRefine((value, context) => {
